@@ -685,7 +685,7 @@ body::after {
   font-size: 16px;
 }
 .content-wrap {
-  width: calc(100% - 530px);
+  width: calc(100% - 430px);
   float: right;
 }
 .content-wrap--noside {
@@ -1104,7 +1104,7 @@ body::after {
   padding: 1rem 2rem;
   background-color: var(--color-card);
   padding: 1rem;
-  width: 500px;
+  width: 400px;
   font-size: 16px;
 }
 .sidebar--sticky {
@@ -1121,7 +1121,7 @@ body::after {
   display: none;
 }
 .sidebar-wrap {
-  width: 500px;
+  width: 400px;
   float: left;
 }
 .sidebar-nav {
@@ -2817,12 +2817,12 @@ body::after {
   content: '|';
   margin: 0 10px;
 }
-@media (min-width: 1770px) {
+@media (min-width: 1670px) {
   .header-nav-inner {
-    width: 1770px;
+    width: 1670px;
   }
   .main-inner {
-    width: 1770px;
+    width: 1670px;
   }
 }
 @media (min-width: 991.98px) {
