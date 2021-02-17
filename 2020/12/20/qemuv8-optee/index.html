@@ -1,0 +1,388 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="基于qemu的optee模拟环境搭建">
+<meta property="og:type" content="article">
+<meta property="og:title" content="基于qemu的optee模拟环境搭建">
+<meta property="og:url" content="http://blingblingxuanxuan.github.io/2020/12/20/qemuv8-optee/index.html">
+<meta property="og:site_name" content="Clang鱼塘">
+<meta property="og:description" content="基于qemu的optee模拟环境搭建">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-12-19T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-02-17T07:11:01.134Z">
+<meta property="article:author" content="blingbling">
+<meta name="twitter:card" content="summary"><title>基于qemu的optee模拟环境搭建 | Clang鱼塘</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2020/12/20/qemuv8-optee/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":true},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"light","wordWrap":false},
+  reward: false,
+  fancybox: false,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: undefined,
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-feather-alt"></i></span><span class="header-nav-menu-item__text">文章</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/archives/"><span class="header-nav-submenu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-submenu-item__text">归档</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/categories/"><span class="header-nav-submenu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-submenu-item__text">分类</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/tags/"><span class="header-nav-submenu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-submenu-item__text">标签</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-fingerprint"></i></span><span class="header-nav-menu-item__text">关于</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/author/"><span class="header-nav-submenu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-submenu-item__text">作者</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-angle-double-down"></i></span><span class="header-nav-menu-item__text">其他</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/friends/"><span class="header-nav-submenu-item__icon"><i class="fas fa-thumbs-up"></i></span><span class="header-nav-submenu-item__text">友链</span></a></div></div></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">Clang鱼塘</div><div class="header-banner-info__subtitle"></div></div><div class="header-banner-arrow"><div class="header-banner-arrow__icon"><i class="fas fa-angle-down"></i></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">基于qemu的optee模拟环境搭建</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2020-12-20</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-02-17</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body"><p>很早之前，参考CSDN博主“漂流的猴子”的两篇博客<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://icyshuai.blog.csdn.net/article/details/71499619" >0.使用Qemu运行OP-TEE</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>和<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://icyshuai.blog.csdn.net/article/details/99855105" >OP-TEE_3.6.0的qemu运行验证</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>，尝试搭建过optee的模拟执行环境，但无论是在家里还是在公司里，都因为网络或其他莫名的原因而没有成功。</p>
+<p>这次，误打误撞看到了optee官方文档中的搭建方法——<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://optee.readthedocs.io/en/latest/building/index.html" >Build and run</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>，抱着尝试的心态，竟然搭建成功了！所以做个记录。</p>
+<p>我用到的环境如下：</p>
+<ul>
+<li><p>windows 10上安装的virtualbox 6.1.6版本。这个版本应该无所谓。</p>
+</li>
+<li><p>虚拟机的系统是Ubuntu 18.04。</p>
+</li>
+<li><p>安装的optee版本是3.8.0。</p>
+</li>
+</ul>
+<p>这里要提两个点，一开始我用的是Ubuntu 16.04版本安装optee 3.6.0，但是在安装依赖的时候一直报下面这个错，所以我就换成了Ubuntu 18.04。</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">E: Unable to locate package python3-pycryptodome</span><br></pre></td></tr></table></div></figure>
+<p>在Ubuntu 18.04上repo init的时候又报了一个错（具体是啥忘记了），原因是repo版本和optee版本不兼容。要么降低repo的版本（从2.x到1.x），要么使用新版本的optee。我选择了后者，使用Ubuntu 18.04，repo 2.x版本安装optee的3.8.0版本，最终环境搭建成功。</p>
+
+        <h1 id="1-安装依赖"   >
+          <a href="#1-安装依赖" class="heading-link"><i class="fas fa-link"></i></a><a href="#1-安装依赖" class="headerlink" title="1 安装依赖"></a>1 安装依赖</h1>
+      <p>（1）因为安装的是64位的ubuntu，所以先使能系统对i386的支持。</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> sudo dpkg --add-architecture i386</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> sudo apt-get update</span></span><br></pre></td></tr></table></div></figure>
+<p>（2）安装所有需要用到的packages。</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> sudo apt-get install android-tools-adb android-tools-fastboot autoconf \</span></span><br><span class="line"><span class="bash">        automake bc bison build-essential ccache cscope curl device-tree-compiler \</span></span><br><span class="line"><span class="bash">        expect flex ftp-upload gdisk iasl libattr1-dev libcap-dev \</span></span><br><span class="line"><span class="bash">        libfdt-dev libftdi-dev libglib2.0-dev libhidapi-dev libncurses5-dev \</span></span><br><span class="line"><span class="bash">        libpixman-1-dev libssl-dev libtool make \</span></span><br><span class="line"><span class="bash">        mtools netcat python-crypto python3-crypto python-pyelftools \</span></span><br><span class="line"><span class="bash">        python3-pycryptodome python3-pyelftools python-serial python3-serial \</span></span><br><span class="line"><span class="bash">        rsync unzip uuid-dev xdg-utils xterm xz-utils zlib1g-dev</span></span><br></pre></td></tr></table></div></figure>
+
+        <h1 id="2-安装android-repo"   >
+          <a href="#2-安装android-repo" class="heading-link"><i class="fas fa-link"></i></a><a href="#2-安装android-repo" class="headerlink" title="2 安装android repo"></a>2 安装android repo</h1>
+      <p>如果系统之前没有android的开发环境，没有安装过repo的话，可以将repo下载到本地，然后添加到环境变量中。</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> mkdir ~/bin</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> vim ~/.bashrc</span></span><br><span class="line">	export PATH=~/bin:$PATH</span><br><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">source</span> ~/.bashrc</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> curl https://storage.googleapis.com/git-repo-downloads/repo &gt; ~/bin/repo</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> chmod a+x ~/bin/repo</span></span><br></pre></td></tr></table></div></figure>
+
+        <h1 id="3-获取源码"   >
+          <a href="#3-获取源码" class="heading-link"><i class="fas fa-link"></i></a><a href="#3-获取源码" class="headerlink" title="3 获取源码"></a>3 获取源码</h1>
+      <p>通过github上op-tee项目中的manifest指定版本来获取所需的源码，这种方法对于新手来说快捷省事。（repo之前需要设置好git的代理，保证能通过git访问外网）</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> mkdir -p optee</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">cd</span> optee</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> repo init -u https://github.com/OP-TEE/manifest.git -m qemu_v8.xml -b 3.8.0</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> repo sync -j4 --no-clone-bundle</span></span><br></pre></td></tr></table></div></figure>
+<p>以上命令执行完如果没有任何问题的话，就可以直接跳到第4步去下载toolchain了。</p>
+<p>但是很不幸，我在<code>sync</code>的时候遇到了这个错误——<code>“GnuTLS recv error (-110): The TLS connection was non-properly terminated”</code>，最后成功的<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://stackoverflow.com/questions/52529639/gnutls-recv-error-110-the-tls-connection-was-non-properly-terminated" >解决办法</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>是重装git，步骤如下。</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> sudo apt-get install build-essential fakeroot dpkg-dev -y</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> sudo apt-get build-dep git -y</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> sudo apt-get install libcurl4-openssl-dev -y</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">cd</span> ~</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> mkdir source-git</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">cd</span> source-git/</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> apt-get <span class="built_in">source</span> git</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">cd</span> git-2.*.*/</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> sed -i -- <span class="string">&#x27;s/libcurl4-gnutls-dev/libcurl4-openssl-dev/&#x27;</span> ./debian/control</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> sed -i -- <span class="string">&#x27;/TEST\s*=\s*test/d&#x27;</span> ./debian/rules</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> dpkg-buildpackage -rfakeroot -b -uc -us</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> sudo dpkg -i ../git_*ubuntu*.deb</span></span><br></pre></td></tr></table></div></figure>
+
+        <h1 id="4-下载toolchains"   >
+          <a href="#4-下载toolchains" class="heading-link"><i class="fas fa-link"></i></a><a href="#4-下载toolchains" class="headerlink" title="4 下载toolchains"></a>4 下载toolchains</h1>
+      <p>编译不同架构的op-tee时，需要用到不同的toolchain，因此我们需要事先下载好。</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">cd</span> ~/optee/build</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> make -j2 toolchains</span></span><br></pre></td></tr></table></div></figure>
+<p>如果以上命令执行没有问题的话，继续去第5步就好啦。</p>
+<p>我这里遇到一个问题：</p>
+<ul>
+<li><p>make报错，提示在指定的目录中没有tar包。</p>
+<p>我仔细研究了一下，发现是没有下载下来。于是打开build目录下的toolchain.mk看了看这个脚本的实现。脚本第25行是<code>curl -s -L $(2) -o $(TOOLCHAIN_ROOT)/$(3).tar.xz;</code>，目的是下载一个tar包。去掉<code>-s</code>看看下载时到底发生了什么。果不其然，有错误提示<code>curl: (60) SSL certificate problem: unable to get local issuer certificate</code>。这是证书的问题，有两种方案：一种是在本地安装证书，另一种是curl下载时加上<code>-k</code>参数跳过证书检查。我选择第二种，因此将toolchain.mk中的第25行改成<code>curl -k -L $(2) -o $(TOOLCHAIN_ROOT)/$(3).tar.xz;</code>，然后就可以成功下载toolchain啦。</p>
+</li>
+</ul>
+
+        <h1 id="5-编译整个工程"   >
+          <a href="#5-编译整个工程" class="heading-link"><i class="fas fa-link"></i></a><a href="#5-编译整个工程" class="headerlink" title="5 编译整个工程"></a>5 编译整个工程</h1>
+      <p>因为在一开始已经设置过repo manifests了，所以编译的时候可以不指定版本，直接运行make。</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">cd</span> ~/optee/build</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> make -j4</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 或者，将编译输出重定向到<span class="built_in">log</span>中，方便编译出问题了定位</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> make 2&gt;&amp;1 | tee build.log</span></span><br></pre></td></tr></table></div></figure>
+
+        <h1 id="6-运行optee"   >
+          <a href="#6-运行optee" class="heading-link"><i class="fas fa-link"></i></a><a href="#6-运行optee" class="headerlink" title="6 运行optee"></a>6 运行optee</h1>
+      <p>在build目录下执行make run</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> <span class="built_in">cd</span> ~/optee/build</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> make run</span></span><br></pre></td></tr></table></div></figure>
+<p>执行完后，一共会有三个窗口：qemu，非安全世界，安全世界。前两个窗口有shell，安全世界的窗口只有日志输出。</p>
+<p>在qemu窗口中执行<code>c</code>，然后就可以在非安全世界的shell中执行<code>xtest</code>进行测试。</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">QEMU console:         (qemu) c</span><br><span class="line">Normal world shell:   # xtest</span><br></pre></td></tr></table></div></figure>
+<p>到此，整个基于qemu的optee环境就算搭建完成了，后续可以自由地进行分析和验证。</p>
+
+        <h1 id="7-optee代码目录结构"   >
+          <a href="#7-optee代码目录结构" class="heading-link"><i class="fas fa-link"></i></a><a href="#7-optee代码目录结构" class="headerlink" title="7 optee代码目录结构"></a>7 optee代码目录结构</h1>
+      <p>一开始不明白为什么manifest下的default.xml和qemu_v8.xml两者代码目录不一样，最明显的，前者有uboot而后者没有，那后者是用什么引导启动的呢？</p>
+<p>其实，default.xml编译的是32位的optee，而qemu_v8.xml编译的是64位的。64位的optee使用UEFI-EDK2替换掉了uboot，并引入加密组件mbedtls。这里参考了<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.xiezeyang.com/2020/08/16/Security/OPEN-TEE%E4%BB%A3%E7%A0%81%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84%E5%8F%8A%E7%BC%96%E8%AF%91%E7%9B%AE%E6%A0%87/" >OPEN-TEE代码目录结构及编译目标</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>这篇文章才弄懂的。</p>
+<p>以qemu_v8.xml中的代码目录为例，如下是编译完成后的状态，out和out-br是编译过程中创建的目录。</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">build&#x2F; - 不同平台的makefile及kconfig</span><br><span class="line">buildroot&#x2F; - 一款编译工具</span><br><span class="line">edk2&#x2F; - 遵循UEFI标准的bootloader源码</span><br><span class="line">linux&#x2F; - linux kernel源码</span><br><span class="line">mbedtls&#x2F; - 开源的ssl&#x2F;tls加密组件，轻量级</span><br><span class="line">optee_benchmark&#x2F; - open-tee项目基准框架的源码</span><br><span class="line">optee_client&#x2F; - open-tee项目的非安全侧源码</span><br><span class="line">optee_examples&#x2F; - open-tee中使用的示例CA和TA源码</span><br><span class="line">optee_os&#x2F; - open-tee项目的os源码</span><br><span class="line">optee_test&#x2F; - 测试套件xtest源码</span><br><span class="line">out&#x2F; - 存储编译生成用于烧录的image，如bl1.bin, bl2.bin等</span><br><span class="line">out-br&#x2F; - 存放buildroot工具编译生成的文件</span><br><span class="line">qemu&#x2F; - qemu源码</span><br><span class="line">.repo&#x2F; - repo工程</span><br><span class="line">soc_term&#x2F; - 监听qemu、非安全终端、安全终端三个端口，正确将log重定向至对应的终端</span><br><span class="line">toolchains&#x2F; - 包含编译所需的工具链</span><br><span class="line">trusted-firmware-a&#x2F; - atf源码</span><br></pre></td></tr></table></div></figure>
+
+        <h1 id="8-后续研究"   >
+          <a href="#8-后续研究" class="heading-link"><i class="fas fa-link"></i></a><a href="#8-后续研究" class="headerlink" title="8 后续研究"></a>8 后续研究</h1>
+      <p>后面计划参考《手机安全和可信应用开发指南》及<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://optee.readthedocs.io/en/latest/general/index.html" >OP-TEE documentation</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>对各个模块更深入地分析。</p>
+<p>另一个任务是分析一些<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.op-tee.org/security-advisories/" >op-tee历年漏洞</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>。</p>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="http://blingblingxuanxuan.github.io">blingbling</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="http://blingblingxuanxuan.github.io/2020/12/20/qemuv8-optee/">http://blingblingxuanxuan.github.io/2020/12/20/qemuv8-optee/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/2020/12/20/myfirstpc/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">从零开始组装台式机</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/2020/12/05/hitctf2020-dagongren1/"><span class="paginator-prev__text">hitctf2020之dagongren1</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#1-%E5%AE%89%E8%A3%85%E4%BE%9D%E8%B5%96"><span class="toc-number">1.</span> <span class="toc-text">
+          1 安装依赖</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#2-%E5%AE%89%E8%A3%85android-repo"><span class="toc-number">2.</span> <span class="toc-text">
+          2 安装android repo</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#3-%E8%8E%B7%E5%8F%96%E6%BA%90%E7%A0%81"><span class="toc-number">3.</span> <span class="toc-text">
+          3 获取源码</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#4-%E4%B8%8B%E8%BD%BDtoolchains"><span class="toc-number">4.</span> <span class="toc-text">
+          4 下载toolchains</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#5-%E7%BC%96%E8%AF%91%E6%95%B4%E4%B8%AA%E5%B7%A5%E7%A8%8B"><span class="toc-number">5.</span> <span class="toc-text">
+          5 编译整个工程</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#6-%E8%BF%90%E8%A1%8Coptee"><span class="toc-number">6.</span> <span class="toc-text">
+          6 运行optee</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#7-optee%E4%BB%A3%E7%A0%81%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84"><span class="toc-number">7.</span> <span class="toc-text">
+          7 optee代码目录结构</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#8-%E5%90%8E%E7%BB%AD%E7%A0%94%E7%A9%B6"><span class="toc-number">8.</span> <span class="toc-text">
+          8 后续研究</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/uploads/zhishi1.jpg" alt="avatar"></div></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/blingblingxuanxuan" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a><a class="sidebar-ov-social-item" href="https://weibo.com/anxinbuzitreexy" target="_blank" rel="noopener" data-popover="微博" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-weibo"></i></span></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2021</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>blingbling</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.3.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div><div>Just follow your heart, and keep smiling.</div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>

