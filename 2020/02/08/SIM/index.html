@@ -1,0 +1,404 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="SIM卡原理及复制原理">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SIM卡复制原理">
+<meta property="og:url" content="http://blingblingxuanxuan.github.io/2020/02/08/SIM/index.html">
+<meta property="og:site_name" content="Clang鱼塘">
+<meta property="og:description" content="SIM卡原理及复制原理">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/02/08/SIM/sim-4-kinds.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2020/02/08/SIM/sim-6-parts.png">
+<meta property="article:published_time" content="2020-02-07T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-02-17T04:25:03.251Z">
+<meta property="article:author" content="blingbling">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://blingblingxuanxuan.github.io/2020/02/08/SIM/sim-4-kinds.png"><title>SIM卡复制原理 | Clang鱼塘</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2020/02/08/SIM/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":true},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"light","wordWrap":false},
+  reward: false,
+  fancybox: false,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: undefined,
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-feather-alt"></i></span><span class="header-nav-menu-item__text">文章</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/archives/"><span class="header-nav-submenu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-submenu-item__text">归档</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/categories/"><span class="header-nav-submenu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-submenu-item__text">分类</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/tags/"><span class="header-nav-submenu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-submenu-item__text">标签</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-fingerprint"></i></span><span class="header-nav-menu-item__text">关于</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/author/"><span class="header-nav-submenu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-submenu-item__text">作者</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-angle-double-down"></i></span><span class="header-nav-menu-item__text">其他</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/friends/"><span class="header-nav-submenu-item__icon"><i class="fas fa-thumbs-up"></i></span><span class="header-nav-submenu-item__text">友链</span></a></div></div></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">Clang鱼塘</div><div class="header-banner-info__subtitle"></div></div><div class="header-banner-arrow"><div class="header-banner-arrow__icon"><i class="fas fa-angle-down"></i></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">SIM卡复制原理</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2020-02-08</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-02-17</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h1 id="SIM卡复制原理"   >
+          <a href="#SIM卡复制原理" class="heading-link"><i class="fas fa-link"></i></a><a href="#SIM卡复制原理" class="headerlink" title="SIM卡复制原理"></a>SIM卡复制原理</h1>
+      <blockquote>
+<p>GSM手机要想得到GSM系统的服务需要插入一张SIM卡。因为GSM系统是通过SIM卡来识别用户的，而不是基于手机来识别。</p>
+<p>移动终端上必须装上sim卡才能使用，sim卡是整个<strong>GSM系统</strong>（全球移动通讯系统）中唯一确认用户身份的设备。</p>
+</blockquote>
+
+        <h2 id="常用缩写"   >
+          <a href="#常用缩写" class="heading-link"><i class="fas fa-link"></i></a><a href="#常用缩写" class="headerlink" title="常用缩写"></a>常用缩写</h2>
+      <p>SIM，Subscriber Identification Module，客户识别模块（也称用户身份识别卡）。</p>
+<p>IMEI，国际移动设备识别码。由15位数字组成，每台手机对应一个IMEI，为全世界独一无二的。</p>
+<p>MEID，移动设备识别码。由14位十六进制字符组成。</p>
+<p>IMSI，国际移动用户识别码。通过IMSI可反查运营商、归属地、手机号码等信息。</p>
+
+        <h2 id="sim卡的演进"   >
+          <a href="#sim卡的演进" class="heading-link"><i class="fas fa-link"></i></a><a href="#sim卡的演进" class="headerlink" title="sim卡的演进"></a>sim卡的演进</h2>
+      <p>1991年，德国捷德公司开发了世界第一张SIM卡，大小是一个名片的大小。此类卡是<strong>标准SIM卡</strong>，也叫“原卡”。</p>
+<p>中国移动通信起步较晚，没赶上“原卡”时代，因此我们一开始接触到的是Mini SIM卡。再之后由于手机逐步小型化，2010年出现了Micro SIM卡，首先使用在苹果公司的产品上，如ipad、iphone4。2011年，苹果公司提出了更小的sim卡标准——Nano SIM卡。</p>
+<p><img src="sim-4-kinds.png"></p>
+<p>以上的演进，说白了就是剪卡过程，并不是什么技术演进。</p>
+<p>但是Nano SIM卡还是占据较大的空间，在小型可穿戴设备上不实用，而且卡槽中放卡的方式不稳定。因此发展出了eSIM卡Embeded-SIM，直接嵌入到电路板上。</p>
+<p>但是eSIM仍然是一个硬件。现在还出现了依靠操作系统软件实现SIM卡功能的softSIM和vSIM，这样就完全告别实体SIM卡片了。</p>
+<p>伴随着网络变化，sim卡的变化：</p>
+<ul>
+<li>SIM卡存在无法接入LTE/IMS网络的局限性</li>
+<li>USIM可接入LTE/2G/3G网络，但不存储IMS网络相关的用户信息，因此接入VoLTE网络时，还需要通过终端导出IMS注册时所需要的用户码号信息。</li>
+<li>ISIM卡是在USIM卡的基础上，增加了ISIM模块，专门用于存储IMS网络相关用户码号和归属地信息。可以通过读取ISIM模块中的信息直接接入VoLTE网络。</li>
+</ul>
+
+        <h2 id="sim卡硬件特性"   >
+          <a href="#sim卡硬件特性" class="heading-link"><i class="fas fa-link"></i></a><a href="#sim卡硬件特性" class="headerlink" title="sim卡硬件特性"></a>sim卡硬件特性</h2>
+      <blockquote>
+<p>sim卡是一个装有微处理器的芯片卡。</p>
+</blockquote>
+<p>下面看一看实际的sim卡长什么样：</p>
+<p><img src="sim-6-parts.png"></p>
+<p>sim卡通过这些铜制接口将卡内逻辑电路与移动终端连接起来。其中与移动终端连接的有如下六个触电：电源（Vcc），复位（RESET），时钟（CLK），接地端（GND），编程电压（VPP），数据I/O接口（Data）</p>
+<p>sim卡硬件内部包含如下五个模块：</p>
+<ul>
+<li>微处理器cpu，8位</li>
+<li>程序存储器ROM，3~8kbit</li>
+<li>工作存储器RAM，6~16kbit</li>
+<li>数据存储器EPROM，128~256kbit</li>
+<li>串行通信单元</li>
+</ul>
+<p>使用时，手机会向sim卡发送命令，sim卡根据标准规范执行后，给手机反馈执行结果。</p>
+
+        <h2 id="sim卡的功能"   >
+          <a href="#sim卡的功能" class="heading-link"><i class="fas fa-link"></i></a><a href="#sim卡的功能" class="headerlink" title="sim卡的功能"></a>sim卡的功能</h2>
+      <p>1、存储数据：</p>
+<ul>
+<li>固定数据：这类数据在ME（Mobile Equipment）被出售之前由SIM卡中心写入，包括国际移动用户识别号（IMSI）、鉴权密钥（KI）等</li>
+<li>临时数据：指的是网络相关的的临时数据，如位置区域识别码（LAI）、移动用户暂时识别码（TMSI）、禁止接入的公共电话网代码等</li>
+<li>业务代码：如个人识别码（PIN）、解锁码（PUK）、计费费率等</li>
+<li>电话号码、短消息等用户记录</li>
+</ul>
+<p>（以上四类数据，除第一类只有专业部门能查阅和更新外，其他几类都是手机可查阅和更新的）</p>
+<p>2、PIN码保护</p>
+<p>3、用户身份鉴权</p>
+<p>4、SIM卡中的保密算法及密钥</p>
+
+        <h2 id="sim卡认证"   >
+          <a href="#sim卡认证" class="heading-link"><i class="fas fa-link"></i></a><a href="#sim卡认证" class="headerlink" title="sim卡认证"></a>sim卡认证</h2>
+      <p>SIM卡中没有存储本机号码，仅有IMIS号。当我们在营业厅申请并注册手机号时，运营商将手机号码与SIM卡的IMSI号、序列号以及鉴权密钥Ki做登记，储存在数据库里。</p>
+<p>SIM卡插入到手机中开机时，手机向SIM卡请求IMSI，然后把IMSI发送给运营商。运营商在数据库中查找是否存在这个IMSI并判断是否为合法用户，然后获得这个IMSI对应的手机号码和鉴权密钥Ki。</p>
+<p>运营商再生成一个随机数RAND，然后将该随机数发送给手机。手机接收到随机数RAND后，将该随机数RAND发送给SIM卡。SIM卡利用RAND和鉴权密钥Ki通过A3算法生成应答SRES，将SRES发送给手机，再由手机转发给运营商。运营商在本地利用RAND和对应的鉴权密钥Ki进行相同的运算，得到X-SRES，并比较SRES和X-SRES是否相同，相同的话就说明这个卡是合法的，允许其接入网络。</p>
+<p>上一步骤中，手机端收到RAND时，同时还会让SIM卡利用RAND和Ki计算出一个通信用的加密密钥Kc，计算时用的算法称之为A8。由于A3和A8接受的输入相同，因此实现者偷了个懒，用一个算法同时生成SRES和Kc。</p>
+<p>之后的通信过程中，使用加密密钥Kc和A5算法对通信内容进行加密。由于通信内容的加密量巨大，SIM卡无法快速处理如此多的加密需求，因此通信过程中的加密都是在手机上完成的。因此，所有的GSM手机都必须至少支持一种相同的A5算法，否则就无法漫游了。这时候运营商和设备商又偷了个懒，全世界目前都只用一种A5算法。这个算法的做法就是和Kc的8字节序列进行简单的循环XOR，再和报文序号做个减法。</p>
+
+        <h2 id="sim卡复制"   >
+          <a href="#sim卡复制" class="heading-link"><i class="fas fa-link"></i></a><a href="#sim卡复制" class="headerlink" title="sim卡复制"></a>sim卡复制</h2>
+      <p>从以上SIM卡认证原理中，我们知道IMSI和Ki是必不可少的，A3算法也必须知道。IMSI可以通过手机将其从SIM卡中读取出来，但是A3算法和鉴权密钥Ki是无法直接获取的，只能通过某种方法破解。</p>
+<p>A3算法一直被作为高级商业机密保护起来。但在1998年左右，有个人泄露了几页关于A3算法的文档到网络上。加州伯克利的几个教授拿到这个文档后，对照着SIM卡研究了一阵，最终将A3算法破解了。这个算法又叫做Comp128。</p>
+<p>怎么获取Ki呢？两个思路，一种是把SIM卡拆掉然后接到特殊设备上将Ki读取出来，另一种是利用Comp128去暴力破解、穷举。前一种方法就像用小刀在硬盘上刻操作系统一样不靠谱。后一种方法有一定的限制，SIM卡中的逻辑是一共只能查询2^16次左右，之后卡就不可用了。因此，研究者们只能在可接受的次数之内，通过构造特定明文和分析输出的密文来破解Ki的值。这种方法最终成功了。</p>
+<p>由于SIM复制设备越来越多，运营商们不得不发行新算法的卡，这个算法叫做Comp128 v2。这个算法目前为止还没被破解。</p>
+
+        <h1 id="reference"   >
+          <a href="#reference" class="heading-link"><i class="fas fa-link"></i></a><a href="#reference" class="headerlink" title="reference"></a>reference</h1>
+      <p>SIM卡实现原理：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.jianshu.com/p/8c9374f5e581" >https://www.jianshu.com/p/8c9374f5e581</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>4G LTE 网只能提供数据服务，不能承载语音通话，该怎么理解？<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.zhihu.com/question/22365275" >https://www.zhihu.com/question/22365275</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>SIM卡复制原理：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://cn.club.vmall.com/thread-2454925-1-1.html" >https://cn.club.vmall.com/thread-2454925-1-1.html</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>关于SIM和eSIM，看这一篇就够啦！<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/47999705" >https://zhuanlan.zhihu.com/p/47999705</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>SIM卡中的A3、A5和A8算法：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="http://www.360doc.com/content/11/0913/22/3129476_148024343.shtml" >http://www.360doc.com/content/11/0913/22/3129476_148024343.shtml</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>什么是伪基站？<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.zhihu.com/question/36723973" >https://www.zhihu.com/question/36723973</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="http://blingblingxuanxuan.github.io">blingbling</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="http://blingblingxuanxuan.github.io/2020/02/08/SIM/">http://blingblingxuanxuan.github.io/2020/02/08/SIM/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/2020/02/23/paper/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">ctf堆入门 - paper</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/2019/10/26/syzkaller/"><span class="paginator-prev__text">syzkaller</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#SIM%E5%8D%A1%E5%A4%8D%E5%88%B6%E5%8E%9F%E7%90%86"><span class="toc-number">1.</span> <span class="toc-text">
+          SIM卡复制原理</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E7%94%A8%E7%BC%A9%E5%86%99"><span class="toc-number">1.1.</span> <span class="toc-text">
+          常用缩写</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#sim%E5%8D%A1%E7%9A%84%E6%BC%94%E8%BF%9B"><span class="toc-number">1.2.</span> <span class="toc-text">
+          sim卡的演进</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#sim%E5%8D%A1%E7%A1%AC%E4%BB%B6%E7%89%B9%E6%80%A7"><span class="toc-number">1.3.</span> <span class="toc-text">
+          sim卡硬件特性</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#sim%E5%8D%A1%E7%9A%84%E5%8A%9F%E8%83%BD"><span class="toc-number">1.4.</span> <span class="toc-text">
+          sim卡的功能</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#sim%E5%8D%A1%E8%AE%A4%E8%AF%81"><span class="toc-number">1.5.</span> <span class="toc-text">
+          sim卡认证</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#sim%E5%8D%A1%E5%A4%8D%E5%88%B6"><span class="toc-number">1.6.</span> <span class="toc-text">
+          sim卡复制</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#reference"><span class="toc-number">2.</span> <span class="toc-text">
+          reference</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/uploads/zhishi1.jpg" alt="avatar"></div></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/blingblingxuanxuan" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a><a class="sidebar-ov-social-item" href="https://weibo.com/anxinbuzitreexy" target="_blank" rel="noopener" data-popover="微博" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-weibo"></i></span></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2021</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>blingbling</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.3.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div><div>Just follow your heart, and keep smiling.</div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>

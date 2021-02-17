@@ -1,0 +1,591 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="syzkaller编译及定制">
+<meta property="og:type" content="article">
+<meta property="og:title" content="syzkaller">
+<meta property="og:url" content="http://blingblingxuanxuan.github.io/2019/10/26/syzkaller/index.html">
+<meta property="og:site_name" content="Clang鱼塘">
+<meta property="og:description" content="syzkaller编译及定制">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2019/10/26/syzkaller/syzkaller-mgr.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2019/10/26/syzkaller/syzkaller-vmlinux.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2019/10/26/syzkaller/syzkaller-ethnet.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2019/10/26/syzkaller/syzkaller-running.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2019/10/26/syzkaller/syzkaller-display1.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2019/10/26/syzkaller/syzkaller-display2.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2019/10/26/syzkaller/syzkaller-display3.png">
+<meta property="article:published_time" content="2019-10-25T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-02-17T04:20:31.118Z">
+<meta property="article:author" content="blingbling">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://blingblingxuanxuan.github.io/2019/10/26/syzkaller/syzkaller-mgr.png"><title>syzkaller | Clang鱼塘</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2019/10/26/syzkaller/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":true},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"light","wordWrap":false},
+  reward: false,
+  fancybox: false,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: undefined,
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-feather-alt"></i></span><span class="header-nav-menu-item__text">文章</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/archives/"><span class="header-nav-submenu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-submenu-item__text">归档</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/categories/"><span class="header-nav-submenu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-submenu-item__text">分类</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/tags/"><span class="header-nav-submenu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-submenu-item__text">标签</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-fingerprint"></i></span><span class="header-nav-menu-item__text">关于</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/author/"><span class="header-nav-submenu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-submenu-item__text">作者</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-angle-double-down"></i></span><span class="header-nav-menu-item__text">其他</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/friends/"><span class="header-nav-submenu-item__icon"><i class="fas fa-thumbs-up"></i></span><span class="header-nav-submenu-item__text">友链</span></a></div></div></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">Clang鱼塘</div><div class="header-banner-info__subtitle"></div></div><div class="header-banner-arrow"><div class="header-banner-arrow__icon"><i class="fas fa-angle-down"></i></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">syzkaller</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2019-10-26</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-02-17</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h1 id="1-总览"   >
+          <a href="#1-总览" class="heading-link"><i class="fas fa-link"></i></a><a href="#1-总览" class="headerlink" title="1.总览"></a>1.总览</h1>
+      <p>关于<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://github.com/google/syzkaller" >Syzkaller</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>是什么，我就不多说了，介绍的文档很多。直接进入正题吧~</p>
+<p>github上英文版的指导中，有些许坑需要自己踩踩，所以将搭建syzkaller的环境记录下来，供之后参考。本文计划搭建如下几个环境（会不断更新）：</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">1. 使用syzkaller去fuzz x86-64架构的linux内核，这个内核是用qemu模拟的。</span><br><span class="line">2. 使用syzkaller去fuzz arm64的手机设备，qemu模拟和实体机都准备尝试一下。</span><br><span class="line">3. 两台通过网络连接的linux机器之间的fuzz。</span><br></pre></td></tr></table></div></figure>
+<p>在正式开始之前，先说一下基本环境。我用来搭建环境的主机是Ubuntu18.04虚拟机，gcc版本是7.5.0。</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">syzkaller官网对gcc版本的要求是&gt;6.1.0。所以如果你的主机是Ubuntu16.04的话，可以按照安装gcc章节升级一下本地gcc版本。</span><br></pre></td></tr></table></div></figure>
+<p>ubuntu 18.04搭建syzkaller环境，需要做以下四件事情：</p>
+<ul>
+<li><p>1、准备好C编译环境。</p>
+</li>
+<li><p>2、准备好待测试的Linux kernel，并开启coverage代码覆盖率选项。</p>
+</li>
+</ul>
+<ul>
+<li><p>3、准备测试机，虚拟机或者物理机。</p>
+</li>
+<li><p>4、准备好syzkaller源码，并编译。（由于syzkaller是由go语言写的，所以这里需要提前安装好go语言环境）</p>
+</li>
+</ul>
+
+        <h1 id="2-安装GCC"   >
+          <a href="#2-安装GCC" class="heading-link"><i class="fas fa-link"></i></a><a href="#2-安装GCC" class="headerlink" title="2.安装GCC"></a>2.安装GCC</h1>
+      <blockquote>
+<p>gcc下载地址：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="http://ftp.gnu.org/gnu/gcc/" >gcc下载</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+</blockquote>
+<p>宿主机自带的gcc版本过低的话，需要在原本的基础上新装一个高版本的gcc。这里我选择源码安装，并且将它安装到一个单独目录，这样今后想卸载的话，直接删除该目录即可。</p>
+<ul>
+<li>解压gcc-7.4.0源码包：<code>tar -zxvf gcc-7.4.0.tar.gz</code>（或者<code>tar -Jxvf gcc-7.4.0.tar.xz</code>）</li>
+<li>下载安装依赖项：在解压完的源码包中，执行./contrib/download_prerequisites（需更改base_url为<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="http://mirror.linux-ia64.org/gnu/gcc/infrastructure/%EF%BC%8C%E5%A6%82%E6%9E%9C%E6%89%A7%E8%A1%8C%E6%97%B6%E4%B8%80%E7%9B%B4%E6%B2%A1%E6%9C%89%E8%BF%9B%E5%BA%A6%EF%BC%8C%E8%80%83%E8%99%91%E5%8A%A0%E4%B8%8Asudo%E6%9D%83%E9%99%90%E6%89%A7%E8%A1%8C%EF%BC%89%E3%80%82%E8%8B%A5%E6%89%A7%E8%A1%8C%E4%B8%8D%E6%88%90%E5%8A%9F%EF%BC%8C%E5%88%99%E9%9C%80%E8%87%AA%E8%A1%8C%E4%B8%8B%E8%BD%BD%E5%AE%89%E8%A3%85%EF%BC%8C%E6%AD%A5%E9%AA%A4%E5%A6%82%E4%B8%8B%E3%80%82" >http://mirror.linux-ia64.org/gnu/gcc/infrastructure/，如果执行时一直没有进度，考虑加上sudo权限执行）。若执行不成功，则需自行下载安装，步骤如下。</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+</ul>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">gcc7.4.0依赖的gmp,mpfr和mpc版本如下：</span><br><span class="line">	gmp&#x3D;&#39;gmp-6.1.0.tar.bz2&#39;</span><br><span class="line">	mpfr&#x3D;&#39;mpfr-3.1.4.tar.bz2&#39;</span><br><span class="line">	mpc&#x3D;&#39;mpc-1.0.3.tar.gz&#39;</span><br><span class="line"></span><br><span class="line">安装过程参考链接：</span><br><span class="line">https:&#x2F;&#x2F;blog.csdn.net&#x2F;lwbeyond&#x2F;article&#x2F;details&#x2F;77718040（主要参考该文档）</span><br><span class="line">https:&#x2F;&#x2F;blog.csdn.net&#x2F;xs1102&#x2F;article&#x2F;details&#x2F;89175293</span><br><span class="line">https:&#x2F;&#x2F;blog.csdn.net&#x2F;davidhopper&#x2F;article&#x2F;details&#x2F;79681695</span><br><span class="line"></span><br><span class="line">安装gmp到configure步骤时，出现“no usable m4”错误：</span><br><span class="line">https:&#x2F;&#x2F;blog.csdn.net&#x2F;wangqing_12345&#x2F;article&#x2F;details&#x2F;52484723</span><br></pre></td></tr></table></div></figure>
+
+        <h1 id="3-x86-64-linux-kernel-in-qemu"   >
+          <a href="#3-x86-64-linux-kernel-in-qemu" class="heading-link"><i class="fas fa-link"></i></a><a href="#3-x86-64-linux-kernel-in-qemu" class="headerlink" title="3 x86-64 linux kernel in qemu"></a>3 x86-64 linux kernel in qemu</h1>
+      <blockquote>
+<p>标题解释：这一小节的fuzz对象是linux kernel，架构是x86-64，是使用qemu模拟出来的。</p>
+</blockquote>
+
+        <h2 id="3-1-编译syzkaller"   >
+          <a href="#3-1-编译syzkaller" class="heading-link"><i class="fas fa-link"></i></a><a href="#3-1-编译syzkaller" class="headerlink" title="3.1 编译syzkaller"></a>3.1 编译syzkaller</h2>
+      
+        <h3 id="3-1-1-搞定go环境"   >
+          <a href="#3-1-1-搞定go环境" class="heading-link"><i class="fas fa-link"></i></a><a href="#3-1-1-搞定go环境" class="headerlink" title="3.1.1 搞定go环境"></a>3.1.1 搞定go环境</h3>
+      <p>go官网：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://golang.org/dl/" >https://golang.org/dl</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">wget https://dl.google.com/go/go1.14.2.linux-amd64.tar.gz</span><br><span class="line">tar -xf go1.14.2.linux-amd64.tar.gz</span><br><span class="line">mv go goroot</span><br><span class="line">mkdir gopath</span><br><span class="line">export GOPATH=`pwd`/gopath</span><br><span class="line">export GOROOT=`pwd`/goroot</span><br><span class="line">export PATH=$GOPATH/bin:$PATH</span><br><span class="line">export PATH=$GOROOT/bin:$PATH</span><br></pre></td></tr></table></div></figure>
+<ul>
+<li><p>goroot/ 存放go源码</p>
+</li>
+<li><p>gopath/ 是go的工作目录</p>
+</li>
+</ul>
+<p>需要将它们都添加到环境变量<code>~/bashrc</code>中去，然后再<code>source ~/.bashrc</code>更新一下环境变量。</p>
+
+        <h3 id="3-1-2-下载syzkaller源码"   >
+          <a href="#3-1-2-下载syzkaller源码" class="heading-link"><i class="fas fa-link"></i></a><a href="#3-1-2-下载syzkaller源码" class="headerlink" title="3.1.2 下载syzkaller源码"></a>3.1.2 下载syzkaller源码</h3>
+      <figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">go get -u -d github.com/google/syzkaller/prog</span><br></pre></td></tr></table></div></figure>
+<p>不要小瞧这一行代码，如果不把代理配置好，咱们在国内的同学可是要下哭。关于代理的配置，之后有空再更新文章吧。</p>
+
+        <h3 id="3-1-3-编译syzkaller"   >
+          <a href="#3-1-3-编译syzkaller" class="heading-link"><i class="fas fa-link"></i></a><a href="#3-1-3-编译syzkaller" class="headerlink" title="3.1.3 编译syzkaller"></a>3.1.3 编译syzkaller</h3>
+      <figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">cd gopath/src/github.com/google/syzkaller/</span><br><span class="line">make</span><br></pre></td></tr></table></div></figure>
+<p>这里需要注意，如果是在虚拟机中编译，要把虚拟机内存给多一点，比如8G。（我一开始只给了虚拟机4G内存，结果编译不通过）</p>
+<p>编译通过后，就可以在syzkaller的bin/下看到二进制文件啦。</p>
+<p> <img src="syzkaller-mgr.png"></p>
+
+        <h2 id="3-2-编译linux-kernel"   >
+          <a href="#3-2-编译linux-kernel" class="heading-link"><i class="fas fa-link"></i></a><a href="#3-2-编译linux-kernel" class="headerlink" title="3.2 编译linux kernel"></a>3.2 编译linux kernel</h2>
+      <p>linux kenrel github链接：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://github.com/torvalds/linux" >https://github.com/torvalds/linux</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h3 id="3-2-1-一切顺利的情况"   >
+          <a href="#3-2-1-一切顺利的情况" class="heading-link"><i class="fas fa-link"></i></a><a href="#3-2-1-一切顺利的情况" class="headerlink" title="3.2.1 一切顺利的情况"></a>3.2.1 一切顺利的情况</h3>
+      <ol>
+<li>下载linux源码</li>
+</ol>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git clone git://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git</span><br></pre></td></tr></table></div></figure>
+<ol start="2">
+<li>生成配置文件</li>
+</ol>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cd $kernel</span><br><span class="line">make defconfig</span><br><span class="line">make kvmconfig</span><br></pre></td></tr></table></div></figure>
+<ol start="3">
+<li>更改.config文件对内核的配置选项或者使用<code>make menuconfig</code>进行配置</li>
+</ol>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> Coverage collection.</span></span><br><span class="line">CONFIG_KCOV=y</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> Debug info <span class="keyword">for</span> symbolization.</span></span><br><span class="line">CONFIG_DEBUG_INFO=y</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> Memory bug detector</span></span><br><span class="line">CONFIG_KASAN=y</span><br><span class="line">CONFIG_KASAN_INLINE=y</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> Required <span class="keyword">for</span> Debian Stretch</span></span><br><span class="line">CONFIG_CONFIGFS_FS=y</span><br><span class="line">CONFIG_SECURITYFS=y</span><br></pre></td></tr></table></div></figure>
+<ol start="4">
+<li>重新生成config文件</li>
+</ol>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">make olddefconfig</span><br></pre></td></tr></table></div></figure>
+<ol start="5">
+<li>开始编译内核</li>
+</ol>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">make -j4</span><br></pre></td></tr></table></div></figure>
+<p>编译完成后，可以在如下目录中看到vmlinux和bzImage文件</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> ls <span class="variable">$KERNEL</span>/vmlinux</span></span><br><span class="line"><span class="meta">$</span><span class="bash">KERNEL/vmlinux</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> ls <span class="variable">$KERNEL</span>/arch/x86/boot/bzImage</span></span><br><span class="line"><span class="meta">$</span><span class="bash">KERNEL/arch/x86/boot/bzImage</span></span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="3-2-2-若gcc版本过低"   >
+          <a href="#3-2-2-若gcc版本过低" class="heading-link"><i class="fas fa-link"></i></a><a href="#3-2-2-若gcc版本过低" class="headerlink" title="3.2.2 若gcc版本过低"></a>3.2.2 若gcc版本过低</h3>
+      <p>最初有一次使用gcc 7.1.0编译最新版kernel时出错<code>“You are building kernel with non-retpoline compiler, please update your compiler..”</code>。查阅了一些资料显示，是由于retpoline只有gcc7.3.0及以上的版本才支持，因此需要在本地编译一个高版本gcc，并使用如下方式指定make时的编译器。以gcc8.0.1为例，编译过程如下：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cd $KERNEL</span><br><span class="line">make CC=&quot; /usr/local/gcc-8.0.1/bin/gcc&quot; defconfig</span><br><span class="line">make CC=&quot; /usr/local/gcc-8.0.1/bin/gcc&quot; kvmconfig</span><br></pre></td></tr></table></div></figure>
+<p>然后更改.config文件中的选项，使其支持我们需要的一些功能</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">CONFIG_KCOV=y</span><br><span class="line">CONFIG_DEBUG_INFO=y</span><br><span class="line">CONFIG_KASAN=y</span><br><span class="line">CONFIG_KASAN_INLINE=y</span><br><span class="line">CONFIG_CONFIGFS_FS=y</span><br><span class="line">CONFIG_SECURITYFS=y</span><br></pre></td></tr></table></div></figure>
+<p>保存完该文件后，编译</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">make CC=&quot; /usr/local/gcc-8.0.1/bin/gcc&quot; oldconfig</span><br><span class="line">make CC=&quot; /usr/local/gcc-8.0.1/bin/gcc&quot; -j4</span><br></pre></td></tr></table></div></figure>
+<p>编译完成后，可以看到vmlinux（kernel binary）和bzImage（packed kernel image）。</p>
+<p><img src="syzkaller-vmlinux.png"></p>
+
+        <h2 id="3-3-配置qemu-vm"   >
+          <a href="#3-3-配置qemu-vm" class="heading-link"><i class="fas fa-link"></i></a><a href="#3-3-配置qemu-vm" class="headerlink" title="3.3 配置qemu vm"></a>3.3 配置qemu vm</h2>
+      <ol>
+<li>安装qemu</li>
+</ol>
+<p>使用一条简单的命令即可：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install qemu-system-x86</span><br></pre></td></tr></table></div></figure>
+<ol start="2">
+<li>生成image</li>
+</ol>
+<p>使用debootstrap构建linux启动镜像：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install debootstrap</span><br><span class="line">cd $IMAGE/</span><br><span class="line">wget https://raw.githubusercontent.com/google/syzkaller/master/tools/create-image.sh -O create-image.sh</span><br><span class="line">chmod +x create-image.sh</span><br><span class="line">./create-image.sh</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 可以使用./create-image.sh -h查看更多帮助选项</span></span><br></pre></td></tr></table></div></figure>
+<p>完成之后目录内容如下：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">bling@Ubuntu1804:~/s_image$ ll</span><br><span class="line">total 502072</span><br><span class="line">drwxr-xr-x  3 bling bling       4096 1月   9 09:03 ./</span><br><span class="line">drwxr-xr-x 25 bling bling       4096 1月   9 00:45 ../</span><br><span class="line">drwxr-xr-x 21 root  root        4096 1月   9 02:25 chroot/</span><br><span class="line">-rwxr-xr-x  1 bling bling       6360 1月   9 00:13 create-image.sh*</span><br><span class="line">-rw-------  1 bling bling       1675 1月   9 09:03 stretch.id_rsa</span><br><span class="line">-rw-r--r--  1 bling bling        398 1月   9 09:03 stretch.id_rsa.pub</span><br><span class="line">-rw-r--r--  1 bling bling 2147483648 1月   9 09:04 stretch.img</span><br></pre></td></tr></table></div></figure>
+<ol start="3">
+<li>启动虚拟机</li>
+</ol>
+<p>启动虚拟机试试</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">qemu-system-x86_64 -m 2G -smp 2 -kernel /home/bling/Downloads/linux-5.5.1/arch/x86/boot/bzImage -append &quot;console=ttyS0 root=/dev/sda earlyprintk=serial net.ifnames=0&quot; -drive file=/home/bling/s_image/stretch.img,format=raw -net user,hostfwd=tcp:127.0.0.1:10021-:22 -net nic,model=e1000 -enable-kvm -nographic -pidfile vm.pid 2&gt;&amp;1 | tee vm.log</span><br></pre></td></tr></table></div></figure>
+<p>对以上各参数我的理解如下：</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">-kernel xxx&#x2F;bzImage：用bzImage作为内核镜像，qemu的这个功能用来测试不同内核非常方便。</span><br><span class="line">-append cmdline：将cmdline作为内核的命令行参数</span><br><span class="line">-hda xxx&#x2F;xxx.img：指定xxx.img作为硬盘镜像</span><br><span class="line">-net user,hostfwd&#x3D;tcp::10021-:22 -net nic：客户机与宿主机之间通过指定的端口进行通讯</span><br><span class="line">-enable-kvm：开启kvm虚拟化</span><br><span class="line">-nographic：非图形界面启动</span><br><span class="line">-m 2G：分配2G内存给虚拟系统</span><br><span class="line">-smp 2：指定虚拟机由2个CPU</span><br><span class="line">-pidfile xxx.pid：将qemu进程pid储存在xxx.pid这个文件中</span><br><span class="line">2&gt;&amp;1 | tee vm.log：将执行过程中的输出同时定向到标准输出和vm.log文件中</span><br></pre></td></tr></table></div></figure>
+<p>参考了两篇文章：（1）<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.csdn.net/tzwsoho/article/details/80303088" >hostfwd的问题</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span> （2）<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.csdn.net/Dr_Unknown/article/details/76837708" >make 2&gt;&amp;1 | tee log.txt 命令解析</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>qemu启动起来之后，运行ssh测试一下是否连通，便于后期syzkaller运行出错时定位问题。</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">ssh -i $IMAGE/stretch.id_rsa -p 10021 -o &quot;StrictHostKeyChecking no&quot; root@localhost</span><br></pre></td></tr></table></div></figure>
+<p>曾经有一次连接时在这里出了问题，宿主机上ssh无法连接到虚拟机。原因如下：</p>
+<p>由于上一步中create-image.sh中如下eth0跟实际qemu虚拟机中运行的网卡名称不一样，导致网卡没有分配IP地址。最后解决方法如下：qemu启动虚拟机，root用户身份登录后，设置网卡IP地址。</p>
+<p><img src="syzkaller-ethnet.png"></p>
+<p>参考文章：（1）<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.csdn.net/wuzhong8809/article/details/83374140" >网卡没分配IP地址的解决方法</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>（2）<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://xuanxuanblingbling.github.io/ctf/web/2019/05/10/rsa/" >rsa公私钥知识点</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>（3）<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="http://embedsec.systems/zh/gnulinux-security/2017/06/05/syzkaller.html" >一个自己生成公私钥配置的方法</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 关闭qemu虚拟机</span></span><br><span class="line">kill $(cat vm.pid)</span><br></pre></td></tr></table></div></figure>
+
+        <h2 id="3-4-启动syzkaller"   >
+          <a href="#3-4-启动syzkaller" class="heading-link"><i class="fas fa-link"></i></a><a href="#3-4-启动syzkaller" class="headerlink" title="3.4 启动syzkaller"></a>3.4 启动syzkaller</h2>
+      <p>为了使syzkaller运行起来，在syzkaller目录下，新建一个workdir目录，并新建一个config文件用于配置运行所需参数（命名为xxx.cfg）</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mkdir workdir</span><br><span class="line">./bin/syz-manager -config=abcd.cfg</span><br></pre></td></tr></table></div></figure>
+<p>cfg文件的格式如下，根据实际情况各参数可做更改：</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">        &quot;target&quot;: &quot;linux&#x2F;amd64&quot;,</span><br><span class="line">        &quot;http&quot;: &quot;127.0.0.1:56741&quot;,</span><br><span class="line">        &quot;workdir&quot;: &quot;&#x2F;home&#x2F;bling&#x2F;gopath&#x2F;src&#x2F;github.com&#x2F;google&#x2F;syzkaller&#x2F;workdir&quot;,</span><br><span class="line">        &quot;kernel_obj&quot;: &quot;&#x2F;home&#x2F;bling&#x2F;Downloads&#x2F;linux-5.5.1&quot;,</span><br><span class="line">        &quot;image&quot;: &quot;&#x2F;home&#x2F;bling&#x2F;s_image&#x2F;stretch.img&quot;,</span><br><span class="line">        &quot;sshkey&quot;: &quot;&#x2F;home&#x2F;bling&#x2F;s_image&#x2F;stretch.id_rsa&quot;,</span><br><span class="line">        &quot;syzkaller&quot;: &quot;&#x2F;home&#x2F;bling&#x2F;gopath&#x2F;src&#x2F;github.com&#x2F;google&#x2F;syzkaller&#x2F;&quot;,</span><br><span class="line">        &quot;procs&quot;: 8,</span><br><span class="line">        &quot;type&quot;: &quot;qemu&quot;,</span><br><span class="line">        &quot;vm&quot;: &#123;</span><br><span class="line">                &quot;count&quot;: 4,</span><br><span class="line">                &quot;kernel&quot;: &quot;&#x2F;home&#x2F;bling&#x2F;Downloads&#x2F;linux-5.5.1&#x2F;arch&#x2F;x86&#x2F;boot&#x2F;bzImage&quot;,</span><br><span class="line">                &quot;cpu&quot;: 2,</span><br><span class="line">                &quot;mem&quot;: 2048</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>执行成功后，如下图所示：</p>
+<p><img src="syzkaller-running.png"></p>
+
+        <h1 id="4-arm64-android-kernel-goldfish"   >
+          <a href="#4-arm64-android-kernel-goldfish" class="heading-link"><i class="fas fa-link"></i></a><a href="#4-arm64-android-kernel-goldfish" class="headerlink" title="4 arm64 android kernel goldfish"></a>4 arm64 android kernel goldfish</h1>
+      <blockquote>
+<p>标题解释：这一小节的fuzz对象是linux kernel，架构是arm64，是使用goldfish模拟出来的。</p>
+</blockquote>
+<p>待补充…</p>
+
+        <h1 id="5-定制"   >
+          <a href="#5-定制" class="heading-link"><i class="fas fa-link"></i></a><a href="#5-定制" class="headerlink" title="5 定制"></a>5 定制</h1>
+      <blockquote>
+<p>对于新的内核接口，增加系统调用描述</p>
+</blockquote>
+
+        <h2 id="5-1-syz-extract和syz-sysgen"   >
+          <a href="#5-1-syz-extract和syz-sysgen" class="heading-link"><i class="fas fa-link"></i></a><a href="#5-1-syz-extract和syz-sysgen" class="headerlink" title="5.1 syz-extract和syz-sysgen"></a>5.1 syz-extract和syz-sysgen</h2>
+      <p>syzkaller在编译的时候，默认不会编译syz-extract这个模块。因此我们需要手工编译一下。</p>
+<p>在syzkaller源码目录下，执行如下命令：</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">make bin&#x2F;syz-extract</span><br></pre></td></tr></table></div></figure>
+<p>如果syz-sysgen也没默认编译的话，执行如下命令：</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">make bin&#x2F;syz-sysgen</span><br></pre></td></tr></table></div></figure>
+<p>他俩的关系是这样的：</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">+-------+            +---------+           +------+</span><br><span class="line">|xxx.txt+-----------&gt;|xxx.const+----------&gt;|xxx.go|</span><br><span class="line">+---+---+            +---------+           +------+</span><br><span class="line">    |    syz-extract            syz-sysgen    ^</span><br><span class="line">    |                                         |</span><br><span class="line">    +-----------------------------------------+</span><br></pre></td></tr></table></div></figure>
+<p>我们针对某个驱动接口写出xxx.txt，然后使用syz-extract利用txt和源码生成const文档，最后执行syz-sysgen时syzkaller会根据txt和const生成一个go文件。可在sys/linux/gen/amd64.go和executor/syscalls.h中看到结果。</p>
+
+        <h2 id="5-2-一次定制示例"   >
+          <a href="#5-2-一次定制示例" class="heading-link"><i class="fas fa-link"></i></a><a href="#5-2-一次定制示例" class="headerlink" title="5.2 一次定制示例"></a>5.2 一次定制示例</h2>
+      <ul>
+<li>编写一个有漏洞的驱动接口，并将其编译进内核（或者使用打ko的方式）。</li>
+<li>编写驱动接口对应的txt文件，将其放入syzkaller/sys/linux目录下，生成go文件并重新编译syzkaller。</li>
+<li>运行syzkaller，改config文件指定fuzz接口提高速率，最后分析crash。</li>
+</ul>
+
+        <h3 id="5-2-1-构造一个内核模块的漏洞"   >
+          <a href="#5-2-1-构造一个内核模块的漏洞" class="heading-link"><i class="fas fa-link"></i></a><a href="#5-2-1-构造一个内核模块的漏洞" class="headerlink" title="5.2.1 构造一个内核模块的漏洞"></a>5.2.1 构造一个内核模块的漏洞</h3>
+      <ol>
+<li>在<code>kernel_src/drivers/char</code>目录下，新建一个testxy.c。内容如下，这是一个有漏洞的内核模块。</li>
+</ol>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/init.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/module.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/proc_fs.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/uaccess.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/slab.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> MY_DEV_NAME <span class="meta-string">&quot;test&quot;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> DEBUG_FLAG <span class="meta-string">&quot;PROC_DEV&quot;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">ssize_t</span> <span class="title">proc_read</span> <span class="params">(struct file *proc_file, <span class="keyword">char</span> __user *proc_user, <span class="keyword">size_t</span> n, <span class="keyword">loff_t</span> *loff)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">ssize_t</span> <span class="title">proc_write</span> <span class="params">(struct file *proc_file, <span class="keyword">const</span> <span class="keyword">char</span> __user *proc_user, <span class="keyword">size_t</span> n, <span class="keyword">loff_t</span> *loff)</span></span>;</span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">proc_open</span> <span class="params">(struct inode *proc_inode, struct file *proc_file)</span></span>;</span><br><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">file_operations</span> <span class="title">a</span> =</span> &#123;</span><br><span class="line">                                .open = proc_open,</span><br><span class="line">                                .read = proc_read,</span><br><span class="line">                                .write = proc_write,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> __init <span class="title">mod_init</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="class"><span class="keyword">struct</span> <span class="title">proc_dir_entry</span> *<span class="title">test_entry</span>;</span></span><br><span class="line">    <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">file_operations</span> *<span class="title">proc_fops</span> =</span> &amp;a;</span><br><span class="line">    printk(DEBUG_FLAG<span class="string">&quot;:proc init start!\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">    test_entry = proc_create(MY_DEV_NAME, S_IRUGO|S_IWUGO, <span class="literal">NULL</span>, proc_fops);</span><br><span class="line">    <span class="keyword">if</span>(!test_entry)</span><br><span class="line">       printk(DEBUG_FLAG<span class="string">&quot;:there is somethings wrong!\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">    printk(DEBUG_FLAG<span class="string">&quot;:proc init over!\n&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<ol start="2">
+<li>打开char/目录下的Kconfig文件，添加：</li>
+</ol>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">config TESTXY_MODULE</span><br><span class="line">        tristate &quot;heap overflow test&quot;</span><br><span class="line">        default y</span><br><span class="line">        help</span><br><span class="line">          This file is to test a buffer overflow.</span><br></pre></td></tr></table></div></figure>
+<ol start="3">
+<li>打开char/目录下的Makefile文件，添加：</li>
+</ol>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">obj-$</span><span class="bash">(CONFIG_TESTXY_MODULE) += testxy.o</span></span><br></pre></td></tr></table></div></figure>
+<p>若/linux/drivers/char/是新目录，还需修改/linux/drivers/Kconfig（加上source “drivers/char/Kconfig”）；修改/linux/drivers/Makefile（加上obj-$(CONFIG_TEST_MODULE) += char/）。</p>
+<ol start="4">
+<li>make menuconfig时可以在<code>Device Drivers -&gt; Character devices -&gt; Heap Overflow Test</code> (*表示直接编如内核，M表示模块形式) 处看到刚刚添加的测试模块。</li>
+</ol>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">make clean</span><br><span class="line">make menuconfig</span><br><span class="line">make -j8</span><br></pre></td></tr></table></div></figure>
+<ol start="5">
+<li>用新的内核启动虚拟机，查看模块是否加载成功</li>
+</ol>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 查看模块对应设备节点是否存在</span></span><br><span class="line">ls /proc/test</span><br><span class="line"><span class="meta">#</span><span class="bash"> 查看模块加载时的<span class="built_in">log</span>信息</span></span><br><span class="line">dmesg | grep &quot;proc init&quot;</span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="5-2-2-定制txt系统调用描述文件"   >
+          <a href="#5-2-2-定制txt系统调用描述文件" class="heading-link"><i class="fas fa-link"></i></a><a href="#5-2-2-定制txt系统调用描述文件" class="headerlink" title="5.2.2 定制txt系统调用描述文件"></a>5.2.2 定制txt系统调用描述文件</h3>
+      <ol>
+<li>syzkaller源码中，找到sys/linux/目录，新建一个文件，命名为<code>proc_operation.txt</code>，内容如下：</li>
+</ol>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">include &lt;linux&#x2F;fs.h&gt;</span><br><span class="line"></span><br><span class="line">open$proc(file ptr[in, string[&quot;&#x2F;proc&#x2F;test&quot;]], flags flags[proc_open_flags], mode flags[proc_open_mode]) fd</span><br><span class="line">read$proc(fd fd, buf buffer[out], count len[buf]) len[buf]</span><br><span class="line">write$proc(fd fd, buf buffer[in], count len[buf]) len[buf]</span><br><span class="line">close$proc(fd fd)</span><br><span class="line"></span><br><span class="line">proc_open_flags &#x3D; O_RDONLY, O_WRONLY, O_RDWR, O_APPEND, FASYNC, O_CLOEXEC, O_CREAT, O_DIRECT, O_DIRECTORY, O_EXCL, O_LARGEFILE, O_NOATIME, O_NOCTTY, O_NOFOLLOW, O_NONBLOCK, O_PATH, O_SYNC, O_TRUNC, __O_TMPFILE</span><br><span class="line">proc_open_mode &#x3D; S_IRUSR, S_IWUSR, S_IXUSR, S_IRGRP, S_IWGRP, S_IXGRP, S_IROTH, S_IWOTH, S_IXOTH</span><br><span class="line"></span><br></pre></td></tr></table></div></figure>
+<ol start="2">
+<li>使用syz-extract生成const文件。指定txt文件名，可单独生成该文件对应的const文件。</li>
+</ol>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">bin/syz-extract -os linux -sourcedir &quot;/home/bling/Downloads/linux-5.5.1&quot; -arch amd64 proc_operation.txt</span><br></pre></td></tr></table></div></figure>
+<ol start="3">
+<li>运行syz-sysgen</li>
+<li>重新编译syzkaller</li>
+</ol>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">make clean</span><br><span class="line">make</span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="5-2-3-验证能否成功触发crash"   >
+          <a href="#5-2-3-验证能否成功触发crash" class="heading-link"><i class="fas fa-link"></i></a><a href="#5-2-3-验证能否成功触发crash" class="headerlink" title="5.2.3 验证能否成功触发crash"></a>5.2.3 验证能否成功触发crash</h3>
+      <p>启动syzkaller的配置文件如下。为了更快看到crash结果，增加了“enable_syscalls”项，只允许某些系统调用，效率更快。</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">        &quot;target&quot;: &quot;linux&#x2F;amd64&quot;,</span><br><span class="line">        &quot;http&quot;: &quot;127.0.0.1:56741&quot;,</span><br><span class="line">        &quot;workdir&quot;: &quot;&#x2F;home&#x2F;bling&#x2F;gopath&#x2F;src&#x2F;github.com&#x2F;google&#x2F;syzkaller&#x2F;workdir&quot;,</span><br><span class="line">        &quot;kernel_obj&quot;: &quot;&#x2F;home&#x2F;bling&#x2F;Downloads&#x2F;linux-5.5.1&quot;,</span><br><span class="line">        &quot;image&quot;: &quot;&#x2F;home&#x2F;bling&#x2F;s_image&#x2F;stretch.img&quot;,</span><br><span class="line">        &quot;sshkey&quot;: &quot;&#x2F;home&#x2F;bling&#x2F;s_image&#x2F;stretch.id_rsa&quot;,</span><br><span class="line">        &quot;syzkaller&quot;: &quot;&#x2F;home&#x2F;bling&#x2F;gopath&#x2F;src&#x2F;github.com&#x2F;google&#x2F;syzkaller&#x2F;&quot;,</span><br><span class="line">        &quot;procs&quot;: 8,</span><br><span class="line">        &quot;type&quot;: &quot;qemu&quot;,</span><br><span class="line">        &quot;enable_syscalls&quot;:[</span><br><span class="line">        		&quot;open$proc&quot;,</span><br><span class="line">        		&quot;read$proc&quot;,</span><br><span class="line">        		&quot;write$proc&quot;,</span><br><span class="line">        		&quot;close$proc&quot;</span><br><span class="line">        ],</span><br><span class="line">        &quot;vm&quot;: &#123;</span><br><span class="line">                &quot;count&quot;: 4,</span><br><span class="line">                &quot;kernel&quot;: &quot;&#x2F;home&#x2F;bling&#x2F;Downloads&#x2F;linux-5.5.1&#x2F;arch&#x2F;x86&#x2F;boot&#x2F;bzImage&quot;,</span><br><span class="line">                &quot;cpu&quot;: 2,</span><br><span class="line">                &quot;mem&quot;: 2048</span><br><span class="line">        &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>启动syzkaller进行测试：</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;bin&#x2F;syz-manager -config&#x3D;abcd.cfg</span><br></pre></td></tr></table></div></figure>
+<p>触发到漏洞分支！</p>
+<p><img src="syzkaller-display1.png"></p>
+<p><img src="syzkaller-display2.png"></p>
+<p><img src="syzkaller-display3.png"></p>
+
+        <h2 id="5-3-txt文件语法"   >
+          <a href="#5-3-txt文件语法" class="heading-link"><i class="fas fa-link"></i></a><a href="#5-3-txt文件语法" class="headerlink" title="5.3 txt文件语法"></a>5.3 txt文件语法</h2>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="http://embedsec.systems/zh/gnulinux-security/2017/06/05/syzkaller-demo.html" >http://embedsec.systems/zh/gnulinux-security/2017/06/05/syzkaller-demo.html</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h2 id="5-4-config文件"   >
+          <a href="#5-4-config文件" class="heading-link"><i class="fas fa-link"></i></a><a href="#5-4-config文件" class="headerlink" title="5.4 config文件"></a>5.4 config文件</h2>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://github.com/google/syzkaller/blob/master/pkg/mgrconfig/testdata/qemu.cfg" >config文件示例</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://github.com/google/syzkaller/blob/master/pkg/mgrconfig/config.go" >config文件参数详解</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h1 id="编译ko的方法"   >
+          <a href="#编译ko的方法" class="heading-link"><i class="fas fa-link"></i></a><a href="#编译ko的方法" class="headerlink" title="编译ko的方法"></a>编译ko的方法</h1>
+      <p>test.c</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/init.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;linux/module.h&gt;</span></span></span><br><span class="line"> </span><br><span class="line">MODULE_LICENSE(<span class="string">&quot;Dual BSD/GPL&quot;</span>);</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">hello_init</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">        printk(KERN_ALERT <span class="string">&quot;Hello, world\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">hello_exit</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">        printk(KERN_ALERT <span class="string">&quot;Goodbye, cruel world\n&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line">module_init(hello_init);</span><br><span class="line">module_exit(hello_exit);</span><br></pre></td></tr></table></div></figure>
+<p>Makefile</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">obj-m := testxy.o</span><br><span class="line"></span><br><span class="line">KDIR = /home/bling/Downloads/linux-5.5.1/</span><br><span class="line"></span><br><span class="line">all:</span><br><span class="line">        make -C $(KDIR) M=$(PWD) modules </span><br><span class="line"></span><br><span class="line">clean:</span><br><span class="line">        rm -rf *.o *.ko *.mod.* *.symvers *.order</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h1 id="参考文章推荐"   >
+          <a href="#参考文章推荐" class="heading-link"><i class="fas fa-link"></i></a><a href="#参考文章推荐" class="headerlink" title="参考文章推荐"></a>参考文章推荐</h1>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://xz.aliyun.com/t/5079?spm=5176.12901015.0.i12901015.3af8525coJ6I6t" >内核漏洞挖掘技术系列(4)——syzkaller(1)</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.jianshu.com/p/790b733f80a2" >【漏洞挖掘】使用Syzkaller&amp;QEMU捕捉内核堆溢出Demo</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="http://pwn4.fun/2019/10/09/Syzkaller-Crash-Demo/" >Syzkaller Crash Demo</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="http://blingblingxuanxuan.github.io">blingbling</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="http://blingblingxuanxuan.github.io/2019/10/26/syzkaller/">http://blingblingxuanxuan.github.io/2019/10/26/syzkaller/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/2020/02/08/SIM/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">SIM卡复制原理</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/1994/10/23/things/"><span class="paginator-prev__text">things</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#1-%E6%80%BB%E8%A7%88"><span class="toc-number">1.</span> <span class="toc-text">
+          1.总览</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#2-%E5%AE%89%E8%A3%85GCC"><span class="toc-number">2.</span> <span class="toc-text">
+          2.安装GCC</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#3-x86-64-linux-kernel-in-qemu"><span class="toc-number">3.</span> <span class="toc-text">
+          3 x86-64 linux kernel in qemu</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#3-1-%E7%BC%96%E8%AF%91syzkaller"><span class="toc-number">3.1.</span> <span class="toc-text">
+          3.1 编译syzkaller</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-1-%E6%90%9E%E5%AE%9Ago%E7%8E%AF%E5%A2%83"><span class="toc-number">3.1.1.</span> <span class="toc-text">
+          3.1.1 搞定go环境</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-2-%E4%B8%8B%E8%BD%BDsyzkaller%E6%BA%90%E7%A0%81"><span class="toc-number">3.1.2.</span> <span class="toc-text">
+          3.1.2 下载syzkaller源码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-3-%E7%BC%96%E8%AF%91syzkaller"><span class="toc-number">3.1.3.</span> <span class="toc-text">
+          3.1.3 编译syzkaller</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-2-%E7%BC%96%E8%AF%91linux-kernel"><span class="toc-number">3.2.</span> <span class="toc-text">
+          3.2 编译linux kernel</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-1-%E4%B8%80%E5%88%87%E9%A1%BA%E5%88%A9%E7%9A%84%E6%83%85%E5%86%B5"><span class="toc-number">3.2.1.</span> <span class="toc-text">
+          3.2.1 一切顺利的情况</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-2-%E8%8B%A5gcc%E7%89%88%E6%9C%AC%E8%BF%87%E4%BD%8E"><span class="toc-number">3.2.2.</span> <span class="toc-text">
+          3.2.2 若gcc版本过低</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-3-%E9%85%8D%E7%BD%AEqemu-vm"><span class="toc-number">3.3.</span> <span class="toc-text">
+          3.3 配置qemu vm</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-4-%E5%90%AF%E5%8A%A8syzkaller"><span class="toc-number">3.4.</span> <span class="toc-text">
+          3.4 启动syzkaller</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#4-arm64-android-kernel-goldfish"><span class="toc-number">4.</span> <span class="toc-text">
+          4 arm64 android kernel goldfish</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#5-%E5%AE%9A%E5%88%B6"><span class="toc-number">5.</span> <span class="toc-text">
+          5 定制</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#5-1-syz-extract%E5%92%8Csyz-sysgen"><span class="toc-number">5.1.</span> <span class="toc-text">
+          5.1 syz-extract和syz-sysgen</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-2-%E4%B8%80%E6%AC%A1%E5%AE%9A%E5%88%B6%E7%A4%BA%E4%BE%8B"><span class="toc-number">5.2.</span> <span class="toc-text">
+          5.2 一次定制示例</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-1-%E6%9E%84%E9%80%A0%E4%B8%80%E4%B8%AA%E5%86%85%E6%A0%B8%E6%A8%A1%E5%9D%97%E7%9A%84%E6%BC%8F%E6%B4%9E"><span class="toc-number">5.2.1.</span> <span class="toc-text">
+          5.2.1 构造一个内核模块的漏洞</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-2-%E5%AE%9A%E5%88%B6txt%E7%B3%BB%E7%BB%9F%E8%B0%83%E7%94%A8%E6%8F%8F%E8%BF%B0%E6%96%87%E4%BB%B6"><span class="toc-number">5.2.2.</span> <span class="toc-text">
+          5.2.2 定制txt系统调用描述文件</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-3-%E9%AA%8C%E8%AF%81%E8%83%BD%E5%90%A6%E6%88%90%E5%8A%9F%E8%A7%A6%E5%8F%91crash"><span class="toc-number">5.2.3.</span> <span class="toc-text">
+          5.2.3 验证能否成功触发crash</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-3-txt%E6%96%87%E4%BB%B6%E8%AF%AD%E6%B3%95"><span class="toc-number">5.3.</span> <span class="toc-text">
+          5.3 txt文件语法</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-4-config%E6%96%87%E4%BB%B6"><span class="toc-number">5.4.</span> <span class="toc-text">
+          5.4 config文件</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BC%96%E8%AF%91ko%E7%9A%84%E6%96%B9%E6%B3%95"><span class="toc-number">6.</span> <span class="toc-text">
+          编译ko的方法</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%AB%A0%E6%8E%A8%E8%8D%90"><span class="toc-number">7.</span> <span class="toc-text">
+          参考文章推荐</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/uploads/zhishi1.jpg" alt="avatar"></div></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/blingblingxuanxuan" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a><a class="sidebar-ov-social-item" href="https://weibo.com/anxinbuzitreexy" target="_blank" rel="noopener" data-popover="微博" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-weibo"></i></span></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2021</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>blingbling</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.3.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div><div>Just follow your heart, and keep smiling.</div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>
