@@ -5,16 +5,16 @@
 <meta property="og:site_name" content="Clang鱼塘">
 <meta property="og:description" content="时隔一年，又重新开始刷题啦~ 加油加油(ง •_•)ง">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="http://blingblingxuanxuan.github.io/2021/05/15/pwnable-tw-dubblesort/pwnable-tw-dubblesort.assets/image-20210515183536310.png">
-<meta property="og:image" content="http://blingblingxuanxuan.github.io/2021/05/15/pwnable-tw-dubblesort/pwnable-tw-dubblesort.assets/image-20210515121957899.png">
-<meta property="og:image" content="http://blingblingxuanxuan.github.io/2021/05/15/pwnable-tw-dubblesort/pwnable-tw-dubblesort.assets/image-20210515190651246.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2021/05/15/pwnable-tw-dubblesort/image-20210515183536310.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2021/05/15/pwnable-tw-dubblesort/image-20210515121957899.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2021/05/15/pwnable-tw-dubblesort/image-20210515190651246.png">
 <meta property="article:published_time" content="2021-05-15T10:03:05.000Z">
-<meta property="article:modified_time" content="2021-05-15T11:13:32.057Z">
+<meta property="article:modified_time" content="2021-05-15T12:05:43.095Z">
 <meta property="article:author" content="blingbling">
 <meta property="article:tag" content="read func">
 <meta property="article:tag" content="scanf func">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="http://blingblingxuanxuan.github.io/2021/05/15/pwnable-tw-dubblesort/pwnable-tw-dubblesort.assets/image-20210515183536310.png"><title>pwnable.tw之dubblesort | Clang鱼塘</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2021/05/15/pwnable-tw-dubblesort/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+<meta name="twitter:image" content="http://blingblingxuanxuan.github.io/2021/05/15/pwnable-tw-dubblesort/image-20210515183536310.png"><title>pwnable.tw之dubblesort | Clang鱼塘</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2021/05/15/pwnable-tw-dubblesort/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
 var CONFIG = {
   root: '/',
   algolia: undefined,
@@ -57,11 +57,11 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></he
 <p>read函数接收输入后（把’\n’也当作一个字符），并不会在末尾添加”\x00”。那么如果后续以”%s”对该输入进行输出操作，就会越界打印，造成信息泄露。</p>
 </blockquote>
 <p>随便输入几个字母，可以看到打印出了乱码。多打印出来的字符来自于栈上，栈上可能存有libc的地址，因此考虑用这个漏洞泄露libc基址。</p>
-<p><img src="pwnable-tw-dubblesort.assets/image-20210515183536310.png" alt="image-20210515183536310"></p>
+<p><img src="image-20210515183536310.png"></p>
 <p>下图展示了本地栈空间内容，输入的是‘aaaa’（对应0xffffce4c处的0x61616161），可以看到0x61616161后的栈空间内有很多f7开头的、长得很像地址的值。对应到vmmap获取的进程空间，目标集中在了“0xf7fb2000”这个值。输入的第六和第七个单元都是它，经过实践，本地泄露第六个单元能成功，远程泄露第七个单元才能成功。</p>
 <p>另外还有一个需要注意的点，本地调试中0xf7fb2000对应libc的got.plt段，其加载偏移通过<code>readelf -S /lib/i386-linux-gnu/libc-2.27.so</code>得到是0x1d8000，因此本地利用时libc基址为<code>0xf7fb2000 - 0x1d8000</code>。</p>
 <p>而远端libc跟本地不一样，其got.plt段加载偏移通过<code>readelf -S libc_32.so.6</code>得到是0x1b0000。因此在打远程的时候，需要用<code>泄露地址 - 0x1b0000</code>来得到lbic基址。</p>
-<p><img src="pwnable-tw-dubblesort.assets/image-20210515121957899.png" alt="image-20210515121957899"></p>
+<p><img src="image-20210515121957899.png"></p>
 
         <h2 id="未限制numbers大小导致栈溢出"   >
           <a href="#未限制numbers大小导致栈溢出" class="heading-link"><i class="fas fa-link"></i></a><a href="#未限制numbers大小导致栈溢出" class="headerlink" title="未限制numbers大小导致栈溢出"></a>未限制numbers大小导致栈溢出</h2>
@@ -80,7 +80,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></he
 <li>而当输入为’+’ ‘-‘这两个字符时，由于他们可以定义数字的正负，因此不会被定义为非法字符。同时单独输入该字符又能达到不往栈上写入数据的目的。</li>
 </ul>
 <figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">if ( v8 )</span><br><span class="line">&#123;</span><br><span class="line">  v4 &#x3D; v9;</span><br><span class="line">  for ( i &#x3D; 0; i &lt; v8; ++i )</span><br><span class="line">  &#123;</span><br><span class="line">    __printf_chk(1, &quot;Enter the %d number : &quot;);</span><br><span class="line">    fflush(stdout);</span><br><span class="line">    __isoc99_scanf(&quot;%u&quot;, v4);</span><br><span class="line">    v3 &#x3D; v8;</span><br><span class="line">    v4 +&#x3D; 4;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
-<p><img src="pwnable-tw-dubblesort.assets/image-20210515190651246.png" alt="image-20210515190651246"></p>
+<p><img src="image-20210515190651246.png"></p>
 
         <h1 id="EXP"   >
           <a href="#EXP" class="heading-link"><i class="fas fa-link"></i></a><a href="#EXP" class="headerlink" title="EXP"></a>EXP</h1>
