@@ -1,0 +1,500 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="linux使用中遇到的小问题和小技巧合集">
+<meta property="og:type" content="article">
+<meta property="og:title" content="linux releated">
+<meta property="og:url" content="http://blingblingxuanxuan.github.io/2019/01/01/linux-releated/index.html">
+<meta property="og:site_name" content="Clang鱼塘">
+<meta property="og:description" content="linux使用中遇到的小问题和小技巧合集">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-01-01T12:52:16.000Z">
+<meta property="article:modified_time" content="2021-11-13T13:02:07.482Z">
+<meta property="article:author" content="blingbling">
+<meta property="article:tag" content="linux">
+<meta name="twitter:card" content="summary"><title>linux releated | Clang鱼塘</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2019/01/01/linux-releated/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":true},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"light","wordWrap":false},
+  reward: false,
+  fancybox: false,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: undefined,
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-feather-alt"></i></span><span class="header-nav-menu-item__text">文章</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/archives/"><span class="header-nav-submenu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-submenu-item__text">归档</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/categories/"><span class="header-nav-submenu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-submenu-item__text">分类</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/tags/"><span class="header-nav-submenu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-submenu-item__text">标签</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-fingerprint"></i></span><span class="header-nav-menu-item__text">关于</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/author/"><span class="header-nav-submenu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-submenu-item__text">作者</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-angle-double-down"></i></span><span class="header-nav-menu-item__text">其他</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/friends/"><span class="header-nav-submenu-item__icon"><i class="fas fa-thumbs-up"></i></span><span class="header-nav-submenu-item__text">友链</span></a></div></div></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">Clang鱼塘</div><div class="header-banner-info__subtitle"></div></div><div class="header-banner-arrow"><div class="header-banner-arrow__icon"><i class="fas fa-angle-down"></i></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">linux releated</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2019-01-01</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-11-13</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h1 id="解决ubuntu中”Could-not-get-lock-var-lib-dpkg-lock”"   >
+          <a href="#解决ubuntu中”Could-not-get-lock-var-lib-dpkg-lock”" class="heading-link"><i class="fas fa-link"></i></a><a href="#解决ubuntu中”Could-not-get-lock-var-lib-dpkg-lock”" class="headerlink" title="解决ubuntu中”Could not get lock /var/lib/dpkg/lock”"></a>解决ubuntu中”Could not get lock /var/lib/dpkg/lock”</h1>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://itsfoss.com/could-not-get-lock-error/" >How to Fix ‘E: Could not get lock /var/lib/dpkg/lock’ Error in Ubuntu Linux</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.linuxuprising.com/2018/07/how-to-fix-could-not-get-lock.html" >How To Fix “Could not get lock /var/lib/dpkg/lock - open (11 Resource temporarily unavailable)” Errors</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>比较暴力的方法是，直接rm -rf 那两个lock文件</p>
+
+        <h1 id="Kali-2020版中文显示乱码的解决方案"   >
+          <a href="#Kali-2020版中文显示乱码的解决方案" class="heading-link"><i class="fas fa-link"></i></a><a href="#Kali-2020版中文显示乱码的解决方案" class="headerlink" title="Kali 2020版中文显示乱码的解决方案"></a>Kali 2020版中文显示乱码的解决方案</h1>
+      <p>安装完2020最新kali中文版后，发现界面出现了无数“麻将块”。原因是该版本对中文的不支持，因此需要我们自己安装一下中文字体。</p>
+
+        <h2 id="更改kali的镜像源"   >
+          <a href="#更改kali的镜像源" class="heading-link"><i class="fas fa-link"></i></a><a href="#更改kali的镜像源" class="headerlink" title="更改kali的镜像源"></a>更改kali的镜像源</h2>
+      <p>在sources.list中添加一个源：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">vim /etc/apt/sources.list</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> tsinghua university</span></span><br><span class="line">deb https://mirrors.tuna.tsinghua.edu.cn/kali kali-rolling main contrib non-free</span><br><span class="line">deb-src https://mirrors.tuna.tsinghua.edu.cn/kali kali-rolling main contrib non-free</span><br><span class="line"></span><br></pre></td></tr></table></div></figure>
+<p>添加完源之后，必须立马执行更新命令：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get update</span><br></pre></td></tr></table></div></figure>
+
+        <h2 id="安装中文字体"   >
+          <a href="#安装中文字体" class="heading-link"><i class="fas fa-link"></i></a><a href="#安装中文字体" class="headerlink" title="安装中文字体"></a>安装中文字体</h2>
+      <p>依次执行以下命令：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 安装本地设置</span></span><br><span class="line">sudo apt-get install locales</span><br><span class="line">locale -a</span><br><span class="line"><span class="meta">#</span><span class="bash"> 安装中文字体</span></span><br><span class="line">sudo apt-get install xfonts-intl-chinese</span><br><span class="line">sudo apt-get install ttf-wqy-microhei</span><br><span class="line"><span class="meta">#</span><span class="bash">重启kali</span></span><br><span class="line">sudo reboot</span><br></pre></td></tr></table></div></figure>
+<p>参考了如下几篇文章的方法：</p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.cnblogs.com/ainv-123/p/12158303.html" >2019kali中文乱码</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_45604567/article/details/104156673" >解决安装kali 2020.1版本后的中文乱码问题</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://wiki.ubuntu.org.cn/Locale" >什么是locale？</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h1 id="ubuntu-1804-安装搜狗输入法"   >
+          <a href="#ubuntu-1804-安装搜狗输入法" class="heading-link"><i class="fas fa-link"></i></a><a href="#ubuntu-1804-安装搜狗输入法" class="headerlink" title="ubuntu 1804 安装搜狗输入法"></a>ubuntu 1804 安装搜狗输入法</h1>
+      <p>在官网下载linux版搜狗输入法的deb安装包，下载到本地后，执行以下三条命令</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sudo dpkg -i sogoupinyin_2.3.1.0112_amd64.deb</span><br><span class="line">sudo apt --fix-broken install</span><br><span class="line">sudo dpkg -i sogoupinyin_2.3.1.0112_amd64.deb</span><br></pre></td></tr></table></div></figure>
+<p>在settings -&gt; Region&amp; Language -&gt; Manage Installed Languages中把Keyboard input method system从IBus修改为fcitx。然后点击Apply System Wide。最后重启电脑。</p>
+<p>重启完成后，在系统中搜索fcitx configuration，点击左下角的加号，取消勾选Only Show Current Language，然后选择Sougou Pinyin，OK一下就可以了。</p>
+<p>现在就可以通过ctrl+shift切换输入法！</p>
+
+        <h1 id="Linux上安装samba服务"   >
+          <a href="#Linux上安装samba服务" class="heading-link"><i class="fas fa-link"></i></a><a href="#Linux上安装samba服务" class="headerlink" title="Linux上安装samba服务"></a>Linux上安装samba服务</h1>
+      
+        <h2 id="ubuntu环境"   >
+          <a href="#ubuntu环境" class="heading-link"><i class="fas fa-link"></i></a><a href="#ubuntu环境" class="headerlink" title="ubuntu环境"></a>ubuntu环境</h2>
+      <p>（1）安装smb服务</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sudo apt update</span><br><span class="line">sudo apt install samba</span><br><span class="line">whereis samba</span><br></pre></td></tr></table></div></figure>
+<p>（2）指定共享文件夹</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">sudo vim /etc/samba/smb.conf</span><br><span class="line">	[sambashare]</span><br><span class="line">    		comment = Samba on Ubuntu</span><br><span class="line">    		path = /any/folder/</span><br><span class="line">    		read only = no</span><br><span class="line">    		browsable = yes</span><br><span class="line">sudo service smbd restart</span><br><span class="line">sudo ufw allow samba （ps：如果没有防火墙或者防火墙未开启，这一步可省略）</span><br></pre></td></tr></table></div></figure>
+<p>（注意： /any/folder/需要将folder权限设置为777，这样才能正常访问）</p>
+<p>（3）指定访问用户</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo smbpasswd -a username</span><br></pre></td></tr></table></div></figure>
+<p>username是ubuntu上的一个普通用户。</p>
+<p>（4）windows上访问</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">//ubuntu-ip/sambashare</span><br></pre></td></tr></table></div></figure>
+<p>windows访问如上地址就可以进入到/any/folder/目录了！</p>
+
+        <h2 id="redhat环境"   >
+          <a href="#redhat环境" class="heading-link"><i class="fas fa-link"></i></a><a href="#redhat环境" class="headerlink" title="redhat环境"></a>redhat环境</h2>
+      <p>参考：</p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://ubuntu.com/tutorials/install-and-configure-samba#1-overview" >ubuntu上设置samba服务</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/selinux_users_and_administrators_guide/sect-managing_confined_services-samba-configuration_examples" >redhat上设置samba服务</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h1 id="Linux上添加-删除用户"   >
+          <a href="#Linux上添加-删除用户" class="heading-link"><i class="fas fa-link"></i></a><a href="#Linux上添加-删除用户" class="headerlink" title="Linux上添加/删除用户"></a>Linux上添加/删除用户</h1>
+      <p>ubuntu添加新用户：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">adduser bling</span><br></pre></td></tr></table></div></figure>
+<p>将用户添加到root组</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sudo chmod u+w /etc/sudoers</span><br><span class="line">sudo vim /etc/sudoers</span><br><span class="line">	在root下方添加：bling ALL(ALL:ALL) ALL</span><br><span class="line">sudo chmod u-w /etc/sudoers</span><br></pre></td></tr></table></div></figure>
+<p>删除用户：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">deluser bling</span><br></pre></td></tr></table></div></figure>
+
+        <h1 id="Linux上安装java-jdk"   >
+          <a href="#Linux上安装java-jdk" class="heading-link"><i class="fas fa-link"></i></a><a href="#Linux上安装java-jdk" class="headerlink" title="Linux上安装java jdk"></a>Linux上安装java jdk</h1>
+      <p>这里以openjdk为例，如果需要安装oracle Java JDK，请用参考链接中的方式。</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 更新软件包列表</span></span><br><span class="line">sudo apt-get update</span><br><span class="line"><span class="meta">#</span><span class="bash"> 安装openjdk-8-jdk</span></span><br><span class="line">sudo apt-get install openjdk-8-jdk</span><br><span class="line"><span class="meta">#</span><span class="bash"> 查看java版本，验证是否安装成功</span></span><br><span class="line">java -version</span><br></pre></td></tr></table></div></figure>
+<p>参考：</p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.csdn.net/zbj18314469395/article/details/86064849" >Ubuntu 18.04安装Java JDK8三种方式</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h1 id="Linux上升级python"   >
+          <a href="#Linux上升级python" class="heading-link"><i class="fas fa-link"></i></a><a href="#Linux上升级python" class="headerlink" title="Linux上升级python"></a>Linux上升级python</h1>
+      
+        <h2 id="ppa源升级"   >
+          <a href="#ppa源升级" class="heading-link"><i class="fas fa-link"></i></a><a href="#ppa源升级" class="headerlink" title="ppa源升级"></a>ppa源升级</h2>
+      <ul>
+<li>添加ppa源，安装python 3.6</li>
+</ul>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sudo add-apt-repository ppa:jonathonf/python-3.6</span><br><span class="line">sudo apt-get update</span><br><span class="line">sudo apt-get install python3.6</span><br></pre></td></tr></table></div></figure>
+<ul>
+<li>调整python3的优先级的方法见5.2</li>
+</ul>
+
+        <h2 id="源码升级"   >
+          <a href="#源码升级" class="heading-link"><i class="fas fa-link"></i></a><a href="#源码升级" class="headerlink" title="源码升级"></a>源码升级</h2>
+      <ul>
+<li>去官网下载所需版本的python源码包。</li>
+</ul>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.python.org/ftp/python/" >python源码网址</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<ul>
+<li>安装依赖</li>
+</ul>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install gcc make zlib1g-dev</span><br><span class="line">sudo apt-get install libbz2-dev</span><br><span class="line">sudo apt-get install libsqlite3-dev</span><br><span class="line">sudo apt-get install python3-dev libxml2-dev libffi-dev libssl-dev libxslt1-dev</span><br></pre></td></tr></table></div></figure>
+<ul>
+<li>开始安装</li>
+</ul>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">tar -zxvf Python-3.6.7.tgz</span><br><span class="line">sudo mv Python-3.6.7 /usr/local</span><br><span class="line">cd /usr/local/Python-3.6.7</span><br><span class="line">./configure</span><br><span class="line">sudo make</span><br><span class="line">sudo make install</span><br></pre></td></tr></table></div></figure>
+<ul>
+<li>更改python版本优先级</li>
+</ul>
+<p>查询python安装路径：<code>whereis python</code></p>
+<p>调整优先级，将新安装的3.6调到最大：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sudo update-alternatives --install /usr/bin/python python /usr/bin/python2.7 100</span><br><span class="line">sudo update-alternatives --install /usr/bin/python python /usr/local/bin/python3.6 200</span><br><span class="line">sudo update-alternatives --install /usr/bin/python python /usr/bin/python3.5 150</span><br></pre></td></tr></table></div></figure>
+<p>到这一步就算是结束了，此时使用<code>python --version</code>可以看到python已经是3.6版本的了。</p>
+<ul>
+<li>后续设置变更</li>
+</ul>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 查询可配置的python</span></span><br><span class="line">update-alternatives --list python</span><br><span class="line"><span class="meta">#</span><span class="bash"> 切换默认python版本</span></span><br><span class="line">update-alternatives --config python</span><br></pre></td></tr></table></div></figure>
+<p>参考：</p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.jianshu.com/p/738f08dfe1f8" >Ubuntu 16.04 升级Python版本到3.6</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.jianshu.com/p/43e0e25bc0d0" >Ubuntu 16.04 源码安装Python-3.6.7</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.csdn.net/xc_zhou/article/details/82593854" >linux中安装Thrift（指定版本）</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h1 id="Linux下生成-应用patch"   >
+          <a href="#Linux下生成-应用patch" class="heading-link"><i class="fas fa-link"></i></a><a href="#Linux下生成-应用patch" class="headerlink" title="Linux下生成/应用patch"></a>Linux下生成/应用patch</h1>
+      
+        <h2 id="普通patch"   >
+          <a href="#普通patch" class="heading-link"><i class="fas fa-link"></i></a><a href="#普通patch" class="headerlink" title="普通patch"></a>普通patch</h2>
+      <ol>
+<li><p>为单个文件生成patch</p>
+<p><code>diff -up /oldFilePath /newFilePath &gt; file.patch</code></p>
+<p>参数说明:</p>
+<p>-u 显示有差异行的前后几行(上下文), 默认是前后各3行, 这样, patch中带有更多的信息.</p>
+<p>-p 显示代码所在的c函数的信息.</p>
+</li>
+<li><p>为多个文件生成patch <code>diff -uprN /oldFolderPath /newFolderPath &gt; folder.patch</code></p>
+<p>参数说明:</p>
+<p>-r 递归地对比一个目录和它的所有子目录(即整个目录树).</p>
+<p>-N 如果某个文件缺少了, 就当作是空文件来对比. 如果不使用本选项, 当diff发现旧代码或者新代码缺少文件时, 只简单的提示缺少文件. 如果使用本选项, 会将新添加的文件全新打印出来作为新增的部分.</p>
+</li>
+<li><p>linux打补丁</p>
+<p><code>patch -p1 &lt; demo.patch</code></p>
+<p>生成的补丁中, 路径信息包含了你的Linux源码根目录的名称, 但其他人的源码根目录可能是其它名字, 所以, 打补丁时, 要进入你的Linux源码根目录, 并且告诉patch工具, 请忽略补丁中的路径的第一级目录(参数-p1).</p>
+<p>diff命令必须在整个Linux源码的根目录的上一级目录中执行.</p>
+</li>
+<li><p>solaris打补丁</p>
+<p><code>gpatch -p1 &lt; demo.patch</code></p>
+</li>
+</ol>
+<p>例如：</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">patch -p1 &lt; huawei_patch&#x2F;huawei_tf_gic_0001.patch</span><br><span class="line">patch -p1 &lt; huawei_patch&#x2F;huawei_tf_gic_0002.patch</span><br></pre></td></tr></table></div></figure>
+
+        <h2 id="git-patch"   >
+          <a href="#git-patch" class="heading-link"><i class="fas fa-link"></i></a><a href="#git-patch" class="headerlink" title="git patch"></a>git patch</h2>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://juejin.im/post/5b5851976fb9a04f844ad0f4" >https://juejin.im/post/5b5851976fb9a04f844ad0f4</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h1 id="ssh"   >
+          <a href="#ssh" class="heading-link"><i class="fas fa-link"></i></a><a href="#ssh" class="headerlink" title="ssh"></a>ssh</h1>
+      <p>安装命令：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 客户端</span></span><br><span class="line">sudo apt-get install ssh  或者 sudo apt-get installopenssh-client</span><br><span class="line"><span class="meta">#</span><span class="bash"> 服务端</span></span><br><span class="line">sudo apt-get install openssh-server</span><br></pre></td></tr></table></div></figure>
+<p>ssh服务命令：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sudo/etc/init.d/ssh start</span><br><span class="line">sudo/etc/init.d/ssh restart</span><br><span class="line">sudo/etc/init.d/ssh stop</span><br></pre></td></tr></table></div></figure>
+<p>配置文件：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 更改ssh配置文件前最好先备份一个</span></span><br><span class="line">sudo cp/etc/ssh/sshd_config /etc/ssh/sshd_config.original</span><br><span class="line"><span class="meta">#</span><span class="bash"> 可以在如下配置文件中修改Port端口号（默认是22），PermitRootLogin等</span></span><br><span class="line">vim /etc/ssh/sshd_config</span><br></pre></td></tr></table></div></figure>
+<p>生成ssh key免密登录：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 在客户端生成用于登录的公私钥，生成后位于~/.ssh/目录下</span></span><br><span class="line">ssh-keygen -t rsa -b 4096 -C &quot;xxx@mail.com&quot;</span><br><span class="line"><span class="meta">#</span><span class="bash"> 将公钥拷贝到远端服务器的~/.ssh/目录下，并重命名为authorized_keys</span></span><br><span class="line">scp ~/.ssh/id_rsa.pub user@ip:~/.ssh/authorized_keys</span><br></pre></td></tr></table></div></figure>
+<p>参考：</p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://help.github.com/en/github/authenticating-to-github/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent" >Generating a new SSH key and adding it to the ssh-agent</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h1 id="ubuntu设置静态ip"   >
+          <a href="#ubuntu设置静态ip" class="heading-link"><i class="fas fa-link"></i></a><a href="#ubuntu设置静态ip" class="headerlink" title="ubuntu设置静态ip"></a>ubuntu设置静态ip</h1>
+      <p>1、更改interfaces文件中的内容</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">sudo vim /etc/network/interfaces</span><br><span class="line"></span><br><span class="line">auto enp0s8</span><br><span class="line">iface enp0s8 inet static</span><br><span class="line">address 192.168.56.116</span><br><span class="line">netmask 255.255.255.0</span><br><span class="line">gateway 192.168.56.1</span><br></pre></td></tr></table></div></figure>
+<p>2、刷新ip</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo ip addr flush enp0s8</span><br><span class="line">sudo systemctl restart networking.service</span><br></pre></td></tr></table></div></figure>
+<p>3、设置重启后依然生效</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sudo vim /etc/NetworkManager/NetworkManager.conf</span><br><span class="line"><span class="meta">#</span><span class="bash"> 将NetworkManager.conf中managed=<span class="literal">false</span>改为managed=<span class="literal">true</span></span></span><br><span class="line">sudo service network-manager restart</span><br></pre></td></tr></table></div></figure>
+<p>参考文章如下：</p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.jianshu.com/p/d69a95aa1ed7" >ubuntu 16.04 设置静态IP</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="http://blingblingxuanxuan.github.io">blingbling</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="http://blingblingxuanxuan.github.io/2019/01/01/linux-releated/">http://blingblingxuanxuan.github.io/2019/01/01/linux-releated/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/linux/">linux</a></span></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/2019/10/26/syzkaller/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">syzkaller</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/2019/01/01/windows-releated/"><span class="paginator-prev__text">windows releated</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3ubuntu%E4%B8%AD%E2%80%9DCould-not-get-lock-var-lib-dpkg-lock%E2%80%9D"><span class="toc-number">1.</span> <span class="toc-text">
+          解决ubuntu中”Could not get lock &#x2F;var&#x2F;lib&#x2F;dpkg&#x2F;lock”</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Kali-2020%E7%89%88%E4%B8%AD%E6%96%87%E6%98%BE%E7%A4%BA%E4%B9%B1%E7%A0%81%E7%9A%84%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="toc-number">2.</span> <span class="toc-text">
+          Kali 2020版中文显示乱码的解决方案</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9B%B4%E6%94%B9kali%E7%9A%84%E9%95%9C%E5%83%8F%E6%BA%90"><span class="toc-number">2.1.</span> <span class="toc-text">
+          更改kali的镜像源</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%89%E8%A3%85%E4%B8%AD%E6%96%87%E5%AD%97%E4%BD%93"><span class="toc-number">2.2.</span> <span class="toc-text">
+          安装中文字体</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#ubuntu-1804-%E5%AE%89%E8%A3%85%E6%90%9C%E7%8B%97%E8%BE%93%E5%85%A5%E6%B3%95"><span class="toc-number">3.</span> <span class="toc-text">
+          ubuntu 1804 安装搜狗输入法</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Linux%E4%B8%8A%E5%AE%89%E8%A3%85samba%E6%9C%8D%E5%8A%A1"><span class="toc-number">4.</span> <span class="toc-text">
+          Linux上安装samba服务</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#ubuntu%E7%8E%AF%E5%A2%83"><span class="toc-number">4.1.</span> <span class="toc-text">
+          ubuntu环境</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#redhat%E7%8E%AF%E5%A2%83"><span class="toc-number">4.2.</span> <span class="toc-text">
+          redhat环境</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Linux%E4%B8%8A%E6%B7%BB%E5%8A%A0-%E5%88%A0%E9%99%A4%E7%94%A8%E6%88%B7"><span class="toc-number">5.</span> <span class="toc-text">
+          Linux上添加&#x2F;删除用户</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Linux%E4%B8%8A%E5%AE%89%E8%A3%85java-jdk"><span class="toc-number">6.</span> <span class="toc-text">
+          Linux上安装java jdk</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Linux%E4%B8%8A%E5%8D%87%E7%BA%A7python"><span class="toc-number">7.</span> <span class="toc-text">
+          Linux上升级python</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#ppa%E6%BA%90%E5%8D%87%E7%BA%A7"><span class="toc-number">7.1.</span> <span class="toc-text">
+          ppa源升级</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%BA%90%E7%A0%81%E5%8D%87%E7%BA%A7"><span class="toc-number">7.2.</span> <span class="toc-text">
+          源码升级</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#Linux%E4%B8%8B%E7%94%9F%E6%88%90-%E5%BA%94%E7%94%A8patch"><span class="toc-number">8.</span> <span class="toc-text">
+          Linux下生成&#x2F;应用patch</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%99%AE%E9%80%9Apatch"><span class="toc-number">8.1.</span> <span class="toc-text">
+          普通patch</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#git-patch"><span class="toc-number">8.2.</span> <span class="toc-text">
+          git patch</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#ssh"><span class="toc-number">9.</span> <span class="toc-text">
+          ssh</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#ubuntu%E8%AE%BE%E7%BD%AE%E9%9D%99%E6%80%81ip"><span class="toc-number">10.</span> <span class="toc-text">
+          ubuntu设置静态ip</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/uploads/zhishi1.jpg" alt="avatar"></div></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/blingblingxuanxuan" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a><a class="sidebar-ov-social-item" href="https://weibo.com/anxinbuzitreexy" target="_blank" rel="noopener" data-popover="微博" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-weibo"></i></span></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2021</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>blingbling</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.3.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div><div>Just follow your heart, and keep smiling.</div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>
