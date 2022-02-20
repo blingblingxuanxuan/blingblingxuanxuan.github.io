@@ -1,0 +1,543 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="从零开始学习如何使用docker，并实践了docker在ctf pwn题中的应用">
+<meta property="og:type" content="article">
+<meta property="og:title" content="docker学习笔记及其在ctf中的应用">
+<meta property="og:url" content="http://blingblingxuanxuan.github.io/2022/02/20/learn-to-use-docker/index.html">
+<meta property="og:site_name" content="Clang鱼塘">
+<meta property="og:description" content="从零开始学习如何使用docker，并实践了docker在ctf pwn题中的应用">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-02-20T06:36:43.000Z">
+<meta property="article:modified_time" content="2022-02-20T08:34:50.464Z">
+<meta property="article:author" content="blingbling">
+<meta property="article:tag" content="docker">
+<meta name="twitter:card" content="summary"><title>docker学习笔记及其在ctf中的应用 | Clang鱼塘</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2022/02/20/learn-to-use-docker/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":true},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"light","wordWrap":false},
+  reward: false,
+  fancybox: false,
+  zoomImage: {"gapAside":"20px"},
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: undefined,
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-feather-alt"></i></span><span class="header-nav-menu-item__text">文章</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/archives/"><span class="header-nav-submenu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-submenu-item__text">归档</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/categories/"><span class="header-nav-submenu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-submenu-item__text">分类</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/tags/"><span class="header-nav-submenu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-submenu-item__text">标签</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-fingerprint"></i></span><span class="header-nav-menu-item__text">关于</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/author/"><span class="header-nav-submenu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-submenu-item__text">作者</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-angle-double-down"></i></span><span class="header-nav-menu-item__text">其他</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/friends/"><span class="header-nav-submenu-item__icon"><i class="fas fa-thumbs-up"></i></span><span class="header-nav-submenu-item__text">友链</span></a></div></div></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">Clang鱼塘</div><div class="header-banner-info__subtitle"></div></div><div class="header-banner-arrow"><div class="header-banner-arrow__icon"><i class="fas fa-angle-down"></i></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">docker学习笔记及其在ctf中的应用</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2022-02-20</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2022-02-20</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body">
+        <h1 id="docker的基本使用"   >
+          <a href="#docker的基本使用" class="heading-link"><i class="fas fa-link"></i></a><a href="#docker的基本使用" class="headerlink" title="docker的基本使用"></a>docker的基本使用</h1>
+      <p>阮一峰老师的文章：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="http://ruanyifeng.com/blog/2018/02/docker-tutorial.html" >Docker 入门教程</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>，学习过程中大部分参考了这篇文章。</p>
+
+        <h2 id="安装docker"   >
+          <a href="#安装docker" class="heading-link"><i class="fas fa-link"></i></a><a href="#安装docker" class="headerlink" title="安装docker"></a>安装docker</h2>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://docs.docker.com/engine/install/ubuntu/" >可以参考官网链接</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>我的安装过程如下：</p>
+<ul>
+<li><p>卸载旧版本：<code>sudo apt-get remove docker docker-engine docker.io containerd runc</code></p>
+</li>
+<li><p>根据本地ubuntu版本选择下载要安装docker版本的.deb包：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://download.docker.com/linux/ubuntu/dists/" >https://download.docker.com/linux/ubuntu/dists/</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>，转到对应版本pool/stable/目录</p>
+</li>
+<li><p>安装下载的deb包：<code>sudo dpkg -i /path/to/package.deb</code></p>
+</li>
+<li><p>或者使用apt安装</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get update</span><br><span class="line">sudo apt-get install docker-ce docker-ce-cli containerd.io</span><br></pre></td></tr></table></div></figure></li>
+<li><p>测试安装是否成功：<code>sudo docker run hello-world</code></p>
+</li>
+</ul>
+<p>正常情况下运行docker是需要sudo权限的，为了防止每次都需要加一个sudo前缀，可以新建一个docker组，并将当前用户添加到这个组里。具体操作如下几条命令：</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo groupadd docker</span><br><span class="line">sudo usermod -aG docker <span class="variable">$USER</span></span><br></pre></td></tr></table></div></figure>
+<p>重启后，直接运行<code>docker run hello-world</code>，发现普通用户也能运行啦！</p>
+
+        <h2 id="常用命令"   >
+          <a href="#常用命令" class="heading-link"><i class="fas fa-link"></i></a><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h2>
+      <p>使用docker时，常用命令都列在这儿了</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">docker image ls   <span class="comment">#列出本机所有的image文件</span></span><br><span class="line">docker image rm [imageName]     <span class="comment">#删除image文件</span></span><br><span class="line">docker image pull library/hello-world       <span class="comment">#从远程仓库将library组下的hello-world这个image文件抓取到本地 （Docker官方提供的image文件都在library中）</span></span><br><span class="line"></span><br><span class="line">docker container run hello-world        <span class="comment">#从image文件中，选取名为hello-world的image，生成一个运行的容器实例</span></span><br><span class="line"></span><br><span class="line">docker container run -it ubuntu    <span class="comment">#启动ubuntu容器时，起一个交互式shell</span></span><br><span class="line">docker container run -it ubuntu bash        <span class="comment">#达到跟上一条命令同样的效果</span></span><br><span class="line">docker container run -it ubuntu ls      <span class="comment">#启动一个ubuntu容器，并执行ls命令，执行完指定命令后，容器自动退出</span></span><br><span class="line">docker container <span class="built_in">kill</span> [containerID]     <span class="comment">#对于不会自动终止的容器，需要使用kill手动终止</span></span><br><span class="line"></span><br><span class="line">docker container ls         <span class="comment">#列出本机正在运行的容器</span></span><br><span class="line">docker container ls --all       <span class="comment">#列出本机所有容器，包括终止运行的容器</span></span><br><span class="line">docker container rm [containerID]       <span class="comment">#对于终止运行的容器，防止其占用磁盘空间，可以使用该命令手动删除</span></span><br><span class="line"></span><br><span class="line">docker container run --rm -it ubuntu /bin/bash      <span class="comment">#使用--rm参数，在容器终止运行后，会自动删除容器文件</span></span><br><span class="line"></span><br><span class="line">docker container start [containerID]        <span class="comment"># 上面的docker container run命令每运行一次就会新建一个容器，因此可以通过start来启动已生成的容器</span></span><br><span class="line">docker container stop [containerID]</span><br><span class="line">docker container logs [containerID]</span><br><span class="line">docker container <span class="built_in">exec</span> -it [containerID] /bin/bash</span><br><span class="line">docker container cp [containerID]:[/path/to/file] .</span><br><span class="line"></span><br></pre></td></tr></table></div></figure>
+<p>echo “123” &gt; test.txt<br>cat &gt; test1.txt &lt;&lt;EOF</p>
+<blockquote>
+<p>1<br>2<br>3<br>4<br>EOF</p>
+</blockquote>
+
+        <h2 id="实践：制作一个容器并发布"   >
+          <a href="#实践：制作一个容器并发布" class="heading-link"><i class="fas fa-link"></i></a><a href="#实践：制作一个容器并发布" class="headerlink" title="实践：制作一个容器并发布"></a>实践：制作一个容器并发布</h2>
+      <p>步骤：</p>
+<ol>
+<li><p>编写 Dockerfile 文件</p>
+</li>
+<li><p>创建 image 文件</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">docker image build -t koa-demo .</span><br><span class="line"><span class="comment"># 或者</span></span><br><span class="line">docker image build -t koa-demo:0.0.1 .        </span><br><span class="line"><span class="comment"># 使用-t参数指定生成的image文件名，冒号后面指定标签（默认标签是latest）。最后的.指定文件所在路径，.表示当前路径</span></span><br></pre></td></tr></table></div></figure></li>
+<li><p>生成容器</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">docker container run --rm -p 8000:3000 -it koa-demo:0.0.1         </span><br><span class="line"><span class="comment"># 容器的 3000 端口映射到本机的 8000 端口</span></span><br></pre></td></tr></table></div></figure></li>
+<li><p>发布 image 文件</p>
+</li>
+</ol>
+
+        <h2 id="实践：使用docker-compose启动容器"   >
+          <a href="#实践：使用docker-compose启动容器" class="heading-link"><i class="fas fa-link"></i></a><a href="#实践：使用docker-compose启动容器" class="headerlink" title="实践：使用docker-compose启动容器"></a>实践：使用docker-compose启动容器</h2>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.jianshu.com/p/658911a8cff3" >Docker：Docker Compose 详解</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo curl -L https:<span class="comment">//github.com/docker/compose/releases/download/1.21.2/docker-compose-$(uname -s)-$(uname -m) -o /usr/local/bin/docker-compose</span></span><br><span class="line">sudo chmod +x /usr/local/bin/docker-compose</span><br></pre></td></tr></table></div></figure>
+<p>docker-compose.yml文件解析</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">version: <span class="string">&#x27;2&#x27;</span> <span class="comment"># 表示该 Docker-Compose 文件使用的是 Version 2 file</span></span><br><span class="line">services:</span><br><span class="line">  docker-demo:  <span class="comment"># 指定服务名称</span></span><br><span class="line">    build: .  <span class="comment"># 指定 Dockerfile 所在路径</span></span><br><span class="line">    ports:    <span class="comment"># 指定端口映射,暴露端口信息  - &quot;宿主机端口:容器暴露端口&quot;</span></span><br><span class="line">      - <span class="string">&quot;9000:8761&quot;</span></span><br></pre></td></tr></table></div></figure>
+<p>使用docker-compose.yml启动容器</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">docker-compose up</span><br><span class="line">docker-compose up -d  <span class="comment"># 后台启动并运行容器</span></span><br><span class="line"><span class="comment"># 在 docker-compose.yml 所在路径下执行该命令 Compose 就会自动构建镜像并使用镜像启动容器</span></span><br></pre></td></tr></table></div></figure>
+
+        <h2 id="实践：docker容器迁移"   >
+          <a href="#实践：docker容器迁移" class="heading-link"><i class="fas fa-link"></i></a><a href="#实践：docker容器迁移" class="headerlink" title="实践：docker容器迁移"></a>实践：docker容器迁移</h2>
+      <p><code>docker save/load</code> ：用来保存/加载image镜像包</p>
+<p><code>docker export/import</code> ：用来保存/加载container容器包</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">docker image ls</span><br><span class="line"></span><br><span class="line">docker save [ImageId] &gt; xxx.tar</span><br><span class="line">docker load &lt; xxx.tar</span><br><span class="line">docker tag [ImageId] xxx:1.1.x      <span class="comment">#有时候需要给镜像重命名并打tag</span></span><br><span class="line">docker run -d --rm -h [HostName] --name [ContainerName] -p [HostPort:ContainerPort] xxx:1.1.x</span><br><span class="line"></span><br><span class="line">docker container ls -all</span><br><span class="line">docker <span class="built_in">export</span> [ContainerId] &gt; xxx.tar</span><br><span class="line">docker import xxx.tar [ContainerName]:[Tag]      <span class="comment">#设置导入后的镜像名称和tag</span></span><br></pre></td></tr></table></div></figure>
+
+        <h1 id="ctf中的应用"   >
+          <a href="#ctf中的应用" class="heading-link"><i class="fas fa-link"></i></a><a href="#ctf中的应用" class="headerlink" title="ctf中的应用"></a>ctf中的应用</h1>
+      
+        <h2 id="做题"   >
+          <a href="#做题" class="heading-link"><i class="fas fa-link"></i></a><a href="#做题" class="headerlink" title="做题"></a><strong>做题</strong></h2>
+      
+        <h3 id="起docker"   >
+          <a href="#起docker" class="heading-link"><i class="fas fa-link"></i></a><a href="#起docker" class="headerlink" title="起docker"></a><strong>起docker</strong></h3>
+      <blockquote>
+<p>通常ctf比赛中提供的Dockerfile中有起docker的命令</p>
+</blockquote>
+<p>方式1、不带命令行</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker build -t nullptr . &amp;&amp; docker run -p 1024:1024 --rm -it nullptr</span><br></pre></td></tr></table></div></figure>
+<p>方式2、带命令行</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker build -t nullptr . &amp;&amp; docker run -p 1024:1024 --rm -it nullptr bash</span><br></pre></td></tr></table></div></figure>
+<p>方式3、新开一个端口，以特权模式运行，并且带命令行</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker build -t nullptr . &amp;&amp; docker run -p 1024:1024 -p 1234:1234 --privileged --rm -it nullptr bash</span><br></pre></td></tr></table></div></figure>
+
+        <h3 id="解决网络的问题"   >
+          <a href="#解决网络的问题" class="heading-link"><i class="fas fa-link"></i></a><a href="#解决网络的问题" class="headerlink" title="解决网络的问题"></a><strong>解决网络的问题</strong></h3>
+      <p>ubuntu 19.10的source.list（注意是http，不是https）：</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 默认注释了源码镜像以提高 apt update 速度，如有需要可自行取消注释</span></span><br><span class="line">deb [trusted=yes] http://mirrors.tuna.tsinghua.edu.cn/ubuntu/ eoan main restricted universe multiverse</span><br><span class="line"><span class="comment"># deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ eoan main restricted universe multiverse</span></span><br><span class="line">deb [trusted=yes] http://mirrors.tuna.tsinghua.edu.cn/ubuntu/ eoan-updates main restricted universe multiverse</span><br><span class="line"><span class="comment"># deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ eoan-updates main restricted universe multiverse</span></span><br><span class="line">deb [trusted=yes] http://mirrors.tuna.tsinghua.edu.cn/ubuntu/ eoan-backports main restricted universe multiverse</span><br><span class="line"><span class="comment"># deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ eoan-backports main restricted universe multiverse</span></span><br><span class="line">deb [trusted=yes] http://mirrors.tuna.tsinghua.edu.cn/ubuntu/ eoan-security main restricted universe multiverse</span><br><span class="line"><span class="comment"># deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ eoan-security main restricted universe multiverse</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 预发布软件源，不建议启用</span></span><br><span class="line"><span class="comment"># deb https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ eoan-proposed main restricted universe multiverse</span></span><br><span class="line"><span class="comment"># deb-src https://mirrors.tuna.tsinghua.edu.cn/ubuntu/ eoan-proposed main restricted universe multiverse</span></span><br></pre></td></tr></table></div></figure>
+<p>以ALLES!CTF 2020中的nullptr这个题为例，其Dockerfile做了如下修改：</p>
+<figure class="highlight dockerfile"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># docker build -t nullptr . &amp;&amp; docker run -p 1024:1024 --rm -it nullptr</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">FROM</span> ubuntu:<span class="number">19.10</span></span><br><span class="line"><span class="comment">#bling-我新增了下面这行，指定源，这样下载docker或者apt更新的时候会更快</span></span><br><span class="line"><span class="keyword">ADD</span><span class="bash"> sources.list /etc/apt/</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> apt-get update &amp;&amp; apt-get install -y gdb</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> useradd -d /home/ctf/ -m -p ctf -s /bin/bash ctf</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> <span class="built_in">echo</span> <span class="string">&quot;ctf:ctf&quot;</span> | chpasswd</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">WORKDIR</span><span class="bash"> /home/ctf</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> nullptr .</span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> flag .</span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> ynetd .</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> chmod +x ./ynetd ./nullptr</span></span><br><span class="line"><span class="comment">#bling-我注释了下面这行，使docker起来后有root权限</span></span><br><span class="line"><span class="comment">#USER ctf</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">CMD</span><span class="bash"> ./ynetd ./nullptr</span></span><br></pre></td></tr></table></div></figure>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.csdn.net/yyj108317/article/details/105984674" >Dockerfile中更换国内源</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h2 id="gdbserver调试"   >
+          <a href="#gdbserver调试" class="heading-link"><i class="fas fa-link"></i></a><a href="#gdbserver调试" class="headerlink" title="gdbserver调试"></a>gdbserver调试</h2>
+      <p>（docker内部）后台运行ctf程序：<code>./ynetd ./nullptr &amp;</code></p>
+<p>（本地）在poc中设置一个raw_input()让攻击脚本停住，再运行poc去连接远程的nullptr</p>
+<p>（docker内部）<code>gdbserver :1234 --attach &lt;pid&gt;</code></p>
+<p>（本地）</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">file ./nulptr</span><br><span class="line">target remote :1234</span><br></pre></td></tr></table></div></figure>
+
+        <h2 id="将远程libc和ld拉至本地"   >
+          <a href="#将远程libc和ld拉至本地" class="heading-link"><i class="fas fa-link"></i></a><a href="#将远程libc和ld拉至本地" class="headerlink" title="将远程libc和ld拉至本地"></a>将远程libc和ld拉至本地</h2>
+      <p>查看docker的 container id：</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker container list</span><br></pre></td></tr></table></div></figure>
+<p>将docker内文件拉取至本地：</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker cp &lt;containerId&gt;:/file/path/within/container /host/path/target</span><br></pre></td></tr></table></div></figure>
+<p>在poc脚本中指定如下libc和ld：</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">myelf  = ELF(<span class="string">&quot;./note&quot;</span>)</span><br><span class="line">libc   = ELF(<span class="string">&quot;./libc.so.6&quot;</span>)</span><br><span class="line">ld     = ELF(<span class="string">&quot;./ld-2.29.so&quot;</span>)</span><br><span class="line">io     = process(argv=[ld.path,myelf.path],env=&#123;<span class="string">&quot;LD_PRELOAD&quot;</span> : libc.path&#125;)</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h1 id="ctf-pwn题部署工具"   >
+          <a href="#ctf-pwn题部署工具" class="heading-link"><i class="fas fa-link"></i></a><a href="#ctf-pwn题部署工具" class="headerlink" title="ctf pwn题部署工具"></a>ctf pwn题部署工具</h1>
+      
+        <h2 id="socat"   >
+          <a href="#socat" class="heading-link"><i class="fas fa-link"></i></a><a href="#socat" class="headerlink" title="socat"></a>socat</h2>
+      <blockquote>
+<p>socat可以为每一个连接者提供一个独立的二进制程序执行环境</p>
+</blockquote>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/347722248" >新版瑞士军刀：socat</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>socat基本用法：</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line">socat - -              <span class="comment"># 把标准输入和标准输出对接，输入什么显示什么</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## 网络测试</span></span><br><span class="line">socat - TCP-LISTEN:8080               <span class="comment"># 终端1 上启动 server 监听 TCP</span></span><br><span class="line">socat - TCP:localhost:8080            <span class="comment"># 终端2 上启动 client 链接 TCP</span></span><br><span class="line"></span><br><span class="line">socat - TCP-LISTEN:8080,fork,reuseaddr      <span class="comment"># 终端1 上启动 server</span></span><br><span class="line">socat - TCP:localhost:8080                  <span class="comment"># 终端2 上启动 client</span></span><br><span class="line"></span><br><span class="line">socat - UDP-LISTEN:8080               <span class="comment"># 终端1 上启动 server 监听 UDP</span></span><br><span class="line">socat - UDP:localhost:8080            <span class="comment"># 终端2 上启动 client 链接 UDP</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## 端口转发</span></span><br><span class="line">socat TCP-LISTEN:8080,fork,reuseaddr  TCP:192.168.1.3:80       <span class="comment"># 将8080端口所有流量转发给远程机器的 80 端口</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## 远程登录</span></span><br><span class="line">socat TCP-LISTEN:8080,fork,reuseaddr  EXEC:/usr/bin/bash    <span class="comment"># 服务端提供 shell</span></span><br><span class="line">socat - TCP:localhost:8080                                  <span class="comment"># 客户端登录</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## 网页服务</span></span><br><span class="line">socat TCP-LISTEN:8080,fork,reuseaddr SYSTEM:<span class="string">&quot;bash web.sh&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## 文件传输</span></span><br><span class="line">socat -u TCP-LISTEN:8080 open:record.log,create    <span class="comment"># 服务端接收文件</span></span><br><span class="line">socat -u open:record.log TCP:localhost:8080        <span class="comment"># 客户端发送文件</span></span><br><span class="line"></span><br><span class="line"><span class="comment">## 透明代理</span></span><br><span class="line">socat TCP-LISTEN:&lt;本地端口&gt;,reuseaddr,fork SOCKS:&lt;代理服务器IP&gt;:&lt;远程地址&gt;:&lt;远程端口&gt;,socksport=&lt;代理服务器端口&gt;</span><br><span class="line">socat TCP-LISTEN:&lt;本地端口&gt;,reuseaddr,fork PROXY:&lt;代理服务器IP&gt;:&lt;远程地址&gt;:&lt;远程端口&gt;,proxyport=&lt;代理服务器端口&gt;</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h2 id="xinetd"   >
+          <a href="#xinetd" class="heading-link"><i class="fas fa-link"></i></a><a href="#xinetd" class="headerlink" title="xinetd"></a>xinetd</h2>
+      <blockquote>
+<p>在实体机上部署部分题目时（如一人起一个qemu），需要使用xinetd服务</p>
+</blockquote>
+
+        <h3 id="基本使用方法：启动一个二进制"   >
+          <a href="#基本使用方法：启动一个二进制" class="heading-link"><i class="fas fa-link"></i></a><a href="#基本使用方法：启动一个二进制" class="headerlink" title="基本使用方法：启动一个二进制"></a>基本使用方法：启动一个二进制</h3>
+      <p>那么，对于一个新手来说，应该怎样入门xinetd的使用呢？这里我记录了几个重要的步骤：</p>
+<ol>
+<li><p>首先，应当写好我们要运行的二进制程序。根据外来的连接请求，我们需要为它们分别起一个新的程序，用于交互。这里以一个简单的打印程序为例。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// gcc aaa.c -o aaa</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[])</span></span>&#123;</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;hello 1, %s\n&quot;</span>,argv[<span class="number">0</span>]);</span><br><span class="line">	fflush(<span class="built_in">stdout</span>);</span><br><span class="line">	getchar();</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;hello 2, %s\n&quot;</span>,argv[<span class="number">1</span>]);</span><br><span class="line">	fflush(<span class="built_in">stdout</span>);</span><br><span class="line">	getchar();</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;hello 3, %s\n&quot;</span>,argv[<span class="number">2</span>]);</span><br><span class="line">	fflush(<span class="built_in">stdout</span>);</span><br><span class="line">	getchar();</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure></li>
+<li><p>安装xinetd：<code>sudo apt install xinetd</code></p>
+</li>
+<li><p>xinetd的配置文件位于<code>/etc/xinetd.d/</code>目录下，我们需要在该目录下新建一个文件，名字随意</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># /etc/xinetd.d/test</span></span><br><span class="line">service ctf</span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">disable</span>     = no</span><br><span class="line">    <span class="built_in">type</span>        = UNLISTED</span><br><span class="line">    protocol    = tcp</span><br><span class="line">    socket_type = stream</span><br><span class="line">    port        = 9999</span><br><span class="line">    <span class="built_in">wait</span>        = no</span><br><span class="line"></span><br><span class="line">    server      = /home/bling/aaa</span><br><span class="line">    server_args = bbb ccc</span><br><span class="line"></span><br><span class="line">    user        = root</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure></li>
+<li><p>配置文件确定无误后，可以重启一下xinetd服务，让配置生效：<code>/etc/init.d/xinetd restart</code></p>
+</li>
+<li><p>配置文件中指定了监听端口为9999，所以我们尝试一下连接该端口，得到了跟预期一样的输出。可以多开几个窗口连接试试，看看<code>netstat -pantu</code>的结果。</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ nc 127.0.0.1 9999</span><br><span class="line">hello 1, aaa</span><br><span class="line"></span><br><span class="line">hello 2, bbb</span><br><span class="line"></span><br><span class="line">hello 3, ccc</span><br></pre></td></tr></table></div></figure>
+<p>以上就是对xnetd的简单使用过程，有了基础框架的了解，后续基于此再添加功能也会清晰很多。</p>
+</li>
+</ol>
+
+        <h3 id="使用xinetd启动多个qemu"   >
+          <a href="#使用xinetd启动多个qemu" class="heading-link"><i class="fas fa-link"></i></a><a href="#使用xinetd启动多个qemu" class="headerlink" title="使用xinetd启动多个qemu"></a>使用xinetd启动多个qemu</h3>
+      <p>对于需要启动qemu的情况，由于qemu启动参数较多，可以使用如下方法：</p>
+<ol>
+<li><p>新建一个bash脚本文件，将工作目录切换到qemu运行所需文件的目录，然后执行qemu命令（可设置timeout 120，将每个qemu的运行时间限制在120s内，防止长时间过多占用计算机资源）</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># start.sh</span></span><br><span class="line"><span class="built_in">cd</span> /home/bling/optee_v7/out/bin;</span><br><span class="line"></span><br><span class="line">timeout 120 /home/bling/optee_v7/qemu-system-arm  -nographic -smp 2 -machine virt,secure=on -cpu cortex-a15 -d unimp -semihosting-config <span class="built_in">enable</span>=on,target=native -m 1057 -bios bl1.bin -object rng-random,filename=/dev/urandom,id=rng0 -device virtio-rng-pci,rng=rng0,max-bytes=1024,period=1000 -netdev user,id=vmnic -device virtio-net-device,netdev=vmnic</span><br></pre></td></tr></table></div></figure></li>
+<li><p>将xinetd的配置文件的server和server_args改为如下设置，这样xinetd服务restart后，每当有新连接到9999端口时，就会使用sh程序执行start.sh，即启动一个qemu</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line">service ctf</span><br><span class="line">&#123;</span><br><span class="line">    <span class="built_in">disable</span>     = yes</span><br><span class="line">    <span class="built_in">type</span>        = UNLISTED</span><br><span class="line">    protocol    = tcp</span><br><span class="line">    socket_type = stream</span><br><span class="line">    port        = 9999</span><br><span class="line">    <span class="built_in">wait</span>        = no</span><br><span class="line">        </span><br><span class="line">    server      = /bin/sh</span><br><span class="line">    server_args = /home/bling/start.sh</span><br><span class="line"></span><br><span class="line">    user        = root</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>ps. ctf中对于需要启动qemu的场景，通常需要选手先过一个pow，目的是平衡服务端的性能。那么需要在上文xinetd的配置文件中调用<code>/usr/bin/python3 /xx/xx/xx/pow.py</code>，通过pow.py脚本再去启动qemu。一个实际的例子可以参考我出的optee的题（后续上传了再贴连接）。</p>
+</li>
+</ol>
+
+        <h3 id="ctf-pwn常用的ctf-xinetd框架"   >
+          <a href="#ctf-pwn常用的ctf-xinetd框架" class="heading-link"><i class="fas fa-link"></i></a><a href="#ctf-pwn常用的ctf-xinetd框架" class="headerlink" title="ctf pwn常用的ctf_xinetd框架"></a>ctf pwn常用的ctf_xinetd框架</h3>
+      <p>在Docker中需要部署带chroot的xinetd服务时，考虑直接用ctf_xinetd模版</p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://github.com/Eadom/ctf_xinetd" >github ctf_xinetd</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.csdn.net/YangZiTrick/article/details/109474241" >Pwn部署框架，出题（ubuntu）</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>现在大部分题目，都是利用xinetd+docker-compose来快速布置docker题目环境</p>
+<ul>
+<li>docker-compose用于生成docker image并启动docker容器</li>
+<li>xinetd在容器中，当容器开始运行后，它根据配置拉起对应的程序，并充当socat的功能</li>
+</ul>
+<p>使用方法：</p>
+<ul>
+<li>将ctf_xinetd目录下载到本地，并更改</li>
+<li>增加docker-compose.yml，并配置</li>
+<li>通过 <code>docker-compose up -d</code> 就能启动容器+启动容器内的二进制程序</li>
+</ul>
+
+        <h1 id="POW"   >
+          <a href="#POW" class="heading-link"><i class="fas fa-link"></i></a><a href="#POW" class="headerlink" title="POW"></a>POW</h1>
+      
+        <h2 id="出题时用到的"   >
+          <a href="#出题时用到的" class="heading-link"><i class="fas fa-link"></i></a><a href="#出题时用到的" class="headerlink" title="出题时用到的"></a>出题时用到的</h2>
+      <p>待补充…</p>
+
+        <h2 id="解题时用到的"   >
+          <a href="#解题时用到的" class="heading-link"><i class="fas fa-link"></i></a><a href="#解题时用到的" class="headerlink" title="解题时用到的"></a>解题时用到的</h2>
+      
+        <h3 id="自研多进程暴破版"   >
+          <a href="#自研多进程暴破版" class="heading-link"><i class="fas fa-link"></i></a><a href="#自研多进程暴破版" class="headerlink" title="自研多进程暴破版"></a>自研多进程暴破版</h3>
+      <p>使用multiprocessing中的pool，参考<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.liaoxuefeng.com/wiki/897692888725344/923056295693632" >廖雪峰老师的博客</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>一个ctf题的例子：<code>python3 this.py tkhYS 26</code></p>
+<p>以后碰到需要多进程跑的题目，改改参数处理，is_valid，calc_start函数就行</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># this.py</span></span><br><span class="line"><span class="keyword">from</span> multiprocessing <span class="keyword">import</span> Pool</span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"><span class="keyword">import</span> time</span><br><span class="line"><span class="keyword">import</span> hashlib</span><br><span class="line"></span><br><span class="line">prefix = sys.argv[<span class="number">1</span>]</span><br><span class="line">difficulty = <span class="built_in">int</span>(sys.argv[<span class="number">2</span>])</span><br><span class="line">zeros = <span class="string">&#x27;0&#x27;</span> * difficulty</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">is_valid</span>(<span class="params">digest</span>):</span></span><br><span class="line">    <span class="keyword">if</span> sys.version_info.major == <span class="number">2</span>:</span><br><span class="line">        digest = [<span class="built_in">ord</span>(i) <span class="keyword">for</span> i <span class="keyword">in</span> digest]</span><br><span class="line">    bits = <span class="string">&#x27;&#x27;</span>.join(<span class="built_in">bin</span>(i)[<span class="number">2</span>:].zfill(<span class="number">8</span>) <span class="keyword">for</span> i <span class="keyword">in</span> digest)</span><br><span class="line">    <span class="keyword">return</span> bits[:difficulty] == zeros</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">calc_start</span>(<span class="params">count,end</span>):</span></span><br><span class="line">    time1 = time.time()</span><br><span class="line">    <span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">        <span class="keyword">if</span> count &gt;= end:</span><br><span class="line">            print(<span class="string">&quot;exceed,count is %d&quot;</span> % count)</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">        s = prefix + <span class="built_in">str</span>(count)</span><br><span class="line">        <span class="keyword">if</span> is_valid(hashlib.sha256(s.encode()).digest()):</span><br><span class="line">            time2 = time.time()</span><br><span class="line">            time3 = time2 - time1</span><br><span class="line">            print(count)</span><br><span class="line">            print(time3)</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line">        count +=<span class="number">1</span></span><br><span class="line"></span><br><span class="line">pool = Pool()</span><br><span class="line"></span><br><span class="line"><span class="comment"># pool.apply_async(calc_start, [0,100000,])</span></span><br><span class="line">pool.apply_async(calc_start, [<span class="number">0</span>,<span class="number">2500000</span>,])</span><br><span class="line">pool.apply_async(calc_start,[<span class="number">2500000</span>,<span class="number">5000000</span>])</span><br><span class="line">pool.apply_async(calc_start,[<span class="number">5000000</span>,<span class="number">7500000</span>])</span><br><span class="line">pool.apply_async(calc_start,[<span class="number">7500000</span>,<span class="number">10000000</span>])</span><br><span class="line">pool.apply_async(calc_start,[<span class="number">10000000</span>,<span class="number">12500000</span>])</span><br><span class="line">pool.apply_async(calc_start,[<span class="number">12500000</span>,<span class="number">15000000</span>])</span><br><span class="line">pool.apply_async(calc_start,[<span class="number">15000000</span>,<span class="number">17500000</span>])</span><br><span class="line">pool.apply_async(calc_start,[<span class="number">17500000</span>,<span class="number">20000000</span>])</span><br><span class="line">pool.apply_async(calc_start,[<span class="number">20000000</span>,<span class="number">22500000</span>])</span><br><span class="line">pool.apply_async(calc_start,[<span class="number">22500000</span>,<span class="number">25000000</span>])</span><br><span class="line">pool.apply_async(calc_start,[<span class="number">25000000</span>,<span class="number">27500000</span>])</span><br><span class="line">pool.apply_async(calc_start,[<span class="number">27500000</span>,<span class="number">30000000</span>])</span><br><span class="line">pool.apply_async(calc_start,[<span class="number">30000000</span>,<span class="number">32500000</span>])</span><br><span class="line">pool.apply_async(calc_start,[<span class="number">32500000</span>,<span class="number">35000000</span>])</span><br><span class="line">pool.apply_async(calc_start,[<span class="number">35000000</span>,<span class="number">37500000</span>])</span><br><span class="line">pool.apply_async(calc_start,[<span class="number">37500000</span>,<span class="number">40000000</span>])</span><br><span class="line">pool.apply_async(calc_start,[<span class="number">40000000</span>,<span class="number">42500000</span>])</span><br><span class="line"></span><br><span class="line">print(<span class="string">&quot;---start----&quot;</span>)</span><br><span class="line">pool.close() </span><br><span class="line">pool.join() </span><br><span class="line">print(<span class="string">&quot;---end----&quot;</span>)</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h3 id="比赛时长亭给的版本"   >
+          <a href="#比赛时长亭给的版本" class="heading-link"><i class="fas fa-link"></i></a><a href="#比赛时长亭给的版本" class="headerlink" title="比赛时长亭给的版本"></a>比赛时长亭给的版本</h3>
+      <figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># python3 proof_of_work.py xxxx 26</span></span><br><span class="line"><span class="keyword">import</span> string</span><br><span class="line"><span class="keyword">import</span> sys</span><br><span class="line"><span class="keyword">from</span> hashlib <span class="keyword">import</span> sha256</span><br><span class="line"><span class="keyword">from</span> itertools <span class="keyword">import</span> chain, product</span><br><span class="line"><span class="keyword">from</span> multiprocessing <span class="keyword">import</span> Pool</span><br><span class="line"></span><br><span class="line">salt = <span class="literal">None</span></span><br><span class="line">hard_bit = <span class="number">0</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">challenge</span>(<span class="params">c</span>):</span></span><br><span class="line">    s = sha256(salt + <span class="string">&#x27;&#x27;</span>.join(c).encode()).hexdigest()</span><br><span class="line">    h = <span class="built_in">int</span>(s, <span class="number">16</span>)</span><br><span class="line">    <span class="keyword">if</span> h &gt;&gt; (<span class="number">256</span> - hard_bit) == <span class="number">0</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&#x27;&#x27;</span>.join(c)</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">None</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">solve</span>():</span></span><br><span class="line">    all_case = chain.from_iterable(<span class="built_in">map</span>(<span class="keyword">lambda</span> x: product(string.ascii_letters, repeat=x), <span class="built_in">range</span>(<span class="number">10</span>)))</span><br><span class="line">    <span class="keyword">with</span> Pool() <span class="keyword">as</span> p:</span><br><span class="line">        m = p.imap(challenge, all_case, <span class="number">1000</span>)</span><br><span class="line">        <span class="keyword">return</span> <span class="built_in">next</span>(<span class="built_in">filter</span>(<span class="keyword">lambda</span> x: x != <span class="literal">None</span>, m))</span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    <span class="keyword">if</span> <span class="built_in">len</span>(sys.argv) != <span class="number">3</span>:</span><br><span class="line">        print(<span class="string">f&quot;<span class="subst">&#123;sys.argv[<span class="number">0</span>]&#125;</span> salt hard_bit&quot;</span>)</span><br><span class="line">        exit(<span class="number">0</span>)</span><br><span class="line">    salt = sys.argv[<span class="number">1</span>].encode()</span><br><span class="line">    hard_bit = <span class="built_in">int</span>(sys.argv[<span class="number">2</span>])</span><br><span class="line">    print(<span class="string">f&quot;result: <span class="subst">&#123;solve()&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></div></figure>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="http://blingblingxuanxuan.github.io">blingbling</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="http://blingblingxuanxuan.github.io/2022/02/20/learn-to-use-docker/">http://blingblingxuanxuan.github.io/2022/02/20/learn-to-use-docker/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/docker/">docker</a></span></div><nav class="post-paginator paginator"><div class="paginator-next"><a class="paginator-next__link" href="/2021/10/02/starbound/"><span class="paginator-prev__text">pwnable.tw之starbound</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#docker%E7%9A%84%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8"><span class="toc-number">1.</span> <span class="toc-text">
+          docker的基本使用</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%89%E8%A3%85docker"><span class="toc-number">1.1.</span> <span class="toc-text">
+          安装docker</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4"><span class="toc-number">1.2.</span> <span class="toc-text">
+          常用命令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%9E%E8%B7%B5%EF%BC%9A%E5%88%B6%E4%BD%9C%E4%B8%80%E4%B8%AA%E5%AE%B9%E5%99%A8%E5%B9%B6%E5%8F%91%E5%B8%83"><span class="toc-number">1.3.</span> <span class="toc-text">
+          实践：制作一个容器并发布</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%9E%E8%B7%B5%EF%BC%9A%E4%BD%BF%E7%94%A8docker-compose%E5%90%AF%E5%8A%A8%E5%AE%B9%E5%99%A8"><span class="toc-number">1.4.</span> <span class="toc-text">
+          实践：使用docker-compose启动容器</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%9E%E8%B7%B5%EF%BC%9Adocker%E5%AE%B9%E5%99%A8%E8%BF%81%E7%A7%BB"><span class="toc-number">1.5.</span> <span class="toc-text">
+          实践：docker容器迁移</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#ctf%E4%B8%AD%E7%9A%84%E5%BA%94%E7%94%A8"><span class="toc-number">2.</span> <span class="toc-text">
+          ctf中的应用</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%81%9A%E9%A2%98"><span class="toc-number">2.1.</span> <span class="toc-text">
+          做题</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%B5%B7docker"><span class="toc-number">2.1.1.</span> <span class="toc-text">
+          起docker</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E5%86%B3%E7%BD%91%E7%BB%9C%E7%9A%84%E9%97%AE%E9%A2%98"><span class="toc-number">2.1.2.</span> <span class="toc-text">
+          解决网络的问题</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#gdbserver%E8%B0%83%E8%AF%95"><span class="toc-number">2.2.</span> <span class="toc-text">
+          gdbserver调试</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%86%E8%BF%9C%E7%A8%8Blibc%E5%92%8Cld%E6%8B%89%E8%87%B3%E6%9C%AC%E5%9C%B0"><span class="toc-number">2.3.</span> <span class="toc-text">
+          将远程libc和ld拉至本地</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#ctf-pwn%E9%A2%98%E9%83%A8%E7%BD%B2%E5%B7%A5%E5%85%B7"><span class="toc-number">3.</span> <span class="toc-text">
+          ctf pwn题部署工具</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#socat"><span class="toc-number">3.1.</span> <span class="toc-text">
+          socat</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#xinetd"><span class="toc-number">3.2.</span> <span class="toc-text">
+          xinetd</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%9F%BA%E6%9C%AC%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95%EF%BC%9A%E5%90%AF%E5%8A%A8%E4%B8%80%E4%B8%AA%E4%BA%8C%E8%BF%9B%E5%88%B6"><span class="toc-number">3.2.1.</span> <span class="toc-text">
+          基本使用方法：启动一个二进制</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8xinetd%E5%90%AF%E5%8A%A8%E5%A4%9A%E4%B8%AAqemu"><span class="toc-number">3.2.2.</span> <span class="toc-text">
+          使用xinetd启动多个qemu</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#ctf-pwn%E5%B8%B8%E7%94%A8%E7%9A%84ctf-xinetd%E6%A1%86%E6%9E%B6"><span class="toc-number">3.2.3.</span> <span class="toc-text">
+          ctf pwn常用的ctf_xinetd框架</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#POW"><span class="toc-number">4.</span> <span class="toc-text">
+          POW</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%87%BA%E9%A2%98%E6%97%B6%E7%94%A8%E5%88%B0%E7%9A%84"><span class="toc-number">4.1.</span> <span class="toc-text">
+          出题时用到的</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%A3%E9%A2%98%E6%97%B6%E7%94%A8%E5%88%B0%E7%9A%84"><span class="toc-number">4.2.</span> <span class="toc-text">
+          解题时用到的</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%87%AA%E7%A0%94%E5%A4%9A%E8%BF%9B%E7%A8%8B%E6%9A%B4%E7%A0%B4%E7%89%88"><span class="toc-number">4.2.1.</span> <span class="toc-text">
+          自研多进程暴破版</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%AF%94%E8%B5%9B%E6%97%B6%E9%95%BF%E4%BA%AD%E7%BB%99%E7%9A%84%E7%89%88%E6%9C%AC"><span class="toc-number">4.2.2.</span> <span class="toc-text">
+          比赛时长亭给的版本</span></a></li></ol></li></ol></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/uploads/zhishi1.jpg" alt="avatar"></div></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/blingblingxuanxuan" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a><a class="sidebar-ov-social-item" href="https://weibo.com/anxinbuzitreexy" target="_blank" rel="noopener" data-popover="微博" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-weibo"></i></span></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2022</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>blingbling</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.3.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div><div>Just follow your heart, and keep smiling.</div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>
