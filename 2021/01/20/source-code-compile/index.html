@@ -33,27 +33,27 @@ var CONFIG = {
 };
 
 window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/about/"><span class="header-nav-menu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-menu-item__text">关于</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">blingbling's blog</div><div class="header-banner-info__subtitle">Clang鱼塘</div></div><div class="header-banner-arrow"><div class="header-banner-arrow__icon"><i class="fas fa-angle-down"></i></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">linux下的源码编译</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2021-01-20</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-02-17</span></span></div></header><div class="post-body">
-        <h1 id="源码编译">
+        <h1 id="源码编译"   >
           <a href="#源码编译" class="heading-link"><i class="fas fa-link"></i></a><a href="#源码编译" class="headerlink" title="源码编译"></a>源码编译</h1>
-      <p>把这篇参考文章<span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://www.jianshu.com/p/39101098ebbe">linux下源代码的编译安装入门</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>完整看并动手实践下来，对源码编译就有了宏观上粗略的了解。</p>
+      <p>把这篇参考文章<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.jianshu.com/p/39101098ebbe" >linux下源代码的编译安装入门</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>完整看并动手实践下来，对源码编译就有了宏观上粗略的了解。</p>
 <p>另外还需要了解多级目录下makefile的编写及编译过程。</p>
 
-        <h2 id="三步走">
+        <h2 id="三步走"   >
           <a href="#三步走" class="heading-link"><i class="fas fa-link"></i></a><a href="#三步走" class="headerlink" title="三步走"></a>三步走</h2>
       
-        <h3 id="configure-检查">
+        <h3 id="configure-检查"   >
           <a href="#configure-检查" class="heading-link"><i class="fas fa-link"></i></a><a href="#configure-检查" class="headerlink" title="configure - 检查"></a>configure - 检查</h3>
       <figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">configure --prefix=dir/</span><br><span class="line"><span class="meta">#</span><span class="bash"> 指定安装目录dir/，后续make install时会安装到dir/目录下（不指定的话，默认是/usr/<span class="built_in">local</span>/bin目录）</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 安装的二进制文件存放在dir/bin/目录下</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 安装的资源文件存放在dir/share/目录下</span></span><br></pre></td></tr></table></div></figure>
 <figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">configure --help</span><br><span class="line"><span class="meta">#</span><span class="bash"> 查看详细的帮助说明，如--sys-config=xxx进行参数设定，--with/--<span class="built_in">enable</span>/--without/--<span class="built_in">disable</span>等对编译过程进行控制</span></span><br></pre></td></tr></table></div></figure>
 
-        <h3 id="make-编译">
+        <h3 id="make-编译"   >
           <a href="#make-编译" class="heading-link"><i class="fas fa-link"></i></a><a href="#make-编译" class="headerlink" title="make - 编译"></a>make - 编译</h3>
       <blockquote>
 <p>除了有些用perl或python编写的软件（使用perl或python进行编译），大部分源代码都是需要通过make进行编译的</p>
 </blockquote>
 <p>make是linux开发套件里面自动化编译的一个控制程序，它通过makefile里的编译规则自动调用gcc，ld等进行编译。makefile可以自行编写，也可以通过configure脚本根据给定的参数和系统环境生成。</p>
 
-        <h3 id="make-install-安装">
+        <h3 id="make-install-安装"   >
           <a href="#make-install-安装" class="heading-link"><i class="fas fa-link"></i></a><a href="#make-install-安装" class="headerlink" title="make install - 安装"></a>make install - 安装</h3>
       <blockquote>
 <p>make通过加’参数’<code>make install</code>或<code>make uninstall</code>来进行安装或卸载，若不加’参数’则表示进行默认的源代码编译</p>
@@ -61,7 +61,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></he
 <p>默认情况下，通常需要root权限来运行<code>make install</code>，因为待写入目录可能权限较高（如/usr/local/bin）。</p>
 <p>对部分软件而言，需要在<code>make install</code>前先运行<code>make check</code>或<code>make test</code>来进行一些测试。</p>
 
-        <h2 id="编译qemu">
+        <h2 id="编译qemu"   >
           <a href="#编译qemu" class="heading-link"><i class="fas fa-link"></i></a><a href="#编译qemu" class="headerlink" title="编译qemu"></a>编译qemu</h2>
       <p>下载qemu源码</p>
 <figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">wget https://download.qemu.org/qemu-5.2.0.tar.xz</span><br><span class="line">tar Jxvf qemu-5.2.0.tar.xz</span><br><span class="line">cd qemu-5.2.0</span><br><span class="line">cd ..</span><br><span class="line">mkdir -p build-qemu</span><br></pre></td></tr></table></div></figure>

@@ -36,25 +36,25 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></he
 <p>windows下利用github和hexo搭建博客</p>
 </blockquote>
 
-        <h1 id="环境依赖">
+        <h1 id="环境依赖"   >
           <a href="#环境依赖" class="heading-link"><i class="fas fa-link"></i></a><a href="#环境依赖" class="headerlink" title="环境依赖"></a>环境依赖</h1>
       <ul>
-<li><p><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://nodejs.org/en/">node.js</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<li><p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://nodejs.org/en/" >node.js</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
 </li>
-<li><p><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://git-scm.com/download/win">git</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<li><p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://git-scm.com/download/win" >git</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
 </li>
 </ul>
 <p>在官网中下载node.js和git，并完成安装。</p>
 <p>分别执行以下命令，若返回版本号，则表明安装成功。</p>
 <figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">git --version</span><br><span class="line">node --version</span><br></pre></td></tr></table></div></figure>
 
-        <h1 id="github仓库">
+        <h1 id="github仓库"   >
           <a href="#github仓库" class="heading-link"><i class="fas fa-link"></i></a><a href="#github仓库" class="headerlink" title="github仓库"></a>github仓库</h1>
       
-        <h1 id="设置ssh">
+        <h1 id="设置ssh"   >
           <a href="#设置ssh" class="heading-link"><i class="fas fa-link"></i></a><a href="#设置ssh" class="headerlink" title="设置ssh"></a>设置ssh</h1>
       
-        <h1 id="安装hexo">
+        <h1 id="安装hexo"   >
           <a href="#安装hexo" class="heading-link"><i class="fas fa-link"></i></a><a href="#安装hexo" class="headerlink" title="安装hexo"></a>安装hexo</h1>
       <figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">npm install -g hexo-cli</span><br></pre></td></tr></table></div></figure>
 <p>新建一个目录，然后初始化该目录</p>
@@ -66,32 +66,32 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></he
 
 
 
-        <h1 id="新建博文">
+        <h1 id="新建博文"   >
           <a href="#新建博文" class="heading-link"><i class="fas fa-link"></i></a><a href="#新建博文" class="headerlink" title="新建博文"></a>新建博文</h1>
       
-        <h2 id="自动创建">
+        <h2 id="自动创建"   >
           <a href="#自动创建" class="heading-link"><i class="fas fa-link"></i></a><a href="#自动创建" class="headerlink" title="自动创建"></a>自动创建</h2>
       <p>进入博客所在目录，右键打开Git Bash Here，创建博文。在source/_posts目录下能看到一个My-New-Post.md文件。</p>
 <figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">hexo new &quot;My New Post&quot;</span><br></pre></td></tr></table></div></figure>
 <p>将博文上传到github并发布</p>
 <figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">hexo g # 生成页面</span><br><span class="line">hexo d # 部署发布</span><br></pre></td></tr></table></div></figure>
 
-        <h2 id="手动创建">
+        <h2 id="手动创建"   >
           <a href="#手动创建" class="heading-link"><i class="fas fa-link"></i></a><a href="#手动创建" class="headerlink" title="手动创建"></a>手动创建</h2>
       <p>在source/_posts目录下新建一个md文件，并在文件开头加入如下格式的front-matter</p>
 <figure class="highlight markdown"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">---</span><br><span class="line">title: Hello World # 标题</span><br><span class="line">date: 2019/3/26 hh:mm:ss # 时间</span><br><span class="line">categories: # 分类</span><br><span class="line"><span class="bullet">-</span> Diary</span><br><span class="line">tags: # 标签</span><br><span class="line"><span class="bullet">-</span> PS3</span><br><span class="line"><span class="bullet">-</span> Games</span><br><span class="line">---</span><br><span class="line"></span><br><span class="line">摘要</span><br><span class="line">&lt;!--more--&gt;</span><br><span class="line">正文</span><br></pre></td></tr></table></div></figure>
 
-        <h1 id="更换主题">
+        <h1 id="更换主题"   >
           <a href="#更换主题" class="heading-link"><i class="fas fa-link"></i></a><a href="#更换主题" class="headerlink" title="更换主题"></a>更换主题</h1>
-      <p><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://hexo.io/themes/">hexo themes</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://hexo.io/themes/" >hexo themes</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
 <figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">cd /f/blog/git clone https://github.com/liuyib/hexo-theme-stun.git themes/stunnpm install --save hexo-renderer-pug    # 安装依赖</span><br></pre></td></tr></table></div></figure>
 <p>然后修改_config.yml</p>
 <figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">theme: stun</span><br></pre></td></tr></table></div></figure>
 
-        <h1 id="参考">
+        <h1 id="参考"   >
           <a href="#参考" class="heading-link"><i class="fas fa-link"></i></a><a href="#参考" class="headerlink" title="参考"></a>参考</h1>
-      <p><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://www.cnblogs.com/thanksblog/p/12900165.html">hexo+github搭建个人博客</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
-<p><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/60578464">使用 Hexo+GitHub 搭建个人免费博客教程（小白向）</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.cnblogs.com/thanksblog/p/12900165.html" >hexo+github搭建个人博客</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/60578464" >使用 Hexo+GitHub 搭建个人免费博客教程（小白向）</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
 </div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="http://blingblingxuanxuan.github.io">blingbling</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="http://blingblingxuanxuan.github.io/2021/02/16/build-a-blog/">http://blingblingxuanxuan.github.io/2021/02/16/build-a-blog/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-share"><div class="social-share" data-sites="qzone, qq, weibo, wechat, douban, linkedin, facebook, twitter, google">Share to: </div></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/2021/03/07/lichee-start/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">荔枝派zero镜像制作及烧录</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/2021/02/03/hws2021-winter/"><span class="paginator-prev__text">HWS2021冬令营选拔赛</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%8E%AF%E5%A2%83%E4%BE%9D%E8%B5%96"><span class="toc-text">
           环境依赖</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#github%E4%BB%93%E5%BA%93"><span class="toc-text">
           github仓库</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%AE%BE%E7%BD%AEssh"><span class="toc-text">

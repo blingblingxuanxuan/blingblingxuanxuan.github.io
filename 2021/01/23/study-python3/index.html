@@ -34,10 +34,10 @@ var CONFIG = {
 
 window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/about/"><span class="header-nav-menu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-menu-item__text">关于</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">blingbling's blog</div><div class="header-banner-info__subtitle">Clang鱼塘</div></div><div class="header-banner-arrow"><div class="header-banner-arrow__icon"><i class="fas fa-angle-down"></i></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">python3学习</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2021-01-23</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2021-02-17</span></span></div></header><div class="post-body"><p>花了一天，参考W3Cschool学了下python3的基础，做了个笔记给自己看。</p>
 
-        <h1 id="探索">
+        <h1 id="探索"   >
           <a href="#探索" class="heading-link"><i class="fas fa-link"></i></a><a href="#探索" class="headerlink" title="探索"></a>探索</h1>
       
-        <h2 id="python3下字符串、bytes、hex之间的转换">
+        <h2 id="python3下字符串、bytes、hex之间的转换"   >
           <a href="#python3下字符串、bytes、hex之间的转换" class="heading-link"><i class="fas fa-link"></i></a><a href="#python3下字符串、bytes、hex之间的转换" class="headerlink" title="python3下字符串、bytes、hex之间的转换"></a>python3下字符串、bytes、hex之间的转换</h2>
       <figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">      &quot;&quot;.encode()                 b&quot;&quot;.hex()</span><br><span class="line">  +----------------+     +- ------------------------+</span><br><span class="line">  |                |     |                          |</span><br><span class="line">  |                |     |                          |</span><br><span class="line">+-+--+           +-v-----+-+                  +-----v-----+</span><br><span class="line">| &quot;&quot; |           |  bytes  |                  |  hex str  |</span><br><span class="line">+-^--+           +-+-----^-+                  +-----+-----+</span><br><span class="line">  |                |     |                          |</span><br><span class="line">  |                |     |                          |</span><br><span class="line">  +----------------+     +--------------------------+</span><br><span class="line">     b&quot;&quot;.decode()               bytes.fromhex(&quot;&quot;)</span><br><span class="line"></span><br></pre></td></tr></table></div></figure>
 <p>最左侧是str对象，中间是bytes对象。他俩之间的转换通过encode()与decode()函数，可以指定utf-8，gbk，ascii等编码方式。</p>
@@ -64,7 +64,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></he
 <p>python2中：</p>
 <figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; <span class="string">&#x27;\x61\x61\x63&#x27;</span>.decode()</span></span><br><span class="line">u&#x27;aac&#x27;</span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; <span class="string">&#x27;616263&#x27;</span>.decode(<span class="string">&#x27;hex&#x27;</span>)</span></span><br><span class="line">&#x27;abc&#x27;</span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; <span class="string">&#x27;abc&#x27;</span>.encode(<span class="string">&#x27;hex&#x27;</span>)</span></span><br><span class="line">&#x27;616263&#x27;</span><br></pre></td></tr></table></div></figure>
 
-        <h1 id="python3模块">
+        <h1 id="python3模块"   >
           <a href="#python3模块" class="heading-link"><i class="fas fa-link"></i></a><a href="#python3模块" class="headerlink" title="python3模块"></a>python3模块</h1>
       <ul>
 <li>keyword</li>
@@ -79,7 +79,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></he
 </ul>
 <figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">import os</span><br><span class="line">os.system(&#x27;ls&#x27;)</span><br></pre></td></tr></table></div></figure>
 
-        <h1 id="数据类型">
+        <h1 id="数据类型"   >
           <a href="#数据类型" class="heading-link"><i class="fas fa-link"></i></a><a href="#数据类型" class="headerlink" title="数据类型"></a>数据类型</h1>
       <blockquote>
 <p>Python 中有六个标准的数据类型：Number（数字），String（字符串），List（列表），Tuple（元组），Set（集合），Dictionary（字典）</p>
@@ -88,14 +88,14 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></he
 <p>可变数据：List（列表），Set（集合），Dictionary（字典）</p>
 <figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">可通过type(xxx)查看数据类型</span><br></pre></td></tr></table></div></figure>
 
-        <h2 id="Number">
+        <h2 id="Number"   >
           <a href="#Number" class="heading-link"><i class="fas fa-link"></i></a><a href="#Number" class="headerlink" title="Number"></a>Number</h2>
       <blockquote>
 <p>python3支持int，float，bool，complex</p>
 </blockquote>
 <figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; 5 + 4  <span class="comment"># 加法</span></span></span><br><span class="line">9</span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; 4.3 - 2 <span class="comment"># 减法</span></span></span><br><span class="line">2.3</span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; 3 * 7  <span class="comment"># 乘法</span></span></span><br><span class="line">21</span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; 2 / 4  <span class="comment"># 除法，得到一个浮点数</span></span></span><br><span class="line">0.5</span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; 2 // 4 <span class="comment"># 除法，得到一个整数</span></span></span><br><span class="line">0</span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; 17 % 3 <span class="comment"># 取余</span></span> </span><br><span class="line">2</span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; 2 ** 5 <span class="comment"># 乘方</span></span></span><br><span class="line">32</span><br></pre></td></tr></table></div></figure>
 
-        <h2 id="String">
+        <h2 id="String"   >
           <a href="#String" class="heading-link"><i class="fas fa-link"></i></a><a href="#String" class="headerlink" title="String"></a>String</h2>
       <blockquote>
 <p>用双引号或单引号括起来，反斜杠<code>&#39;\&#39;</code>作为转义字符和续行符</p>
@@ -114,7 +114,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></he
 </ul>
 <figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; word = <span class="string">&#x27;ilovepython&#x27;</span></span></span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; word[1:5]</span></span><br><span class="line">&#x27;love&#x27;</span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; word[:]</span></span><br><span class="line">&#x27;ilovepython&#x27;</span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; word[5:]</span></span><br><span class="line">&#x27;python&#x27;</span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; word[-10:-6]</span></span><br><span class="line">&#x27;love&#x27;</span><br></pre></td></tr></table></div></figure>
 
-        <h2 id="List">
+        <h2 id="List"   >
           <a href="#List" class="heading-link"><i class="fas fa-link"></i></a><a href="#List" class="headerlink" title="List"></a>List</h2>
       <blockquote>
 <p>使用方括号，逗号组成的元素列表，元素类型可不相同</p>
@@ -139,7 +139,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></he
 
 
 
-        <h2 id="Tuple">
+        <h2 id="Tuple"   >
           <a href="#Tuple" class="heading-link"><i class="fas fa-link"></i></a><a href="#Tuple" class="headerlink" title="Tuple"></a>Tuple</h2>
       <blockquote>
 <p>使用方括号，逗号组成的元素元组，元素类型可不相同</p>
@@ -166,7 +166,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></he
 </ul>
 <figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; tuple1 = (<span class="string">&#x27;Google&#x27;</span>, <span class="string">&#x27;W3CSchool&#x27;</span>, <span class="string">&#x27;Taobao&#x27;</span>)</span></span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; len(tuple1)		<span class="comment"># 计算元组的元素个数</span></span></span><br><span class="line">3</span><br><span class="line"></span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; tuple2 = (<span class="string">&#x27;5&#x27;</span>, <span class="string">&#x27;4&#x27;</span>, <span class="string">&#x27;8&#x27;</span>)</span></span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; max(tuple2)		<span class="comment"># 返回元组中元素的最大值</span></span></span><br><span class="line">&#x27;8&#x27;</span><br><span class="line"></span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; tuple2 = (<span class="string">&#x27;5&#x27;</span>, <span class="string">&#x27;4&#x27;</span>, <span class="string">&#x27;8&#x27;</span>)</span></span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; min(tuple2)		<span class="comment"># 返回元组中元素的最小值</span></span></span><br><span class="line">&#x27;4&#x27;</span><br><span class="line"></span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; list1= [<span class="string">&#x27;Google&#x27;</span>, <span class="string">&#x27;Taobao&#x27;</span>, <span class="string">&#x27;W3CSchool&#x27;</span>, <span class="string">&#x27;Baidu&#x27;</span>]</span></span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; tuple1=tuple(list1)		<span class="comment"># 将list列表转换为元组</span></span></span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; tuple1</span></span><br><span class="line">(&#x27;Google&#x27;, &#x27;Taobao&#x27;, &#x27;W3CSchool&#x27;, &#x27;Baidu&#x27;)</span><br><span class="line"></span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; import operator</span></span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; dict1 = (1, 2, 3)</span></span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; dict2 = (<span class="string">&#x27;a&#x27;</span>, <span class="string">&#x27;b&#x27;</span>, <span class="string">&#x27;c&#x27;</span>)</span></span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; operator.eq(dict1, dict2)		<span class="comment"># 比较两个元组的元素</span></span></span><br><span class="line">False</span><br></pre></td></tr></table></div></figure>
 
-        <h2 id="Set">
+        <h2 id="Set"   >
           <a href="#Set" class="heading-link"><i class="fas fa-link"></i></a><a href="#Set" class="headerlink" title="Set"></a>Set</h2>
       <blockquote>
 <p>一个无序不重复元素的集合，使用大括号{}或set()函数创建</p>
@@ -174,7 +174,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></he
 </blockquote>
 <figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; student = &#123;<span class="string">&#x27;Tom&#x27;</span>, <span class="string">&#x27;Jim&#x27;</span>, <span class="string">&#x27;Mary&#x27;</span>, <span class="string">&#x27;Tom&#x27;</span>, <span class="string">&#x27;Jack&#x27;</span>, <span class="string">&#x27;Rose&#x27;</span>&#125;</span></span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; <span class="built_in">print</span>(student)   		<span class="comment"># 重复的元素被自动去掉</span></span></span><br><span class="line">&#123;&#x27;Jim&#x27;, &#x27;Jack&#x27;, &#x27;Mary&#x27;, &#x27;Tom&#x27;, &#x27;Rose&#x27;&#125;</span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; <span class="string">&#x27;Rose&#x27;</span> <span class="keyword">in</span> student 		 <span class="comment"># membership testing（成员测试）</span></span></span><br><span class="line">True</span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; <span class="comment"># set可以进行集合运算</span></span></span><br><span class="line">... </span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; a = <span class="built_in">set</span>(<span class="string">&#x27;abracadabra&#x27;</span>)</span></span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; b = <span class="built_in">set</span>(<span class="string">&#x27;alacazam&#x27;</span>)</span></span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; a</span></span><br><span class="line">&#123;&#x27;a&#x27;, &#x27;b&#x27;, &#x27;c&#x27;, &#x27;d&#x27;, &#x27;r&#x27;&#125;</span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; a - b     		<span class="comment"># a和b的差集</span></span></span><br><span class="line">&#123;&#x27;b&#x27;, &#x27;d&#x27;, &#x27;r&#x27;&#125;</span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; a | b    		 <span class="comment"># a和b的并集</span></span></span><br><span class="line">&#123;&#x27;l&#x27;, &#x27;m&#x27;, &#x27;a&#x27;, &#x27;b&#x27;, &#x27;c&#x27;, &#x27;d&#x27;, &#x27;z&#x27;, &#x27;r&#x27;&#125;</span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; a &amp; b    		 <span class="comment"># a和b的交集</span></span></span><br><span class="line">&#123;&#x27;a&#x27;, &#x27;c&#x27;&#125;</span><br><span class="line"><span class="meta">&gt;</span><span class="bash">&gt;&gt; a ^ b    		 <span class="comment"># a和b中不同时存在的元素</span></span></span><br><span class="line">&#123;&#x27;l&#x27;, &#x27;m&#x27;, &#x27;b&#x27;, &#x27;d&#x27;, &#x27;z&#x27;, &#x27;r&#x27;&#125;</span><br></pre></td></tr></table></div></figure>
 
-        <h2 id="Dictionary">
+        <h2 id="Dictionary"   >
           <a href="#Dictionary" class="heading-link"><i class="fas fa-link"></i></a><a href="#Dictionary" class="headerlink" title="Dictionary"></a>Dictionary</h2>
       <blockquote>
 <p>一种映射类型（mapping type），在大括号{}中包含一些无序的键值对，<strong>关键字必须使用不可变类型</strong></p>
@@ -188,14 +188,14 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></he
 <figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">dict</span> = &#123;<span class="string">&#x27;Name&#x27;</span>: <span class="string">&#x27;W3CSchool&#x27;</span>, <span class="string">&#x27;Age&#x27;</span>: <span class="number">7</span>, <span class="string">&#x27;Class&#x27;</span>: <span class="string">&#x27;First&#x27;</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">del</span> <span class="built_in">dict</span>[<span class="string">&#x27;Name&#x27;</span>] 		<span class="comment"># 删除键 &#x27;Name&#x27;</span></span><br><span class="line"><span class="built_in">dict</span>.clear()     		<span class="comment"># 删除字典</span></span><br><span class="line"><span class="keyword">del</span> <span class="built_in">dict</span>         		<span class="comment"># 删除字典</span></span><br></pre></td></tr></table></div></figure>
 <p>字典类型有一些内置函数，例如 clear()、keys()、values() 等。</p>
 
-        <h1 id="语法及API">
+        <h1 id="语法及API"   >
           <a href="#语法及API" class="heading-link"><i class="fas fa-link"></i></a><a href="#语法及API" class="headerlink" title="语法及API"></a>语法及API</h1>
       
-        <h2 id="条件控制">
+        <h2 id="条件控制"   >
           <a href="#条件控制" class="heading-link"><i class="fas fa-link"></i></a><a href="#条件控制" class="headerlink" title="条件控制"></a>条件控制</h2>
       <figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> condition_1:</span><br><span class="line">    statement_block_1</span><br><span class="line"><span class="keyword">elif</span> condition_2:</span><br><span class="line">    statement_block_2</span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    statement_block_3</span><br></pre></td></tr></table></div></figure>
 
-        <h2 id="循环">
+        <h2 id="循环"   >
           <a href="#循环" class="heading-link"><i class="fas fa-link"></i></a><a href="#循环" class="headerlink" title="循环"></a>循环</h2>
       <figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">while</span> 判断条件：</span><br><span class="line">    statements</span><br></pre></td></tr></table></div></figure>
 <figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">for</span> &lt;variable&gt; <span class="keyword">in</span> &lt;sequence&gt;:</span><br><span class="line">    &lt;statements&gt;</span><br><span class="line"><span class="keyword">else</span>:</span><br><span class="line">    &lt;statements&gt;</span><br></pre></td></tr></table></div></figure>
@@ -208,7 +208,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></he
 <li>continue和pass</li>
 </ul>
 
-        <h2 id="迭代器与生成器">
+        <h2 id="迭代器与生成器"   >
           <a href="#迭代器与生成器" class="heading-link"><i class="fas fa-link"></i></a><a href="#迭代器与生成器" class="headerlink" title="迭代器与生成器"></a>迭代器与生成器</h2>
       <blockquote>
 <p>迭代器的两个基本方法：iter()和next()</p>
@@ -222,7 +222,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></he
 <p>输出：</p>
 <figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">0 1 1 2 3 5 8 13 21 34 55</span><br></pre></td></tr></table></div></figure>
 
-        <h2 id="函数">
+        <h2 id="函数"   >
           <a href="#函数" class="heading-link"><i class="fas fa-link"></i></a><a href="#函数" class="headerlink" title="函数"></a>函数</h2>
       <figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">def</span>  函数名（参数列表）：</span></span><br><span class="line"><span class="function">	函数体</span></span><br></pre></td></tr></table></div></figure>
 <ul>
@@ -237,7 +237,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></he
 </blockquote>
 <figure class="highlight python"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">sum</span> = <span class="keyword">lambda</span> arg1, arg2: arg1 + arg2;</span><br><span class="line"> </span><br><span class="line"><span class="comment">#调用sum函数</span></span><br><span class="line"><span class="built_in">print</span> <span class="string">&quot;Value of total : &quot;</span>, <span class="built_in">sum</span>( <span class="number">10</span>, <span class="number">20</span> )</span><br><span class="line"><span class="built_in">print</span> <span class="string">&quot;Value of total : &quot;</span>, <span class="built_in">sum</span>( <span class="number">20</span>, <span class="number">20</span> )</span><br></pre></td></tr></table></div></figure>
 
-        <h2 id="输入和输出">
+        <h2 id="输入和输出"   >
           <a href="#输入和输出" class="heading-link"><i class="fas fa-link"></i></a><a href="#输入和输出" class="headerlink" title="输入和输出"></a>输入和输出</h2>
       <p>输入：input()，read()</p>
 <p>输出：print()，write()，str.format()，sys.stdout()</p>
@@ -245,7 +245,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></he
 <p>将值转换为字符串：repr()，str()</p>
 <figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">&gt;&gt;&gt; repr(&#39;\x64&#39;)</span><br><span class="line">&quot;&#39;d&#39;&quot;</span><br><span class="line">&gt;&gt;&gt; str(&#39;\x64&#39;)</span><br><span class="line">&#39;d&#39;</span><br></pre></td></tr></table></div></figure>
 
-        <h2 id="读写文件">
+        <h2 id="读写文件"   >
           <a href="#读写文件" class="heading-link"><i class="fas fa-link"></i></a><a href="#读写文件" class="headerlink" title="读写文件"></a>读写文件</h2>
       <blockquote>
 <p>open() 将会返回一个 file 对象</p>
@@ -263,11 +263,11 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></he
 <figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">from_what 的值, 如果是 0 表示开头, 如果是 1 表示当前位置, 2 表示文件的结尾，例如：</span><br><span class="line"></span><br><span class="line">seek(x, 0) ： 从起始位置即文件首行首字符开始移动 x 个字符</span><br><span class="line">seek(x, 1) ： 表示从当前位置往后移动x个字符</span><br><span class="line">seek(-x, 2)：表示从文件的结尾往前移动x个字符</span><br></pre></td></tr></table></div></figure>
 <p>f.close()：关闭文件。</p>
 
-        <h1 id="标准库概览">
+        <h1 id="标准库概览"   >
           <a href="#标准库概览" class="heading-link"><i class="fas fa-link"></i></a><a href="#标准库概览" class="headerlink" title="标准库概览"></a>标准库概览</h1>
-      <p><span class="exturl"><a class="exturl__link" target="_blank" rel="noopener" href="https://www.w3cschool.cn/python3/python3-stdlib.html">W3Cschool-标准库概览</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.w3cschool.cn/python3/python3-stdlib.html" >W3Cschool-标准库概览</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
 
-        <h1 id="tips">
+        <h1 id="tips"   >
           <a href="#tips" class="heading-link"><i class="fas fa-link"></i></a><a href="#tips" class="headerlink" title="tips"></a>tips</h1>
       <ul>
 <li>复合赋值</li>
