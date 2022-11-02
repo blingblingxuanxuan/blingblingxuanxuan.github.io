@@ -6,7 +6,7 @@
 <meta property="og:description" content="两道简单pwn的题解">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2022-10-16T19:03:34.000Z">
-<meta property="article:modified_time" content="2022-10-16T19:07:19.484Z">
+<meta property="article:modified_time" content="2022-10-16T19:13:38.060Z">
 <meta property="article:author" content="blingbling">
 <meta property="article:tag" content="pwn">
 <meta name="twitter:card" content="summary"><title>ASIS CTF 2022 pwn babyscan_1 babyscan_2 | blingbling's blog</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2022/10/17/asis-ctf-2022-pwn/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/css/share.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
@@ -75,7 +75,7 @@ window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></he
 <p>查了些资料，这种错误有两种可能：</p>
 <ol>
 <li>malloc中控制流劫持后嵌套调用printf，因为printf也会调用malloc，这种嵌套调用容易出问题</li>
-<li><code>call printf</code>时，栈地状态不是16字节对齐</li>
+<li><code>call printf</code>时，栈的状态不是16字节对齐</li>
 </ol>
 <p><a target="_blank" rel="noopener" href="https://stackoverflow.com/a/54399217">The x86-64 System V ABI guarantees 16-byte stack alignment before a <code>call</code></a></p>
 <p>（类似地，某些题目劫持控制流执行<code>system(&quot;/bin/sh&quot;)</code>在ubuntu16.04中能成功，但在ubuntu18.04中就失败，也同样是因为对齐地问题。）</p>
