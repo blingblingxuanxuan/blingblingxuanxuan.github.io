@@ -1,0 +1,467 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="这篇文章的目的，是构造一个linux内核调试环境的壳，之后只需替换内核，就能完成对不同版本内核的调试。文中涉及编译linux内核、编译busybox生成文件系统、编译内核字符设备ko、以及两种内核调试方法。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="两种方法调试linux kernel">
+<meta property="og:url" content="http://blingblingxuanxuan.github.io/2022/12/25/22-12-15-ways-to-debug-linuxkernel/index.html">
+<meta property="og:site_name" content="blingbling&#39;s blog">
+<meta property="og:description" content="这篇文章的目的，是构造一个linux内核调试环境的壳，之后只需替换内核，就能完成对不同版本内核的调试。文中涉及编译linux内核、编译busybox生成文件系统、编译内核字符设备ko、以及两种内核调试方法。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-12-25T08:03:54.000Z">
+<meta property="article:modified_time" content="2022-12-29T09:59:37.195Z">
+<meta property="article:author" content="blingbling">
+<meta property="article:tag" content="linux kernel">
+<meta name="twitter:card" content="summary"><title>两种方法调试linux kernel | blingbling's blog</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2022/12/25/22-12-15-ways-to-debug-linuxkernel/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/css/share.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"20px","tocMaxDepth":3},
+  header: {"enable":true,"showOnPost":true,"scrollDownIcon":true},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"simple","highlight":"light","wordWrap":false},
+  reward: false,
+  fancybox: true,
+  zoomImage: undefined,
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: undefined,
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner"><nav class="header-nav header-nav--fixed"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/about/"><span class="header-nav-menu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-menu-item__text">关于</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/friends/"><span class="header-nav-menu-item__icon"><i class="fas fa-thumbs-up"></i></span><span class="header-nav-menu-item__text">友链</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav><div class="header-banner"><div class="header-banner-info"><div class="header-banner-info__title">blingbling's blog</div><div class="header-banner-info__subtitle">Clang鱼塘</div></div><div class="header-banner-arrow"><div class="header-banner-arrow__icon"><i class="fas fa-angle-down"></i></div></div></div></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">两种方法调试linux kernel</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2022-12-25</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2022-12-29</span></span></div></header><div class="post-body"><p>这篇文章的目的，是构造一个linux内核调试环境的壳，之后只需替换内核，就能完成对不同版本内核的调试。文中涉及编译linux内核、编译busybox生成文件系统、编译内核字符设备ko、以及两种内核调试方法。</p>
+<p>本文中用到的环境如下：</p>
+<ul>
+<li>x86_64架构ubuntu16.04虚拟机</li>
+<li>gcc版本5.4.0</li>
+</ul>
+
+        <h1 id="编译Linux-Kernel"   >
+          <a href="#编译Linux-Kernel" class="heading-link"><i class="fas fa-link"></i></a><a href="#编译Linux-Kernel" class="headerlink" title="编译Linux Kernel"></a>编译Linux Kernel</h1>
+      
+        <h2 id="说明"   >
+          <a href="#说明" class="heading-link"><i class="fas fa-link"></i></a><a href="#说明" class="headerlink" title="说明"></a>说明</h2>
+      <p>编译内核，简单来说包含两个步骤：</p>
+<p>（1）配置内核选项</p>
+<p>（2）用配置的选项编内核</p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="http://embeddedguruji.blogspot.com/2019/01/make-config-vs-oldconfig-vs-defconfig.html" >配置内核选项的命令</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span> 有若干个，我们应当选择哪个呢？</p>
+<p><code>make configs</code>：基于文本形式的配置，每次弹出一个选项，每个选项都需要手动确认。如果想更改前序配置，只能从头再来。</p>
+<p><code>make menuconfig</code>：基于图形界面的配置，可以在界面不同选项中来回切换，可以搜索某个选项，可以加载<code>.config</code>配置文件。它的GUI界面使用了<code>ncurses</code>库，在Ubuntu中可使用<code>sudo apt install libncurses5-dev</code>安装。</p>
+<p><code>make defconfig</code>：根据<code>ARCH</code>指定的架构，用默认选项生成<code>.config</code>配置文件。默认的配置存在<code>arch/$(ARCH)/configs</code>目录下。</p>
+<p><code>make oldconfig</code>：读取已存在的<code>.config</code>文件，并提示用户当前kernel的哪些选项在<code>.config</code>文件中找不到。</p>
+<p><code>make savedefconfig</code>：在当前目录下生成一个<code>defconfig</code>文件</p>
+
+        <h2 id="例子"   >
+          <a href="#例子" class="heading-link"><i class="fas fa-link"></i></a><a href="#例子" class="headerlink" title="例子"></a>例子</h2>
+      <ol>
+<li><p>安装内核编译过程中可能要用到的包</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo apt-get install git fakeroot build-essential ncurses-dev xz-utils libssl-dev bc flex libelf-dev bison</span><br></pre></td></tr></table></div></figure></li>
+<li><p>下载<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.4.72.tar.gz" >linux-4.4.72.tar.gz</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>源码包到本地解压、设置、编译</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">tar -zxf linux-4.4.72.tar.gz</span><br><span class="line"><span class="built_in">cd</span> linux-4.4.72</span><br><span class="line">make ARCH=x86 defconfig</span><br><span class="line">make menuconfig				<span class="comment"># 若无需更改默认配置，这条可省略。</span></span><br><span class="line">make -j4</span><br></pre></td></tr></table></div></figure>
+<p>配置项参考<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://xz.aliyun.com/t/2024" >Linux内核调试</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>，设置如下几个关键选项：</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">由于我们需要调试内核，注意下面这几项一定要配置好：</span><br><span class="line">KernelHacking --&gt; Compile-time checks and compiler options</span><br><span class="line">选中Compile the kernel with debug info</span><br><span class="line">选中Compile the kernel with frame pointers</span><br></pre></td></tr></table></div></figure></li>
+<li><p>编译完成后，即可在当前目录下看到<code>vmlinux</code>，在<code>arch/x86/boot</code>目录下看到<code>bzImage</code>。</p>
+</li>
+</ol>
+
+        <h1 id="编译busybox"   >
+          <a href="#编译busybox" class="heading-link"><i class="fas fa-link"></i></a><a href="#编译busybox" class="headerlink" title="编译busybox"></a>编译busybox</h1>
+      <blockquote>
+<p>通常利用busybox构建文件系统，有两种方式设置启动选项：</p>
+<ol>
+<li>/init文件：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.jianshu.com/p/23351b38ecb0" >[内核pwn] 环境搭建</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li>/etc/init.d/rcS文件：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.anquanke.com/post/id/258874#h3-17" >从零开始的 kernel pwn 入门 - I：Linux kernel 简易食用指南</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+</ol>
+</blockquote>
+<p>这里以第一种方式为例，通过以下几个步骤就能构造一个可以使用的文件系统：</p>
+<ol>
+<li><p>下载 <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.busybox.net/downloads/busybox-1.30.0.tar.bz2" >busybox-1.30.0.tar.bz2</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>源码包。</p>
+</li>
+<li><p>以root用户，运行如下命令，解压、设置、编译。</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">su root</span><br><span class="line">tar -jxf busybox-1.30.0.tar.bz2</span><br><span class="line">make menuconfig</span><br><span class="line"><span class="comment"># 进Settings，勾上Build static binary (no shared libs),编译成静态文件</span></span><br><span class="line"><span class="comment"># 关闭下面两个选项:</span></span><br><span class="line"><span class="comment"># Linux System Utilities -&gt; [] Support mounting NFS file system 网络文件系统</span></span><br><span class="line"><span class="comment"># Networking Utilities -&gt; [] inetd (Internet超级服务器)</span></span><br><span class="line">make install -j 4</span><br><span class="line"><span class="comment"># 高版本gcc编译时报错：date.c:(.text.date_main+0x25f): undefined reference to `stime&#x27;</span></span><br><span class="line"><span class="comment"># 解决：https://git.busybox.net/busybox/patch/?id=d3539be8f27b8cbfdfee460fe08299158f08bcd9</span></span><br></pre></td></tr></table></div></figure></li>
+<li><p>进入编译后生成的<code>_install</code>目录，里面存放了编译生成的文件，在该目录下创建init文件和需要的文件夹。</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> _install</span><br><span class="line">mkdir proc</span><br><span class="line">mkdir sys</span><br><span class="line">touch init</span><br><span class="line">chmod +x init </span><br></pre></td></tr></table></div></figure>
+<p>init中写入如下内容</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/sh</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;&#123;==DBG==&#125; INIT SCRIPT&quot;</span></span><br><span class="line">mkdir /tmp</span><br><span class="line">mount -t proc none /proc</span><br><span class="line">mount -t sysfs none /sys</span><br><span class="line">mount -t debugfs none /sys/kernel/debug</span><br><span class="line">mount -t tmpfs none /tmp</span><br><span class="line"><span class="comment"># insmod /xxx.ko           # load ko</span></span><br><span class="line">mdev -s                         <span class="comment"># We need this to find /dev/sda later</span></span><br><span class="line"><span class="built_in">echo</span> -e <span class="string">&quot;&#123;==DBG==&#125; Boot took <span class="subst">$(cut -d&#x27; &#x27; -f1 /proc/uptime)</span> seconds&quot;</span></span><br><span class="line">setsid /bin/cttyhack setuidgid 1000 /bin/sh             <span class="comment">#normal user</span></span><br><span class="line"><span class="comment">#exec /bin/sh                                           #root</span></span><br><span class="line"></span><br><span class="line">umount /proc</span><br><span class="line">umount /sys/kernel/debug</span><br><span class="line">umount /sys</span><br><span class="line">umount /tmp</span><br><span class="line">poweroff -d 0  -f</span><br></pre></td></tr></table></div></figure></li>
+<li><p>打包生成roofs.cpio</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">find . | cpio -o --format=newc &gt; ../rootfs.cpio</span><br></pre></td></tr></table></div></figure>
+
+
+</li>
+</ol>
+
+        <h1 id="编译漏洞ko"   >
+          <a href="#编译漏洞ko" class="heading-link"><i class="fas fa-link"></i></a><a href="#编译漏洞ko" class="headerlink" title="编译漏洞ko"></a>编译漏洞ko</h1>
+      <p>新建一个存放ko源码和Makefile的文件夹</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">mkdir testko</span><br><span class="line"><span class="built_in">cd</span> testko</span><br><span class="line">touch Makefile</span><br><span class="line">touch babydriver.c</span><br></pre></td></tr></table></div></figure>
+<p>Makefile内容如下：</p>
+<figure class="highlight makefile"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">KDIR := /home/bling/Documents/linux-4.4.72</span><br><span class="line">obj-m += babydriver.o</span><br><span class="line"></span><br><span class="line"><span class="section">all:</span></span><br><span class="line">	make -C <span class="variable">$(KDIR)</span> M=<span class="variable">$(<span class="built_in">shell</span> pwd)</span> modules</span><br><span class="line"><span class="section">clean:</span></span><br><span class="line">	make -C <span class="variable">$(KDIR)</span> M=<span class="variable">$(<span class="built_in">shell</span> pwd)</span> clean</span><br></pre></td></tr></table></div></figure>
+<p>参考 <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://github.com/ctf-wiki/ctf-challenges/tree/master/pwn/kernel/CISCN2017-babydriver" >CISCN2017-babydriver</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span> 这个题，有漏洞的babydrvier.c源码如下：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;linux/init.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;linux/module.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;linux/kernel.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;linux/fs.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;asm/uaccess.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;linux/io.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;linux/cdev.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;linux/slab.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span><span class="meta-string">&lt;linux/device.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line">MODULE_LICENSE(<span class="string">&quot;Dual BSD/GPL&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> test_major = <span class="number">0</span>;</span><br><span class="line"><span class="keyword">static</span> <span class="keyword">int</span> test_minor = <span class="number">0</span>;</span><br><span class="line"></span><br><span class="line"><span class="keyword">static</span> <span class="class"><span class="keyword">struct</span> <span class="title">cdev</span> <span class="title">cdev_0</span>;</span></span><br><span class="line"><span class="keyword">dev_t</span> babydev_no;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="keyword">class</span> *<span class="title">babydev_class</span>;</span></span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">babydevice</span>&#123;</span></span><br><span class="line">	<span class="keyword">char</span>* device_buf;</span><br><span class="line">	<span class="keyword">uint64_t</span> device_buf_len;</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">babydevice</span> <span class="title">babydev_struct</span>;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">babyrelease</span><span class="params">(struct inode *inode, struct file *filp)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	kfree(babydev_struct.device_buf);</span><br><span class="line">	printk(<span class="string">&quot;device release\n&quot;</span>);</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">babyopen</span><span class="params">(struct inode *inode, struct file *filp)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	babydev_struct.device_buf = kmalloc(<span class="number">64</span>,<span class="number">0x24000C0</span>);</span><br><span class="line">	babydev_struct.device_buf_len = <span class="number">64</span>;</span><br><span class="line">	printk(<span class="string">&quot;device open\n&quot;</span>);</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">ssize_t</span> <span class="title">babyread</span><span class="params">(struct file *file, <span class="keyword">char</span> *buf, <span class="keyword">size_t</span> count, <span class="keyword">loff_t</span> *ppos)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">ssize_t</span> v6; </span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> ( !babydev_struct.device_buf )</span><br><span class="line">	  <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">	<span class="keyword">if</span> ( babydev_struct.device_buf_len &gt; count )</span><br><span class="line">	&#123;</span><br><span class="line">	  v6 = count;</span><br><span class="line">	  copy_to_user(buf,babydev_struct.device_buf,v6);</span><br><span class="line">	  <span class="keyword">return</span> v6;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">-2</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">ssize_t</span> <span class="title">babywrite</span><span class="params">(struct file *file, <span class="keyword">const</span> <span class="keyword">char</span> *buf, <span class="keyword">size_t</span> count, <span class="keyword">loff_t</span> *ppos)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">ssize_t</span> result; </span><br><span class="line">	<span class="keyword">ssize_t</span> v6;	</span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span> ( !babydev_struct.device_buf )</span><br><span class="line">	  <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">	result = <span class="number">-2</span>;</span><br><span class="line">	<span class="keyword">if</span> ( babydev_struct.device_buf_len &gt; count )</span><br><span class="line">	&#123;</span><br><span class="line">	  v6 = count;</span><br><span class="line">	  copy_from_user(babydev_struct.device_buf,buf,v6);</span><br><span class="line">	  <span class="keyword">return</span> v6;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> result;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">long</span> <span class="title">babyioctl</span><span class="params">(struct file *fd, <span class="keyword">unsigned</span> <span class="keyword">int</span> cmd, <span class="keyword">unsigned</span> <span class="keyword">long</span> arg)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">size_t</span> v4;	</span><br><span class="line"></span><br><span class="line">	v4 = arg;</span><br><span class="line">	<span class="keyword">if</span> ( cmd == <span class="number">65537</span> )</span><br><span class="line">	&#123;</span><br><span class="line">	  kfree(babydev_struct.device_buf);</span><br><span class="line">	  babydev_struct.device_buf = kmalloc(v4,<span class="number">0x24000C0</span>);</span><br><span class="line">	  babydev_struct.device_buf_len = v4;</span><br><span class="line">	  printk(<span class="string">&quot;alloc done\n&quot;</span>);</span><br><span class="line">	  <span class="keyword">return</span> <span class="number">0LL</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span></span><br><span class="line">	&#123;</span><br><span class="line">	  printk(<span class="string">&quot;defalut:arg is %ld&quot;</span>,arg);</span><br><span class="line">	  <span class="keyword">return</span> <span class="number">-22</span>;</span><br><span class="line">	&#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">file_operations</span> <span class="title">baby_fops</span> =</span> &#123;</span><br><span class="line">	.owner = THIS_MODULE,</span><br><span class="line">	.write = babywrite,</span><br><span class="line">	.read = babyread,</span><br><span class="line">	.unlocked_ioctl = babyioctl,</span><br><span class="line">	.open = babyopen,</span><br><span class="line">	.release = babyrelease,</span><br><span class="line">&#125;;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">int</span> <span class="title">babydriver_init</span><span class="params">(<span class="keyword">void</span>)</span> </span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">int</span> v0; </span><br><span class="line">	<span class="keyword">int</span> v1; </span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">device</span> *<span class="title">v2</span>;</span> </span><br><span class="line"></span><br><span class="line">	<span class="keyword">if</span>( alloc_chrdev_region(&amp;babydev_no, <span class="number">0</span>, <span class="number">1</span>, <span class="string">&quot;babydev&quot;</span>) &gt;= <span class="number">0</span> )&#123;		<span class="comment">// 申请一个主设备号</span></span><br><span class="line">		cdev_init(&amp;cdev_0, &amp;baby_fops);									<span class="comment">// 初始化字符设备cdev结构体，并建立其与操作方法集的关系</span></span><br><span class="line">		cdev_0.owner = THIS_MODULE;</span><br><span class="line">		test_major = MAJOR(babydev_no);</span><br><span class="line">		test_minor = MINOR(babydev_no);</span><br><span class="line">		printk(<span class="string">&quot;[+] test_major: %d ; test_minor: %d \n&quot;</span>,test_major,test_minor);</span><br><span class="line">		v1 = cdev_add(&amp;cdev_0, babydev_no, <span class="number">1</span>);							<span class="comment">// 将字符设备添加到系统中</span></span><br><span class="line">		<span class="keyword">if</span> ( v1 &gt;= <span class="number">0</span> )&#123;</span><br><span class="line">			babydev_class = class_create(THIS_MODULE, <span class="string">&quot;babydev_class&quot;</span>);			<span class="comment">// 创建一个class结构体</span></span><br><span class="line">			<span class="keyword">if</span> ( babydev_class )&#123;</span><br><span class="line">				v2 = device_create(babydev_class, <span class="number">0</span>, MKDEV(test_major,<span class="number">0</span>), <span class="number">0</span>, <span class="string">&quot;babydev&quot;</span>);		<span class="comment">// 自动创建设备节点</span></span><br><span class="line">				<span class="keyword">if</span> ( v2 ) <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">				printk(<span class="string">&quot;create device failed&quot;</span>);</span><br><span class="line">				class_destroy(babydev_class);</span><br><span class="line">			&#125;<span class="keyword">else</span>&#123;</span><br><span class="line">				printk(<span class="string">&quot;create class failed&quot;</span>);</span><br><span class="line">			&#125;</span><br><span class="line">			cdev_del(&amp;cdev_0);</span><br><span class="line">		&#125; <span class="keyword">else</span>&#123;</span><br><span class="line">			printk(<span class="string">&quot;cdev init failed&quot;</span>);</span><br><span class="line">		&#125;</span><br><span class="line">		unregister_chrdev_region(babydev_no, <span class="number">1</span>);</span><br><span class="line">		<span class="keyword">return</span> v1;</span><br><span class="line">	&#125;</span><br><span class="line">	printk(<span class="string">&quot;alloc_chrdev_region failed&quot;</span>);</span><br><span class="line">	<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">babydriver_exit</span><span class="params">(<span class="keyword">void</span>)</span> </span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  device_destroy(babydev_class, babydev_no);		<span class="comment">// 删除设备</span></span><br><span class="line">  class_destroy(babydev_class);						<span class="comment">// 删除类</span></span><br><span class="line">  cdev_del(&amp;cdev_0);								<span class="comment">// 删除字符设备</span></span><br><span class="line">  unregister_chrdev_region(babydev_no, <span class="number">1</span>);			<span class="comment">// 注销设备号</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">module_init(babydriver_init);</span><br><span class="line">module_exit(babydriver_exit);</span><br></pre></td></tr></table></div></figure>
+<p>编译生成babydriver.ko</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">make</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h1 id="测试运行"   >
+          <a href="#测试运行" class="heading-link"><i class="fas fa-link"></i></a><a href="#测试运行" class="headerlink" title="测试运行"></a>测试运行</h1>
+      <p>在<code>_install</code>目录下，准备好漏洞ko和对应的利用程序，exp参考<a href="https://blingblingxuanxuan.github.io/2022/08/28/CISCN2017-babydriver/">第一道内核pwn-CISCN2017-babydriver</a>。并在<code>/init</code>中添加对驱动ko的设置。最后，重打包生成cpio。</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/sh</span></span><br><span class="line"><span class="built_in">echo</span> <span class="string">&quot;&#123;==DBG==&#125; INIT SCRIPT&quot;</span></span><br><span class="line">mkdir /tmp</span><br><span class="line">mount -t proc none /proc</span><br><span class="line">mount -t sysfs none /sys</span><br><span class="line">mount -t debugfs none /sys/kernel/debug</span><br><span class="line">mount -t tmpfs none /tmp</span><br><span class="line">insmod /babydriver.ko           <span class="comment"># load ko</span></span><br><span class="line">mdev -s                         <span class="comment"># We need this to find /dev/sda later</span></span><br><span class="line">chmod 777 /dev/babydev</span><br><span class="line"><span class="built_in">echo</span> -e <span class="string">&quot;&#123;==DBG==&#125; Boot took <span class="subst">$(cut -d&#x27; &#x27; -f1 /proc/uptime)</span> seconds&quot;</span></span><br><span class="line">setsid /bin/cttyhack setuidgid 1000 /bin/sh             <span class="comment">#normal user</span></span><br><span class="line"><span class="comment">#exec /bin/sh                                           #root</span></span><br><span class="line"></span><br><span class="line">umount /proc</span><br><span class="line">umount /sys/kernel/debug</span><br><span class="line">umount /sys</span><br><span class="line">umount /tmp</span><br><span class="line">poweroff -d 0  -f</span><br></pre></td></tr></table></div></figure>
+<p>启动命令：</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">qemu-system-x86_64 -initrd rootfs.cpio -kernel bzImage -append <span class="string">&#x27;console=ttyS0 root=/dev/ram oops=panic panic=1&#x27;</span> -monitor /dev/null -m 128M --nographic</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h1 id="调试方法"   >
+          <a href="#调试方法" class="heading-link"><i class="fas fa-link"></i></a><a href="#调试方法" class="headerlink" title="调试方法"></a>调试方法</h1>
+      <p>经过上面的步骤，我们有了内核镜像bzImage、文件系统rootfs.cpio、漏洞模块babydriver.ko、以及带调试信息的vmlinux。因此，我们可以方便地对内核进行调试，这里汇总两个我目前了解到的调试方法。一种是kernel pwn常用的gdb调试，可以精确调试每一行汇编内容。另一种是源码调试，常用于开发场景，便于c语言级别的流程跟踪。</p>
+
+        <h2 id="二进制调试-gdb"   >
+          <a href="#二进制调试-gdb" class="heading-link"><i class="fas fa-link"></i></a><a href="#二进制调试-gdb" class="headerlink" title="二进制调试 - gdb"></a>二进制调试 - gdb</h2>
+      <p>安装好gdb或gdb插件（peda/gef/pwndbg）后，开启两个窗口，一个窗口运行qemu，另一个窗口运行gdb并加载符号文件。</p>
+<ol>
+<li><p>窗口1</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">qemu-system-x86_64 -initrd rootfs.cpio -kernel bzImage -append <span class="string">&#x27;console=ttyS0 root=/dev/ram oops=panic panic=1&#x27;</span> -monitor /dev/null -m 128M --nographic -S -s</span><br></pre></td></tr></table></div></figure></li>
+<li><p>窗口2</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">gdb</span><br><span class="line">pwndbg&gt; file .&#x2F;vmlinux</span><br><span class="line">pwndbg&gt; target remote :1234</span><br><span class="line">pwndbg&gt; add-symbol-file .&#x2F;xxx.ko 0xffffffffa0000000</span><br><span class="line">pwndbg&gt; b start_kernel</span><br><span class="line">pwndbg&gt; c</span><br></pre></td></tr></table></div></figure>
+
+
+</li>
+</ol>
+
+        <h2 id="源码调试-vscode"   >
+          <a href="#源码调试-vscode" class="heading-link"><i class="fas fa-link"></i></a><a href="#源码调试-vscode" class="headerlink" title="源码调试 - vscode"></a>源码调试 - vscode</h2>
+      <p>待调试内核文件及编译环境在一台ubuntu中，vscode运行在windows中。为了在windows侧调试ubuntu中的目标，需要先配置好两台电脑的环境。</p>
+<p>参考文章推荐：</p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://cloud.tencent.com/developer/article/1726411" >解决VScode配置远程调试Linux程序的问题</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/105069730" >手把手教你利用VS Code+Qemu+GDB调试Linux内核</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h3 id="准备"   >
+          <a href="#准备" class="heading-link"><i class="fas fa-link"></i></a><a href="#准备" class="headerlink" title="准备"></a>准备</h3>
+      <ol>
+<li><p>linux侧安装好gdb、gdbserver以及openssh-server</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">sudo apt update</span><br><span class="line">sudo apt install gdb</span><br><span class="line">sudo apt install gdbserver</span><br><span class="line">sudo apt install openssh-server</span><br></pre></td></tr></table></div></figure></li>
+<li><p>windows侧安装好vscode及插件</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">安装好vscode后安装如下两个插件：</span><br><span class="line">	Remote Development插件</span><br><span class="line">	C&#x2F;C++插件</span><br></pre></td></tr></table></div></figure></li>
+<li><p>配置vscode使用密钥文件连接ubuntu</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">linux侧放入公钥文件至~&#x2F;.ssh&#x2F;authorized_keys</span><br><span class="line">windows侧私钥文件在C:\Users\xxx\.ssh\id_rsa</span><br><span class="line"></span><br><span class="line">windows的vscode中ssh bling@192.168.133.155，设置好config后，刷新SSH，选中目标ip连接到远程</span><br><span class="line"></span><br><span class="line">给远程安装C&#x2F;C++插件，然后就可以打开远程待调试的文件夹</span><br></pre></td></tr></table></div></figure>
+
+
+</li>
+</ol>
+
+        <h3 id="配置"   >
+          <a href="#配置" class="heading-link"><i class="fas fa-link"></i></a><a href="#配置" class="headerlink" title="配置"></a>配置</h3>
+      <p>打开待调试的文件夹后，在文件夹下新建<code>.vscode/launch.json</code>，并填入如下内容。</p>
+<figure class="highlight json"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    <span class="attr">&quot;version&quot;</span>: <span class="string">&quot;0.2.0&quot;</span>,</span><br><span class="line">    <span class="attr">&quot;configurations&quot;</span>: [</span><br><span class="line">        &#123;</span><br><span class="line">            <span class="attr">&quot;name&quot;</span>: <span class="string">&quot;linux4.4.72-debug&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;type&quot;</span>: <span class="string">&quot;cppdbg&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;request&quot;</span>: <span class="string">&quot;launch&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;miDebuggerServerAddress&quot;</span>: <span class="string">&quot;127.0.0.1:1234&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;program&quot;</span>: <span class="string">&quot;$&#123;workspaceFolder&#125;/vmlinux&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;args&quot;</span>: [],</span><br><span class="line">            <span class="attr">&quot;stopAtEntry&quot;</span>: <span class="literal">false</span>,</span><br><span class="line">            <span class="attr">&quot;cwd&quot;</span>: <span class="string">&quot;$&#123;workspaceFolder&#125;&quot;</span>,</span><br><span class="line">            <span class="attr">&quot;environment&quot;</span>: [],</span><br><span class="line">            <span class="attr">&quot;externalConsole&quot;</span>: <span class="literal">false</span>,</span><br><span class="line">            <span class="attr">&quot;logging&quot;</span>: &#123;</span><br><span class="line">                <span class="attr">&quot;engineLogging&quot;</span>: <span class="literal">false</span></span><br><span class="line">            &#125;,</span><br><span class="line">            <span class="attr">&quot;MIMode&quot;</span>: <span class="string">&quot;gdb&quot;</span>,</span><br><span class="line">        &#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>然后linux侧让qemu以调试模式运行并处于等待，windows侧vscode中设置断点后F5连接过去，即可开始源码调试。</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># linux侧</span></span><br><span class="line">qemu-system-x86_64 -initrd rootfs.cpio -kernel bzImage -append <span class="string">&#x27;console=ttyS0 root=/dev/ram oops=panic panic=1&#x27;</span> -monitor /dev/null -m 128M --nographic -S -s</span><br><span class="line"></span><br><span class="line"><span class="comment"># windows侧，在代码中下好断点，F5开始调试</span></span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h3 id="问题"   >
+          <a href="#问题" class="heading-link"><i class="fas fa-link"></i></a><a href="#问题" class="headerlink" title="问题"></a>问题</h3>
+      <p><strong>出现错误</strong>：ubuntu16.04上的qemu版本太低，导致gdb调试出现<code>Remote &#39;g&#39; packet reply is too long: ...</code>的问题。</p>
+<p><strong>解决方法</strong>：</p>
+<ol>
+<li><p>在ubuntu20.04中编译静态qemu</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">sudo apt install libpixman-1-dev</span><br><span class="line">wget https://download.qemu.org/qemu-4.2.0.tar.xz</span><br><span class="line">tar xJf qemu-4.2.0.tar.xz </span><br><span class="line"><span class="built_in">cd</span> qemu-4.2.0/</span><br><span class="line">mkdir build</span><br><span class="line"><span class="built_in">cd</span> build</span><br><span class="line">./configure --static			<span class="comment"># 指定静态编译</span></span><br><span class="line">make -j4						<span class="comment"># 默认编译所有架构</span></span><br></pre></td></tr></table></div></figure>
+<p>如果要编译某个特定架构的，</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">./configure --<span class="built_in">help</span> | grep <span class="string">&quot;target-list=LIST&quot;</span> -A20		<span class="comment"># 查看支持哪些架构</span></span><br><span class="line"><span class="comment">#  --target-list=LIST       set target list (default: build everything)</span></span><br><span class="line"><span class="comment">#                           Available targets: aarch64-softmmu alpha-softmmu </span></span><br><span class="line"><span class="comment">#                           arm-softmmu cris-softmmu hppa-softmmu i386-softmmu </span></span><br><span class="line"><span class="comment">#                           lm32-softmmu m68k-softmmu microblaze-softmmu </span></span><br><span class="line"><span class="comment">#                           microblazeel-softmmu mips-softmmu mips64-softmmu </span></span><br><span class="line"><span class="comment">#                           mips64el-softmmu mipsel-softmmu moxie-softmmu </span></span><br><span class="line"><span class="comment">#                           nios2-softmmu or1k-softmmu ppc-softmmu ppc64-softmmu </span></span><br><span class="line"><span class="comment">#                           riscv32-softmmu riscv64-softmmu s390x-softmmu </span></span><br><span class="line"><span class="comment">#                           sh4-softmmu sh4eb-softmmu sparc-softmmu </span></span><br><span class="line"><span class="comment">#                           sparc64-softmmu tricore-softmmu unicore32-softmmu </span></span><br><span class="line"><span class="comment">#                           x86_64-softmmu xtensa-softmmu xtensaeb-softmmu </span></span><br><span class="line"><span class="comment">#                           aarch64-linux-user aarch64_be-linux-user </span></span><br><span class="line"><span class="comment">#                           alpha-linux-user arm-linux-user armeb-linux-user </span></span><br><span class="line"><span class="comment">#                           cris-linux-user hppa-linux-user i386-linux-user </span></span><br><span class="line"><span class="comment">#                           m68k-linux-user microblaze-linux-user </span></span><br><span class="line"><span class="comment">#                           microblazeel-linux-user mips-linux-user </span></span><br><span class="line"><span class="comment">#                           mips64-linux-user mips64el-linux-user </span></span><br><span class="line"><span class="comment">#                           mipsel-linux-user mipsn32-linux-user </span></span><br><span class="line"><span class="comment">#                           mipsn32el-linux-user nios2-linux-user </span></span><br><span class="line"><span class="comment">#                           or1k-linux-user ppc-linux-user ppc64-linux-user </span></span><br><span class="line"><span class="comment">#                           ppc64abi32-linux-user ppc64le-linux-user </span></span><br><span class="line">./configure --target-list=x86_64-softmmu --static			<span class="comment"># 假如仅编译x86_64架构的</span></span><br><span class="line">make -j4</span><br></pre></td></tr></table></div></figure></li>
+<li><p>拷贝对应的文件和文件夹到ubuntu16.04中</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">qemu-4.2.0/build/x86_64-softmmu/qemu-system-x86_64	<span class="comment"># 文件</span></span><br><span class="line">qemu-4.2.0/pc-bios								<span class="comment"># 整个文件夹</span></span><br></pre></td></tr></table></div></figure></li>
+<li><p>在ubuntu16.04中使用静态编译的4.2.0版本qemu运行kernel</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">./qemu-system-x86_64 -initrd rootfs.cpio -kernel bzImage -append <span class="string">&#x27;console=ttyS0 root=/dev/ram oops=panic panic=1&#x27;</span> -monitor /dev/null -m 64M --nographic -L ./pc-bios/ -S -s</span><br><span class="line"><span class="comment"># 通过-L指定pc-bios目录，使用其中的bios-256k.bin等文件启动系统</span></span><br></pre></td></tr></table></div></figure>
+
+</li>
+</ol>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="http://blingblingxuanxuan.github.io">blingbling</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="http://blingblingxuanxuan.github.io/2022/12/25/22-12-15-ways-to-debug-linuxkernel/">http://blingblingxuanxuan.github.io/2022/12/25/22-12-15-ways-to-debug-linuxkernel/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/linux-kernel/">linux kernel</a></span></div><div class="post-share"><div class="social-share" data-sites="qzone, qq, weibo, wechat, douban, linkedin, facebook, twitter, google">Share to: </div></div><nav class="post-paginator paginator"><div class="paginator-next"><a class="paginator-next__link" href="/2022/12/13/22-12-13-RCTF-ezatm/"><span class="paginator-prev__text">RCTF2022 PWN ezatm</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BC%96%E8%AF%91Linux-Kernel"><span class="toc-number">1.</span> <span class="toc-text">
+          编译Linux Kernel</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AF%B4%E6%98%8E"><span class="toc-number">1.1.</span> <span class="toc-text">
+          说明</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BE%8B%E5%AD%90"><span class="toc-number">1.2.</span> <span class="toc-text">
+          例子</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BC%96%E8%AF%91busybox"><span class="toc-number">2.</span> <span class="toc-text">
+          编译busybox</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BC%96%E8%AF%91%E6%BC%8F%E6%B4%9Eko"><span class="toc-number">3.</span> <span class="toc-text">
+          编译漏洞ko</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%B5%8B%E8%AF%95%E8%BF%90%E8%A1%8C"><span class="toc-number">4.</span> <span class="toc-text">
+          测试运行</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%B0%83%E8%AF%95%E6%96%B9%E6%B3%95"><span class="toc-number">5.</span> <span class="toc-text">
+          调试方法</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E8%BF%9B%E5%88%B6%E8%B0%83%E8%AF%95-gdb"><span class="toc-number">5.1.</span> <span class="toc-text">
+          二进制调试 - gdb</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%BA%90%E7%A0%81%E8%B0%83%E8%AF%95-vscode"><span class="toc-number">5.2.</span> <span class="toc-text">
+          源码调试 - vscode</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%87%86%E5%A4%87"><span class="toc-number">5.2.1.</span> <span class="toc-text">
+          准备</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE"><span class="toc-number">5.2.2.</span> <span class="toc-text">
+          配置</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%97%AE%E9%A2%98"><span class="toc-number">5.2.3.</span> <span class="toc-text">
+          问题</span></a></li></ol></li></ol></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/uploads/zhishi1.jpg" alt="avatar"></div></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/blingblingxuanxuan" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">54</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">12</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">34</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2022</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>blingbling</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.3.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon" data-popover-pos="up" data-popover="访问人数"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon" data-popover-pos="up" data-popover="浏览总量"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div><div>Just follow your heart, and keep smiling.</div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/canvas-nest.js@1.0.1/dist/canvas-nest.min.js" color="0,0,0" opacity="0.6" count="99" zIndex="-1"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/js/social-share.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>
