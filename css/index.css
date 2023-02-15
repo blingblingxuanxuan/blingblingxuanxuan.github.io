@@ -682,7 +682,7 @@ body::after {
   margin: 0 auto;
   padding: 20px;
   width: 100%;
-  font-size: 15px;
+  font-size: 16px;
 }
 .content-wrap {
   width: calc(100% - 380px);
@@ -2791,12 +2791,12 @@ a.fancybox {
   content: '|';
   margin: 0 10px;
 }
-@media (min-width: 1320px) {
+@media (min-width: 1420px) {
   .header-nav-inner {
-    width: 1320px;
+    width: 1420px;
   }
   .main-inner {
-    width: 1320px;
+    width: 1420px;
   }
 }
 @media (min-width: 991.98px) {
