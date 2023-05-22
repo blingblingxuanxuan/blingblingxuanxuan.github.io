@@ -1,0 +1,472 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="简单记录">
+<meta property="og:type" content="article">
+<meta property="og:title" content="linux namespace、cgroup及capabilities">
+<meta property="og:url" content="http://blingblingxuanxuan.github.io/2023/05/23/230523-cgroup-namespace/index.html">
+<meta property="og:site_name" content="blingbling&#39;s blog">
+<meta property="og:description" content="简单记录">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-05-22T19:13:32.000Z">
+<meta property="article:modified_time" content="2023-05-22T19:17:20.588Z">
+<meta property="article:author" content="blingbling">
+<meta property="article:tag" content="namespace">
+<meta property="article:tag" content="cgroup">
+<meta property="article:tag" content="capabilities">
+<meta name="twitter:card" content="summary"><title>linux namespace、cgroup及capabilities | blingbling's blog</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2023/05/23/230523-cgroup-namespace/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/css/share.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"80px","tocMaxDepth":3},
+  header: {"enable":true,"showOnPost":false,"scrollDownIcon":true},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"dark","wordWrap":false},
+  reward: false,
+  fancybox: true,
+  zoomImage: undefined,
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: undefined,
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner header-inner--height header-inner--bgcolor"><nav class="header-nav header-nav--sticky"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/about/"><span class="header-nav-menu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-menu-item__text">关于</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/friends/"><span class="header-nav-menu-item__icon"><i class="fas fa-thumbs-up"></i></span><span class="header-nav-menu-item__text">友链</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">linux namespace、cgroup及capabilities</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2023-05-23</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2023-05-23</span></span></div></header><div class="post-body"><p>做内核漏洞利用的时候，经常需要用到切换namespace的操作。比如普通用户执行<code>syscall(__NR_fsopen, &quot;cgroup&quot;, 0);</code>时会报错“Operation not permitted”，而使用<code>unshare</code>创建一个新的namespace后便可以成功执行。</p>
+<p>一直不明白它背后的原理，于是抽空了解一下namespace和cgroup。</p>
+<p>namespace和cgroup都是linux内核的特性，可以用它们来实现容器，现在最常用的docker就是基于它们的。</p>
+
+        <h1 id="cgroup"   >
+          <a href="#cgroup" class="heading-link"><i class="fas fa-link"></i></a><a href="#cgroup" class="headerlink" title="cgroup"></a>cgroup</h1>
+      <p>cgroup（control group）是linux内核的一个特性，它可以用于限制、计算、隔离进程组对计算机资源的使用（如CPU、memory、disk I/O、network等）。</p>
+<p>cgroup有如下四个功能：</p>
+<ol>
+<li>资源限制（Resource limits）：限制进程组对某一特定资源（CPU，disk，或network）的使用量</li>
+<li>优先级（Prioritization）：通过给某个cgroup中的进程分配多一些资源（相比于其他cgroup），从而提高优先级</li>
+<li>审计（Accounting）：记录进程/进程组使用的资源量</li>
+<li>控制（Control）：进程组控制，如可以使用freezer将进程组挂起或恢复</li>
+</ol>
+<p>cgroup是容器（containers）的一个重要组成部分，因为容器中通常会运行多个进程，这些进程通常需要一并控制。</p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.grant.pizza/blog/understanding-cgroups/" >Understanding cgroups</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>以 cpu cgroup为例，展示了如何设置cgroup。总结如下：</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br></pre></td><td class="code"><pre><span class="line">$ cat /proc/156009/cgroup 			<span class="comment"># 查看进程所属cgroup</span></span><br><span class="line">13:rdma:/</span><br><span class="line">12:pids:/user.slice/user-1000.slice/user@1000.service</span><br><span class="line">11:misc:/</span><br><span class="line">10:freezer:/</span><br><span class="line">9:devices:/user.slice</span><br><span class="line">8:perf_event:/</span><br><span class="line">7:blkio:/user.slice</span><br><span class="line">6:cpuset:/</span><br><span class="line">5:net_cls,net_prio:/</span><br><span class="line">4:cpu,cpuacct:/user.slice</span><br><span class="line">3:hugetlb:/</span><br><span class="line">2:memory:/user.slice/user-1000.slice/user@1000.service</span><br><span class="line">1:name=systemd:/user.slice/user-1000.slice/user@1000.service/apps.slice/apps-org.gnome.Terminal.slice/vte-spawn-22435931-24c6-4399-b2b0-31b0335ff349.scope</span><br><span class="line">0::/user.slice/user-1000.slice/user@1000.service/apps.slice/apps-org.gnome.Terminal.slice/vte-spawn-22435931-24c6-4399-b2b0-31b0335ff349.scope</span><br><span class="line"></span><br><span class="line">$ ls -al /sys/fs/cgroup		<span class="comment"># 查看cgroup文件系统，目录下每个目录代表一个cgroup类型。每一个cgroup类都遵循层级结构</span></span><br><span class="line">total 0</span><br><span class="line">drwxr-xr-x 16 root root 400 4月  30 05:48 .</span><br><span class="line">drwxr-xr-x 11 root root   0 4月  30 05:48 ..</span><br><span class="line">dr-xr-xr-x  6 root root   0 4月  30 05:48 blkio			<span class="comment"># 限制进程的块设备io</span></span><br><span class="line">lrwxrwxrwx  1 root root  11 4月  30 05:48 cpu -&gt; cpu,cpuacct		<span class="comment"># 限制进程的cpu使用率</span></span><br><span class="line">lrwxrwxrwx  1 root root  11 4月  30 05:48 cpuacct -&gt; cpu,cpuacct		</span><br><span class="line">dr-xr-xr-x  6 root root   0 4月  30 05:48 cpu,cpuacct	</span><br><span class="line">dr-xr-xr-x  3 root root   0 4月  30 05:48 cpuset</span><br><span class="line">dr-xr-xr-x  7 root root   0 4月  30 05:48 devices		<span class="comment"># 控制进程能够访问某些设备</span></span><br><span class="line">dr-xr-xr-x  4 root root   0 4月  30 05:48 freezer		<span class="comment"># 挂起或恢复cgroups中的进程</span></span><br><span class="line">dr-xr-xr-x  3 root root   0 4月  30 05:48 hugetlb</span><br><span class="line">dr-xr-xr-x  6 root root   0 4月  30 05:48 memory			<span class="comment"># 限制进程的内存使用量</span></span><br><span class="line">dr-xr-xr-x  2 root root   0 4月  30 05:48 misc</span><br><span class="line">lrwxrwxrwx  1 root root  16 4月  30 05:48 net_cls -&gt; net_cls,net_prio	<span class="comment"># 标记cgroups中进程的网络数据包</span></span><br><span class="line">dr-xr-xr-x  3 root root   0 4月  30 05:48 net_cls,net_prio</span><br><span class="line">lrwxrwxrwx  1 root root  16 4月  30 05:48 net_prio -&gt; net_cls,net_prio</span><br><span class="line">dr-xr-xr-x  3 root root   0 4月  30 05:48 perf_event</span><br><span class="line">dr-xr-xr-x  6 root root   0 4月  30 05:48 pids</span><br><span class="line">dr-xr-xr-x  3 root root   0 4月  30 05:48 rdma</span><br><span class="line">dr-xr-xr-x  6 root root   0 4月  30 05:48 systemd</span><br><span class="line">dr-xr-xr-x  6 root root   0 5月   1 21:31 unified</span><br><span class="line"></span><br><span class="line">$ <span class="built_in">cd</span> cpu		</span><br><span class="line">$ ls -al			<span class="comment"># /sys/fs/cgroup/cpu目录下（相当于根cgroup），存放着进程约束配置文件，及子cgroup（如docker，user.slice等，在子cgroup中还可以继续创建子cgroup。子cgroup能占用的资源不大于父级cgroup）</span></span><br><span class="line">total 0</span><br><span class="line">dr-xr-xr-x   6 root root   0 4月  30 05:48 .</span><br><span class="line">drwxr-xr-x  16 root root 400 4月  30 05:48 ..</span><br><span class="line">-rw-r--r--   1 root root   0 5月  21 12:58 cgroup.clone_children</span><br><span class="line">-rw-r--r--   1 root root   0 4月  30 05:48 cgroup.procs</span><br><span class="line">-r--r--r--   1 root root   0 5月  21 12:58 cgroup.sane_behavior</span><br><span class="line">-r--r--r--   1 root root   0 5月  21 12:58 cpuacct.stat</span><br><span class="line">-rw-r--r--   1 root root   0 5月  21 12:58 cpuacct.usage</span><br><span class="line">-r--r--r--   1 root root   0 5月  21 12:58 cpuacct.usage_all</span><br><span class="line">-r--r--r--   1 root root   0 5月  21 12:58 cpuacct.usage_percpu</span><br><span class="line">-r--r--r--   1 root root   0 5月  21 12:58 cpuacct.usage_percpu_sys</span><br><span class="line">-r--r--r--   1 root root   0 5月  21 12:58 cpuacct.usage_percpu_user</span><br><span class="line">-r--r--r--   1 root root   0 5月  21 12:58 cpuacct.usage_sys</span><br><span class="line">-r--r--r--   1 root root   0 5月  21 12:58 cpuacct.usage_user</span><br><span class="line">-rw-r--r--   1 root root   0 5月  21 12:58 cpu.cfs_burst_us</span><br><span class="line">-rw-r--r--   1 root root   0 5月  21 12:58 cpu.cfs_period_us</span><br><span class="line">-rw-r--r--   1 root root   0 4月  30 05:48 cpu.cfs_quota_us</span><br><span class="line">-rw-r--r--   1 root root   0 5月  21 12:58 cpu.idle</span><br><span class="line">-rw-r--r--   1 root root   0 4月  30 05:48 cpu.shares</span><br><span class="line">-r--r--r--   1 root root   0 5月  21 12:58 cpu.stat</span><br><span class="line">drwxr-xr-x   3 root root   0 5月   1 21:31 docker</span><br><span class="line">drwxr-xr-x   2 root root   0 5月   4 18:55 init.scope</span><br><span class="line">-rw-r--r--   1 root root   0 5月  21 12:58 notify_on_release</span><br><span class="line">-rw-r--r--   1 root root   0 5月  21 12:58 release_agent</span><br><span class="line">drwxr-xr-x 116 root root   0 4月  30 05:48 system.slice</span><br><span class="line">-rw-r--r--   1 root root   0 5月  21 12:58 tasks</span><br><span class="line">drwxr-xr-x   2 root root   0 4月  30 05:48 user.slice</span><br><span class="line"></span><br><span class="line">$ cat tasks				<span class="comment"># 查看当前层级cgroup中包含的进程号</span></span><br><span class="line"></span><br><span class="line">$ sudo mkdir cgroup_test			<span class="comment"># 使用mkdir就可以创建一个子级cgroup</span></span><br><span class="line">$ <span class="built_in">cd</span> cgroup_test</span><br><span class="line">$ sudo <span class="built_in">echo</span> 1234 &gt; tasks			<span class="comment"># 添加1234号进程到新创建的cgroup中</span></span><br><span class="line">$ <span class="built_in">cd</span> ../</span><br><span class="line">$ sudo rmdir cgroup_test			<span class="comment"># 删除创建的cgroup</span></span><br></pre></td></tr></table></div></figure>
+<p>关于cgroup里的一些概念，可以参考：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.csdn.net/chen_haoren/article/details/108773459" >Cgroup是什么(相关概念、功能、作用、特点、怎么用）</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h1 id="namespace"   >
+          <a href="#namespace" class="heading-link"><i class="fas fa-link"></i></a><a href="#namespace" class="headerlink" title="namespace"></a>namespace</h1>
+      <p>namespace也是linux内核的一个特性，它将内核资源分隔开，一组进程能看到一些资源，而其他组的进程看到的是不同的资源，组与组之间互不干扰，不知道对方的存在。简单来说，namespace就是内核提供的一种进程间资源隔离技术。</p>
+<p>查看进程的namespace信息：</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">$ ls -al /proc/$$/ns        	</span><br><span class="line">total 0</span><br><span class="line">dr-x--x--x 2 bling bling 0 5月  22 21:19 .</span><br><span class="line">dr-xr-xr-x 9 bling bling 0 5月  22 16:22 ..</span><br><span class="line">lrwxrwxrwx 1 bling bling 0 5月  22 23:14 cgroup -&gt; <span class="string">&#x27;cgroup:[4026531835]&#x27;</span></span><br><span class="line">lrwxrwxrwx 1 bling bling 0 5月  22 23:14 ipc -&gt; <span class="string">&#x27;ipc:[4026531839]&#x27;</span></span><br><span class="line">lrwxrwxrwx 1 bling bling 0 5月  22 23:14 mnt -&gt; <span class="string">&#x27;mnt:[4026531841]&#x27;</span></span><br><span class="line">lrwxrwxrwx 1 bling bling 0 5月  22 23:14 net -&gt; <span class="string">&#x27;net:[4026531840]&#x27;</span></span><br><span class="line">lrwxrwxrwx 1 bling bling 0 5月  22 23:14 pid -&gt; <span class="string">&#x27;pid:[4026531836]&#x27;</span></span><br><span class="line">lrwxrwxrwx 1 bling bling 0 5月  22 23:14 pid_for_children -&gt; <span class="string">&#x27;pid:[4026531836]&#x27;</span></span><br><span class="line">lrwxrwxrwx 1 bling bling 0 5月  22 23:14 time -&gt; <span class="string">&#x27;time:[4026531834]&#x27;</span></span><br><span class="line">lrwxrwxrwx 1 bling bling 0 5月  22 23:14 time_for_children -&gt; <span class="string">&#x27;time:[4026531834]&#x27;</span></span><br><span class="line">lrwxrwxrwx 1 bling bling 0 5月  22 23:14 user -&gt; <span class="string">&#x27;user:[4026531837]&#x27;</span></span><br><span class="line">lrwxrwxrwx 1 bling bling 0 5月  22 23:14 uts -&gt; <span class="string">&#x27;uts:[4026531838]&#x27;</span></span><br><span class="line"></span><br></pre></td></tr></table></div></figure>
+<p>以上是ubuntu20.04中的一个namespace示例，一共有8类：</p>
+<div class="table-container"><table>
+<thead>
+<tr>
+<th>namespace名称</th>
+<th>使用时的flag</th>
+<th>意义</th>
+<th>编译选项</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>IPC</td>
+<td>CLONE_NEWIPC</td>
+<td>System V IPC, POSIX message queues信号量，消息队列</td>
+<td>CONFIG_IPC_NS</td>
+</tr>
+<tr>
+<td>Network</td>
+<td>CLONE_NEWNET</td>
+<td>Network devices, stacks, ports, etc.网络设备，协议栈，端口等等</td>
+<td>CONFIG_NET_NS</td>
+</tr>
+<tr>
+<td>Mount</td>
+<td>CLONE_NEWNS</td>
+<td>Mount points挂载点</td>
+<td></td>
+</tr>
+<tr>
+<td>PID</td>
+<td>CLONE_NEWPID</td>
+<td>Process IDs进程号</td>
+<td>CONFIG_PID_NS</td>
+</tr>
+<tr>
+<td>Time</td>
+<td>CLONE_NEWTIME</td>
+<td>时钟</td>
+<td>CONFIG_TIME_NS</td>
+</tr>
+<tr>
+<td>User</td>
+<td>CLONE_NEWUSER</td>
+<td>用户和组 ID</td>
+<td>CONFIG_USER_NS</td>
+</tr>
+<tr>
+<td>UTS</td>
+<td>CLONE_NEWUTS</td>
+<td>系统主机名和 NIS(Network Information Service) 主机名（有时称为域名）</td>
+<td>CONFIG_UTS_NS</td>
+</tr>
+<tr>
+<td>Cgroup</td>
+<td>CLONE_NEWCGROUP</td>
+<td>Cgroup root directory cgroup 根目录</td>
+<td></td>
+</tr>
+</tbody></table></div>
+<p>如何使用？跟namespace相关的系统调用有三个：</p>
+<ol>
+<li><p>clone：创建新的进程并设置namespace</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sched.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">clone</span><span class="params">(<span class="keyword">int</span> (*fn)(<span class="keyword">void</span> *), <span class="keyword">void</span> *child_stack,</span></span></span><br><span class="line"><span class="function"><span class="params">         <span class="keyword">int</span> flags, <span class="keyword">void</span> *arg, ...</span></span></span><br><span class="line"><span class="function"><span class="params">         <span class="comment">/* pid_t *ptid, struct user_desc *tls, pid_t *ctid */</span> )</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 使用示例：</span></span><br><span class="line"><span class="keyword">int</span> pid = clone(childFunc, stackTop, CLONE_NEWPID | SIGCHLD, <span class="string">&quot;child&quot;</span>);</span><br></pre></td></tr></table></div></figure>
+
+</li>
+<li><p>unshare：让当前进程加入新的namespace</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">unshare</span><span class="params">(<span class="keyword">int</span> flags)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 使用示例：</span></span><br><span class="line">unshare(CLONE_NEWPID);</span><br></pre></td></tr></table></div></figure>
+<p>linux命令也有一个unshare，可以直接使用如下命令创建一个namespace。新的user，pid，map成root用户，并mount一个新的proc文件系统</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">unshare --user --pid --map-root-user --mount-proc --fork bash</span><br></pre></td></tr></table></div></figure>
+
+</li>
+<li><p>setns：让进程加入已经存在 namespace</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">setns</span><span class="params">(<span class="keyword">int</span> fd, <span class="keyword">int</span> nstype)</span></span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 使用示例</span></span><br><span class="line">fd = open(<span class="string">&quot;/proc/12425/ns/pid&quot;</span>, O_RDONLY);  </span><br><span class="line">setns(fd, CLONE_NEWPID);</span><br></pre></td></tr></table></div></figure>
+
+
+</li>
+</ol>
+<p>参考文章：</p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://moelove.info/2021/12/10/%E6%90%9E%E6%87%82%E5%AE%B9%E5%99%A8%E6%8A%80%E6%9C%AF%E7%9A%84%E5%9F%BA%E7%9F%B3-namespace-%E4%B8%8A/" >搞懂容器技术的基石： namespace （上）</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://cizixs.com/2017/08/29/linux-namespace/" >docker 容器基础技术：linux namespace 简介</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>更深入的理解：</p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://ifeanyi.co/posts/linux-namespaces-part-1/" >A deep dive into Linux namespaces</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://ifeanyi.co/posts/linux-namespaces-part-2/" >A deep dive into Linux namespaces, part 2</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h2 id="通过namespace判断当前是否在容器中"   >
+          <a href="#通过namespace判断当前是否在容器中" class="heading-link"><i class="fas fa-link"></i></a><a href="#通过namespace判断当前是否在容器中" class="headerlink" title="通过namespace判断当前是否在容器中"></a>通过namespace判断当前是否在容器中</h2>
+      <p>docker逃逸时，exp可能需要判断当前是否还在容器中，可以通过<code>/proc/1/ns/pid</code>来判断。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">char</span> buffer[<span class="number">0x100</span>];</span><br><span class="line">	<span class="keyword">int</span> re = readlink(<span class="string">&quot;/proc/1/ns/pid&quot;</span>, buffer, <span class="number">0x100</span>);</span><br><span class="line">    buffer[re] = <span class="number">0</span>;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;buffer:%s\n&quot;</span>,buffer);</span><br><span class="line">	<span class="keyword">if</span> (<span class="built_in">strcmp</span>(buffer, <span class="string">&quot;pid:[4026531836]&quot;</span>) != <span class="number">0</span>) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;we are in docker\n&quot;</span>);</span><br><span class="line">        <span class="keyword">return</span> <span class="number">-1</span>;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;we are in ubuntu\n&quot;</span>);</span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">// gcc test.c -o test</span></span><br><span class="line"><span class="comment">// sudo ./test</span></span><br></pre></td></tr></table></div></figure>
+
+        <h1 id="capabilities"   >
+          <a href="#capabilities" class="heading-link"><i class="fas fa-link"></i></a><a href="#capabilities" class="headerlink" title="capabilities"></a>capabilities</h1>
+      <p>capabilities是linux系统上比”特权/非特权用户”更细粒度的访问控制机制。</p>
+<p>可执行程序的capabilities有三个集合，用来保存三类capabilities：</p>
+<ol>
+<li>Permitted</li>
+<li>Inheritable</li>
+<li>Effective</li>
+</ol>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">getcap</span> /bin/ping	<span class="comment"># 查看可执行程序的capabilities</span></span><br><span class="line">sudo <span class="built_in">setcap</span> cap_net_admin,cap_net_raw+ep /bin/ping		<span class="comment"># 给程序设置capabilities</span></span><br><span class="line">sudo <span class="built_in">setcap</span> cap_net_admin,cap_net_raw-ep /bin/ping		<span class="comment"># 移除程序的capabilities</span></span><br></pre></td></tr></table></div></figure>
+<p>进程的capabilities有五种集合，：</p>
+<ol>
+<li>Permitted：进程能够使用的capabilities的上限</li>
+<li>Inheritable：创建子进程时会将Inherited capabilities传递下去</li>
+<li>Effective：当前进程执行过程中用到的capabilities，内核检查进程是否可以进行特权操作时，就检查该集合</li>
+<li>Bounding：</li>
+<li>Ambient：</li>
+</ol>
+<p>通过查看<code>/proc/[pid]/status</code>可以获得进程五个capabilities集合的信息：</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">➜  ~ <span class="built_in">echo</span> $$</span><br><span class="line">152301</span><br><span class="line">➜  ~ cat /proc/152301/status</span><br><span class="line"><span class="comment"># ......</span></span><br><span class="line">CapInh:	0000000000000000</span><br><span class="line">CapPrm:	0000000000000000</span><br><span class="line">CapEff:	0000000000000000</span><br><span class="line">CapBnd:	000001ffffffffff		<span class="comment"># 无法阅读，可通过capsh --decode=xxx来解析，如下示例</span></span><br><span class="line">CapAmb:	0000000000000000</span><br><span class="line"><span class="comment"># ......</span></span><br><span class="line">➜  ~ capsh --decode=000001ffffffffff </span><br><span class="line">0x000001ffffffffff=cap_chown,cap_dac_override,cap_dac_read_search,cap_fowner,cap_fsetid,cap_kill,cap_setgid,cap_setuid,cap_setpcap,cap_linux_immutable,cap_net_bind_service,cap_net_broadcast,cap_net_admin,cap_net_raw,cap_ipc_lock,cap_ipc_owner,cap_sys_module,cap_sys_rawio,cap_sys_chroot,cap_sys_ptrace,cap_sys_pacct,cap_sys_admin,cap_sys_boot,cap_sys_nice,cap_sys_resource,cap_sys_time,cap_sys_tty_config,cap_mknod,cap_lease,cap_audit_write,cap_audit_control,cap_setfcap,cap_mac_override,cap_mac_admin,cap_syslog,cap_wake_alarm,cap_block_suspend,cap_audit_read,38,39,40</span><br><span class="line"></span><br><span class="line"><span class="comment"># 其他操作命令</span></span><br><span class="line">capsh --<span class="built_in">print</span>		<span class="comment"># 查看当前shell进程的capabilities</span></span><br><span class="line">getpcaps 1234		<span class="comment"># 获取进程号为1234的进程的capabilities</span></span><br></pre></td></tr></table></div></figure>
+<p>相关系统调用：sys_capget，sys_capset</p>
+<p>参考：</p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.cnblogs.com/sparkdev/p/11417781.html" >Linux Capabilities 简介</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://earthly.dev/blog/intro-to-linux-capabilities/" >An Introduction to Linux Capabilities</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.container-solutions.com/linux-capabilities-why-they-exist-and-how-they-work" >Linux Capabilities: Why They Exist and How They Work</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://0x0916.gitbooks.io/linux-capability/content/example.html" >Capabiltiy 示例</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h1 id="回到问题"   >
+          <a href="#回到问题" class="heading-link"><i class="fas fa-link"></i></a><a href="#回到问题" class="headerlink" title="回到问题"></a>回到问题</h1>
+      <p>看完cgroup和namespace并未解决我一开始的问题。cgroup是控制cpu和内存等资源的，跟能否通过fsopen打开cgroup应该无关。而namespace无论切换到root还是普通用户都能打开cgroup，那为什么正常shell下的普通用户无法打开cgroup呢？</p>
+<p>于是看了下linux的capabilities！</p>
+<p>linux中除了通过user（特权进程/非特权进程）限制权限，还有更细粒度的capabilities。执行一个操作时，当user权限未通过，还会检测进程是否具备对应的capabilities。</p>
+<p>所以有了一个猜测：通过unshare设置当前进程namespace的时候，它一定有了新的capabilities！</p>
+<p>通过以下程序可以证明，执行unshare后，当前进程就有了所有的linux capabilities，所以可以成功执行<code>syscall(__NR_fsopen, &quot;cgroup&quot;, 0);</code></p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// gcc test.c -lcap -o test</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _GNU_SOURCE</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdint.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdarg.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;pthread.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/types.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">undef</span> _POSIX_SOURCE  </span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/capability.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">static</span> <span class="keyword">void</span> <span class="title">die</span><span class="params">(<span class="keyword">const</span> <span class="keyword">char</span> *fmt, ...)</span> </span>&#123;</span><br><span class="line">  va_list params;</span><br><span class="line">  va_start(params, fmt);</span><br><span class="line">  <span class="built_in">vfprintf</span>(<span class="built_in">stderr</span>, fmt, params);</span><br><span class="line">  va_end(params);</span><br><span class="line">  <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line">    <span class="keyword">if</span> (unshare(CLONE_NEWUSER | CLONE_NEWNS)) &#123;</span><br><span class="line">        die(<span class="string">&quot;unshare(CLONE_NEWUSER | CLONE_NEWNS): %m&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (unshare(CLONE_NEWNET)) &#123;</span><br><span class="line">        die(<span class="string">&quot;unshare(CLONE_NEWNET): %m&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">cap_t</span> caps = cap_get_proc(); </span><br><span class="line">    <span class="keyword">ssize_t</span> y = <span class="number">0</span>;  </span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;The process %d was give capabilities %s\n&quot;</span>,(<span class="keyword">int</span>) getpid(), cap_to_text(caps, &amp;y));  </span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> __<span class="title">user_cap_header_struct</span> <span class="title">cap_header_data</span>;</span></span><br><span class="line">    <span class="keyword">cap_user_header_t</span> cap_header = &amp;cap_header_data;</span><br><span class="line"></span><br><span class="line">    <span class="class"><span class="keyword">struct</span> __<span class="title">user_cap_data_struct</span> <span class="title">cap_data_data</span>;</span></span><br><span class="line">    <span class="keyword">cap_user_data_t</span> cap_data = &amp;cap_data_data;</span><br><span class="line"></span><br><span class="line">    cap_header-&gt;pid = getpid();</span><br><span class="line">    cap_header-&gt;version = _LINUX_CAPABILITY_VERSION_1;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (capget(cap_header, cap_data) &lt; <span class="number">0</span>) &#123;</span><br><span class="line">        perror(<span class="string">&quot;Failed capget&quot;</span>);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="built_in">printf</span>(<span class="string">&quot;Cap data CapEff: 0x%x, CapPrm: 0x%x, CapInh: 0x%x \n&quot;</span>,cap_data-&gt;effective, cap_data-&gt;permitted, cap_data-&gt;inheritable);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;   </span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment">执行后输出</span></span><br><span class="line"><span class="comment">➜  ~ ./test                  </span></span><br><span class="line"><span class="comment">The process 162247 was give capabilities =ep</span></span><br><span class="line"><span class="comment">Cap data CapEff: 0xffffffff, CapPrm: 0xffffffff, CapInh: 0x0 </span></span><br><span class="line"><span class="comment">*/</span></span><br></pre></td></tr></table></div></figure>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man3/cap_set_proc.3.html" >cap_get_proc(3)</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://man7.org/linux/man-pages/man2/capset.2.html" >capget(2)</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h1 id="参考文章"   >
+          <a href="#参考文章" class="heading-link"><i class="fas fa-link"></i></a><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://atum.li/2017/04/25/linuxsandbox/" >linux中的容器与沙箱初探</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.nginx.com/blog/what-are-namespaces-cgroups-how-do-they-work/" >What Are Namespaces and cgroups, and How Do They Work?</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="http://blingblingxuanxuan.github.io">blingbling</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="http://blingblingxuanxuan.github.io/2023/05/23/230523-cgroup-namespace/">http://blingblingxuanxuan.github.io/2023/05/23/230523-cgroup-namespace/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/namespace/">namespace</a></span><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/cgroup/">cgroup</a></span><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/capabilities/">capabilities</a></span></div><div class="post-share"><div class="social-share" data-sites="qzone, qq, weibo, wechat, douban, linkedin, facebook, twitter, google">Share to: </div></div><nav class="post-paginator paginator"><div class="paginator-next"><a class="paginator-next__link" href="/2023/05/19/230518-cve-2021-4154/"><span class="paginator-prev__text">CVE-2021-4154漏洞分析及利用</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#cgroup"><span class="toc-number">1.</span> <span class="toc-text">
+          cgroup</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#namespace"><span class="toc-number">2.</span> <span class="toc-text">
+          namespace</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%80%9A%E8%BF%87namespace%E5%88%A4%E6%96%AD%E5%BD%93%E5%89%8D%E6%98%AF%E5%90%A6%E5%9C%A8%E5%AE%B9%E5%99%A8%E4%B8%AD"><span class="toc-number">2.1.</span> <span class="toc-text">
+          通过namespace判断当前是否在容器中</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#capabilities"><span class="toc-number">3.</span> <span class="toc-text">
+          capabilities</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9B%9E%E5%88%B0%E9%97%AE%E9%A2%98"><span class="toc-number">4.</span> <span class="toc-text">
+          回到问题</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%AB%A0"><span class="toc-number">5.</span> <span class="toc-text">
+          参考文章</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/uploads/zhishi1.jpg" alt="avatar"></div></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/blingblingxuanxuan" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">65</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">13</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">37</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2023</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>blingbling</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.3.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon" data-popover-pos="up" data-popover="访问人数"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon" data-popover-pos="up" data-popover="浏览总量"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div><div>Just follow your heart, and keep smiling.</div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/canvas-nest.js@1.0.1/dist/canvas-nest.min.js" color="0,0,0" opacity="0.6" count="99" zIndex="-1"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/js/social-share.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>
