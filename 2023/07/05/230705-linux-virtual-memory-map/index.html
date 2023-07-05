@@ -1,0 +1,409 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/favicon-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/favicon-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="一篇需要慢慢完善的博客，深入理解linux内存管理的虚拟内存分布图（virtual memory map）">
+<meta property="og:type" content="article">
+<meta property="og:title" content="关于linux虚拟内存分布图">
+<meta property="og:url" content="http://blingblingxuanxuan.github.io/2023/07/05/230705-linux-virtual-memory-map/index.html">
+<meta property="og:site_name" content="blingbling&#39;s blog">
+<meta property="og:description" content="一篇需要慢慢完善的博客，深入理解linux内存管理的虚拟内存分布图（virtual memory map）">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2023/07/05/230705-linux-virtual-memory-map/image-20230705003923041.png?size=600">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2023/07/05/230705-linux-virtual-memory-map/image-20230705155603586.png?size=600">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2023/07/05/230705-linux-virtual-memory-map/image-20230705192354954.png?size=600">
+<meta property="article:published_time" content="2023-07-05T12:03:21.000Z">
+<meta property="article:modified_time" content="2023-07-05T12:12:56.796Z">
+<meta property="article:author" content="blingbling">
+<meta property="article:tag" content="linux">
+<meta property="article:tag" content="memory management">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://blingblingxuanxuan.github.io/2023/07/05/230705-linux-virtual-memory-map/image-20230705003923041.png?size=600"><title>关于linux虚拟内存分布图 | blingbling's blog</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2023/07/05/230705-linux-virtual-memory-map/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/css/share.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"80px","tocMaxDepth":3},
+  header: {"enable":true,"showOnPost":false,"scrollDownIcon":true},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"dark","wordWrap":false},
+  reward: false,
+  fancybox: true,
+  zoomImage: undefined,
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: undefined,
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner header-inner--height header-inner--bgcolor"><nav class="header-nav header-nav--sticky"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/about/"><span class="header-nav-menu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-menu-item__text">关于</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/friends/"><span class="header-nav-menu-item__icon"><i class="fas fa-thumbs-up"></i></span><span class="header-nav-menu-item__text">友链</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">关于linux虚拟内存分布图</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2023-07-05</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2023-07-05</span></span></div></header><div class="post-body"><p>前段时间做linux内核pwn时，碰到一个很有意思的虚拟内存区域 —— cpu_entry_area mapping（0xfffffe0000000000~ 0xfffffe7fffffffff）。这个区域未开启随机化，在利用时可以用来：</p>
+<ol>
+<li>泄露内核代码段地址信息，绕过KASLR</li>
+<li>地址空间有可写部分，rop等数据可以布置到该空间</li>
+<li>0xfffffe0000010f58可作为栈迁移的目的地（DB exception stack），需结合硬件断点（hardware breakpoint）和DB异常（debug exception）</li>
+</ol>
+<p>这么强大的一个区域居然从来没关注过，来看看linux官方给出的<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.10/source/Documentation/x86/x86_64/mm.rst" >虚拟内存分布图</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>，会不会还存在一些尚未关注到的危险区域呢？</p>
+<p><img   src="image-20230705003923041.png?size=600" style="width: 600px;"  alt="image-20230705003923041"></p>
+<p>为了了解以上各区间存在的意义及其特性，新起这篇博客专门记录学习过程，一点点更新。</p>
+
+        <h1 id="user-space-virtual-memory"   >
+          <a href="#user-space-virtual-memory" class="heading-link"><i class="fas fa-link"></i></a><a href="#user-space-virtual-memory" class="headerlink" title="user-space virtual memory"></a>user-space virtual memory</h1>
+      <p>用户空间的虚拟内存空间，每个进程都有自己独立的内存空间，struct mm_struct</p>
+
+        <h1 id="LDT-remap-for-PTI"   >
+          <a href="#LDT-remap-for-PTI" class="heading-link"><i class="fas fa-link"></i></a><a href="#LDT-remap-for-PTI" class="headerlink" title="LDT remap for PTI"></a>LDT remap for PTI</h1>
+      
+        <h1 id="direct-mapping-of-all-physical-memory"   >
+          <a href="#direct-mapping-of-all-physical-memory" class="heading-link"><i class="fas fa-link"></i></a><a href="#direct-mapping-of-all-physical-memory" class="headerlink" title="direct mapping of all physical memory"></a>direct mapping of all physical memory</h1>
+      
+        <h1 id="vmalloc-ioremap-space"   >
+          <a href="#vmalloc-ioremap-space" class="heading-link"><i class="fas fa-link"></i></a><a href="#vmalloc-ioremap-space" class="headerlink" title="vmalloc/ioremap space"></a>vmalloc/ioremap space</h1>
+      
+        <h1 id="virtual-memory-map"   >
+          <a href="#virtual-memory-map" class="heading-link"><i class="fas fa-link"></i></a><a href="#virtual-memory-map" class="headerlink" title="virtual memory map"></a>virtual memory map</h1>
+      
+        <h1 id="KASAN-shadow-memory"   >
+          <a href="#KASAN-shadow-memory" class="heading-link"><i class="fas fa-link"></i></a><a href="#KASAN-shadow-memory" class="headerlink" title="KASAN shadow memory"></a>KASAN shadow memory</h1>
+      
+        <h1 id="vaddr-end-for-KASLR"   >
+          <a href="#vaddr-end-for-KASLR" class="heading-link"><i class="fas fa-link"></i></a><a href="#vaddr-end-for-KASLR" class="headerlink" title="vaddr_end for KASLR"></a>vaddr_end for KASLR</h1>
+      
+        <h1 id="cpu-entry-area-mapping"   >
+          <a href="#cpu-entry-area-mapping" class="heading-link"><i class="fas fa-link"></i></a><a href="#cpu-entry-area-mapping" class="headerlink" title="cpu_entry_area mapping"></a>cpu_entry_area mapping</h1>
+      <p>区间：0xfffffe0000000000 ~ 0xfffffe7fffffffff</p>
+<p>大小：2 TB</p>
+<p>随机化：从linux 6.2开始，对cpu_entry_area做了随机化，早期版本无随机化。但未对idt区域随机化，因此，依然可以通过这个位置泄露内核地址。</p>
+<p>内容：存放IDT表和n个 <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.15.103/source/arch/x86/include/asm/cpu_entry_area.h#L90" >struct cpu_entry_area</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>结构体，每个cpu对应一个cpu_entry_area结构体。以linux5.15.119为例，结构体定义如下</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">struct</span> <span class="title">cpu_entry_area</span> &#123;</span></span><br><span class="line">	<span class="keyword">char</span> gdt[PAGE_SIZE];</span><br><span class="line">	</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">entry_stack_page</span> <span class="title">entry_stack_page</span>;</span></span><br><span class="line">	</span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">tss_struct</span> <span class="title">tss</span>;</span></span><br><span class="line">	</span><br><span class="line"><span class="meta">#<span class="meta-keyword">ifdef</span> CONFIG_X86_64</span></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	 * Exception stacks used for IST entries with guard pages.</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">cea_exception_stacks</span> <span class="title">estacks</span>;</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">endif</span></span></span><br><span class="line"></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">debug_store</span> <span class="title">cpu_debug_store</span>;</span></span><br><span class="line"></span><br><span class="line">	<span class="class"><span class="keyword">struct</span> <span class="title">debug_store_buffers</span> <span class="title">cpu_debug_buffers</span>;</span></span><br><span class="line">&#125;;</span><br></pre></td></tr></table></div></figure>
+<p>可以看到，结构体中包含：</p>
+<ul>
+<li>the GDT</li>
+<li>the entry stack ：每个cpu有一个，用于处理用户态到内核的上下文切换。</li>
+<li>the TSS</li>
+<li>the exception stacks ：cpu处理某些中断和异常时会用到这里面的栈，一共有7种类型。对应到tss_struct结构体种的<code>tss-&gt;x86_tss.ist[7]</code>，即Interrupt Stack Table 中断栈表（IST）。</li>
+<li>debug stores and buffers</li>
+</ul>
+<p>该结构体在整个mapping区域布局如下图所示（老版本内核的偏移跟这个不一样，DB_stack\DF_stack等栈大小是0x1000）：</p>
+<p><img   src="image-20230705155603586.png?size=600" style="width: 600px;"  alt="image-20230705155603586"></p>
+<p>在漏洞利用中需要关注的是exception stacks中DB_stack这段，它是内核空间的地址，同时用户态也能将数据布置到上面。用户态通过ptrace为子进程设置硬件断点，并在子进程中触发该硬件断点，便能将此时子进程的寄存器内容压入DB_stack中。</p>
+<p>代码层面如何操作呢？如下代码可将用户态寄存器数据布置到cpu_entry_area的DB stack中</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#<span class="meta-keyword">define</span> _GNU_SOURCE</span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdio.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stdlib.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;unistd.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/user.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;stddef.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/wait.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sys/ptrace.h&gt;</span></span></span><br><span class="line"><span class="meta">#<span class="meta-keyword">include</span> <span class="meta-string">&lt;sched.h&gt;</span></span></span><br><span class="line"></span><br><span class="line"><span class="keyword">pid_t</span> hbp_pid;</span><br><span class="line"><span class="keyword">int</span> status;</span><br><span class="line"><span class="keyword">char</span> buf[<span class="number">0x10</span>];</span><br><span class="line"></span><br><span class="line"><span class="comment">// 创建hardware breakpoint</span></span><br><span class="line"><span class="function"><span class="keyword">void</span> <span class="title">create_hbp</span><span class="params">(<span class="keyword">void</span>* addr)</span>     </span></span><br><span class="line"><span class="function"></span>&#123;</span><br><span class="line">    <span class="comment">//Set DR0: HBP address</span></span><br><span class="line">    <span class="keyword">if</span>(ptrace(PTRACE_POKEUSER,hbp_pid, offsetof(struct user, u_debugreg), addr) == <span class="number">-1</span>) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;Could not create hbp! ptrace dr0: %m\n&quot;</span>);</span><br><span class="line">        kill(hbp_pid,<span class="number">9</span>);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">/* Set DR7: bit 0 enables DR0 breakpoint. Bit 8 ensures the processor stops on the instruction which causes the exception.</span></span><br><span class="line"><span class="comment">     * bits 16,17 means we stop on data read or write. Bits 18,19 say we watch 4 bytes. Why 4 bytes? Well, it&#x27;s convenient to</span></span><br><span class="line"><span class="comment">     * hit 4 DB exceptions per syscall. Why not 8 bytes? Because 4 bytes works fine. */</span></span><br><span class="line">    <span class="keyword">if</span>(ptrace(PTRACE_POKEUSER,hbp_pid, offsetof(struct user, u_debugreg) + <span class="number">56</span>, <span class="number">0xf0101</span>) == <span class="number">-1</span>) &#123;</span><br><span class="line">        <span class="built_in">printf</span>(<span class="string">&quot;Could not create hbp! ptrace dr7: %m\n&quot;</span>);</span><br><span class="line">        kill(hbp_pid,<span class="number">9</span>);</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">int</span> <span class="title">main</span><span class="params">()</span></span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 1. fork a child process</span></span><br><span class="line">    hbp_pid = fork();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 2. child process</span></span><br><span class="line">    <span class="keyword">if</span>(hbp_pid == <span class="number">0</span>)&#123;</span><br><span class="line">        <span class="comment">/* bind cpu */</span></span><br><span class="line">        <span class="keyword">cpu_set_t</span> mask;</span><br><span class="line">        CPU_ZERO(&amp;mask);</span><br><span class="line">        CPU_SET(<span class="number">1</span>,&amp;mask);</span><br><span class="line">        sched_setaffinity(<span class="number">0</span>,<span class="keyword">sizeof</span>(mask),&amp;mask);</span><br><span class="line"></span><br><span class="line">        ptrace(PTRACE_TRACEME,<span class="number">0</span>,<span class="literal">NULL</span>,<span class="literal">NULL</span>);</span><br><span class="line">        raise(SIGSTOP);                         <span class="comment">// 生成一个SIGSTOP信号，当前进程child停止运行</span></span><br><span class="line"></span><br><span class="line">        __asm__(</span><br><span class="line">            <span class="string">&quot;mov r15,   0x15151515;&quot;</span></span><br><span class="line">            <span class="string">&quot;mov r14,   0x14141414;&quot;</span></span><br><span class="line">            <span class="string">&quot;mov r13,   0x13131313;&quot;</span> </span><br><span class="line">            <span class="string">&quot;mov r12,   0x12121212;&quot;</span></span><br><span class="line">            <span class="string">&quot;mov rbp,   0xeeeeeeee;&quot;</span></span><br><span class="line">            <span class="string">&quot;mov rbx,   0xbbbbbbbb;&quot;</span></span><br><span class="line">            <span class="string">&quot;mov r11,   0x11111111;&quot;</span></span><br><span class="line">            <span class="string">&quot;mov r10,   0x10101010;&quot;</span></span><br><span class="line">            <span class="string">&quot;mov r9,    0x99999999;&quot;</span></span><br><span class="line">            <span class="string">&quot;mov r8,    0x88888888;&quot;</span></span><br><span class="line">            <span class="string">&quot;mov rax,   0xaaaaaaaa;&quot;</span></span><br><span class="line">            <span class="string">&quot;mov rcx,   0xcccccccc;&quot;</span></span><br><span class="line">            <span class="string">&quot;mov rdx,   0xdddddddd;&quot;</span></span><br><span class="line">            <span class="string">&quot;mov rsi,   buf;&quot;</span></span><br><span class="line">            <span class="string">&quot;mov rdi,   [rsi];&quot;</span></span><br><span class="line">        );</span><br><span class="line">        <span class="built_in">exit</span>(<span class="number">1</span>);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 3. father process</span></span><br><span class="line">    waitpid(hbp_pid,&amp;status,<span class="number">0</span>);           <span class="comment">// 确定子进程中raise(SIGSTOP)已执行完毕</span></span><br><span class="line"></span><br><span class="line">    create_hbp(buf);</span><br><span class="line"></span><br><span class="line">    ptrace(PTRACE_CONT,hbp_pid,<span class="number">0</span>,<span class="number">0</span>);            </span><br><span class="line">    waitpid(hbp_pid,&amp;status,<span class="number">0</span>);           <span class="comment">// 确定子进程触发到了硬件断点，进入trap</span></span><br><span class="line"></span><br><span class="line">    ptrace(PTRACE_CONT,hbp_pid,<span class="number">0</span>,<span class="number">0</span>);</span><br><span class="line">    waitpid(hbp_pid,&amp;status,<span class="number">0</span>);           <span class="comment">// 确定子进程已退出执行，这个PTRACE_CONT和waitpid可以省略。进入trap后，寄存器信息已带入cpu_entry_area的DB stack中</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 4. enter kernel, get data</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></div></figure>
+<p>以上程序执行完毕后，调试查看内核信息，成功将用户态数据放入DB stack</p>
+<p><img   src="image-20230705192354954.png?size=600" style="width: 600px;"  alt="image-20230705192354954"></p>
+<p>参考：</p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://googleprojectzero.blogspot.com/2022/12/exploiting-CVE-2022-42703-bringing-back-the-stack-attack.html" >P0: Exploiting CVE-2022-42703 - Bringing back the stack attack</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://github.com/pray77/SCTF2023_kernelpwn" >pray77: 跟cpu_entry_area相关的一个题 - sycrop和sycrpg</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://veritas501.github.io/2023_03-22-%E4%B8%80%E7%A7%8D%E5%80%9F%E5%8A%A9%E7%A1%AC%E4%BB%B6%E6%96%AD%E7%82%B9%E7%9A%84%E6%8F%90%E6%9D%83%E6%80%9D%E8%B7%AF%E5%88%86%E6%9E%90/" >veritas501: 一种借助硬件断点的提权思路分析与演示</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="http://sholck.top/archives/20.html" >sholck: cea区域前0x1000空间映射到 IDT table</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://unix.stackexchange.com/a/476777" >stackexchange - what is cpu_entry_area?</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.kernel.org/doc/Documentation/x86/kernel-stacks" >Kernel stacks on x86-64 bit</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+
+        <h1 id="esp-fixup-stacks"   >
+          <a href="#esp-fixup-stacks" class="heading-link"><i class="fas fa-link"></i></a><a href="#esp-fixup-stacks" class="headerlink" title="%esp fixup stacks"></a>%esp fixup stacks</h1>
+      
+        <h1 id="EFI-region-mapping-space"   >
+          <a href="#EFI-region-mapping-space" class="heading-link"><i class="fas fa-link"></i></a><a href="#EFI-region-mapping-space" class="headerlink" title="EFI region mapping space"></a>EFI region mapping space</h1>
+      
+        <h1 id="kernel-text-mapping"   >
+          <a href="#kernel-text-mapping" class="heading-link"><i class="fas fa-link"></i></a><a href="#kernel-text-mapping" class="headerlink" title="kernel text mapping"></a>kernel text mapping</h1>
+      <p>mapped to physical address 0</p>
+
+        <h1 id="module-mapping-space"   >
+          <a href="#module-mapping-space" class="heading-link"><i class="fas fa-link"></i></a><a href="#module-mapping-space" class="headerlink" title="module mapping space"></a>module mapping space</h1>
+      
+        <h1 id="kernel-internal-fixmap-range"   >
+          <a href="#kernel-internal-fixmap-range" class="heading-link"><i class="fas fa-link"></i></a><a href="#kernel-internal-fixmap-range" class="headerlink" title="kernel-internal fixmap range,"></a>kernel-internal fixmap range,</h1>
+      <p>variable size and offset</p>
+
+        <h1 id="legacy-vsyscall-ABI"   >
+          <a href="#legacy-vsyscall-ABI" class="heading-link"><i class="fas fa-link"></i></a><a href="#legacy-vsyscall-ABI" class="headerlink" title="legacy vsyscall ABI"></a>legacy vsyscall ABI</h1>
+      </div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="http://blingblingxuanxuan.github.io">blingbling</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="http://blingblingxuanxuan.github.io/2023/07/05/230705-linux-virtual-memory-map/">http://blingblingxuanxuan.github.io/2023/07/05/230705-linux-virtual-memory-map/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/linux/">linux</a></span><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/memory-management/">memory management</a></span></div><div class="post-share"><div class="social-share" data-sites="qzone, qq, weibo, wechat, douban, linkedin, facebook, twitter, google">Share to: </div></div><nav class="post-paginator paginator"><div class="paginator-prev"><a class="paginator-prev__link" href="/2023/07/05/230705-sctf2023-kernel-pwn-sycrop/"><span class="paginator-prev__icon"><i class="fas fa-angle-left"></i></span><span class="paginator-prev__text">sctf2023 kernel pwn之sycrop</span></a></div><div class="paginator-next"><a class="paginator-next__link" href="/2023/06/19/230619-android-apk/"><span class="paginator-prev__text">电视端常用视频app包名和MainActivity名整理</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#user-space-virtual-memory"><span class="toc-number">1.</span> <span class="toc-text">
+          user-space virtual memory</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#LDT-remap-for-PTI"><span class="toc-number">2.</span> <span class="toc-text">
+          LDT remap for PTI</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#direct-mapping-of-all-physical-memory"><span class="toc-number">3.</span> <span class="toc-text">
+          direct mapping of all physical memory</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#vmalloc-ioremap-space"><span class="toc-number">4.</span> <span class="toc-text">
+          vmalloc&#x2F;ioremap space</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#virtual-memory-map"><span class="toc-number">5.</span> <span class="toc-text">
+          virtual memory map</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#KASAN-shadow-memory"><span class="toc-number">6.</span> <span class="toc-text">
+          KASAN shadow memory</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#vaddr-end-for-KASLR"><span class="toc-number">7.</span> <span class="toc-text">
+          vaddr_end for KASLR</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#cpu-entry-area-mapping"><span class="toc-number">8.</span> <span class="toc-text">
+          cpu_entry_area mapping</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#esp-fixup-stacks"><span class="toc-number">9.</span> <span class="toc-text">
+          %esp fixup stacks</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#EFI-region-mapping-space"><span class="toc-number">10.</span> <span class="toc-text">
+          EFI region mapping space</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#kernel-text-mapping"><span class="toc-number">11.</span> <span class="toc-text">
+          kernel text mapping</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#module-mapping-space"><span class="toc-number">12.</span> <span class="toc-text">
+          module mapping space</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#kernel-internal-fixmap-range"><span class="toc-number">13.</span> <span class="toc-text">
+          kernel-internal fixmap range,</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#legacy-vsyscall-ABI"><span class="toc-number">14.</span> <span class="toc-text">
+          legacy vsyscall ABI</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/uploads/zhishi1.jpg" alt="avatar"></div></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/blingblingxuanxuan" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">68</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">13</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">39</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2023</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>blingbling</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.3.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon" data-popover-pos="up" data-popover="访问人数"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon" data-popover-pos="up" data-popover="浏览总量"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div><div>Just follow your heart, and keep smiling.</div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/npm/canvas-nest.js@1.0.1/dist/canvas-nest.min.js" color="0,0,0" opacity="0.6" count="99" zIndex="-1"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/js/social-share.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>
