@@ -1,0 +1,340 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/leaf-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/leaf-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="arm64 linux 内核中 memcpy 函数对应的汇编代码在 memcpy_template.S 文件中，探索一下具体的拷贝操作是如何执行的呢？">
+<meta property="og:type" content="article">
+<meta property="og:title" content="arm64 linux内核中memcpy是如何运作的？">
+<meta property="og:url" content="http://blingblingxuanxuan.github.io/2023/09/08/230908-arm64-memcpy-template/index.html">
+<meta property="og:site_name" content="blingbling&#39;s blog">
+<meta property="og:description" content="arm64 linux 内核中 memcpy 函数对应的汇编代码在 memcpy_template.S 文件中，探索一下具体的拷贝操作是如何执行的呢？">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2023/09/08/230908-arm64-memcpy-template/image-20230908172757504.png?size=600">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2023/09/08/230908-arm64-memcpy-template/image-20230908172831999.png?size=600">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2023/09/08/230908-arm64-memcpy-template/image-20230908172857815.png?size=600">
+<meta property="article:published_time" content="2023-09-08T09:23:58.000Z">
+<meta property="article:modified_time" content="2023-09-08T09:41:01.852Z">
+<meta property="article:author" content="blingbling">
+<meta property="article:tag" content="linux">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://blingblingxuanxuan.github.io/2023/09/08/230908-arm64-memcpy-template/image-20230908172757504.png?size=600"><title>arm64 linux内核中memcpy是如何运作的？ | blingbling's blog</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2023/09/08/230908-arm64-memcpy-template/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/css/share.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"80px","tocMaxDepth":3},
+  header: {"enable":true,"showOnPost":false,"scrollDownIcon":true},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"light","wordWrap":false},
+  reward: false,
+  fancybox: true,
+  zoomImage: undefined,
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: undefined,
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner header-inner--height header-inner--bgcolor"><nav class="header-nav header-nav--sticky"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/about/"><span class="header-nav-menu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-menu-item__text">关于</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/friends/"><span class="header-nav-menu-item__icon"><i class="fas fa-thumbs-up"></i></span><span class="header-nav-menu-item__text">友链</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">arm64 linux内核中memcpy是如何运作的？</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2023-09-08</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2023-09-08</span></span></div></header><div class="post-body"><p>起因：做某个内核漏洞利用时，需要控制 copy_from_user() 的返回值为类似 0x7e 这种数，于是想当然构造了如下用户态代码</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">char</span>* buf = mmap(<span class="number">0x60000000</span>, <span class="number">0x1000</span>, PROT_READ | PROT_WRITE, MAP_FIXED | MAP_SHARED | MAP_ANONYMOUS, <span class="number">-1</span>, <span class="number">0</span>);</span><br><span class="line"><span class="keyword">char</span>* read_buf = buf + (<span class="number">0x1000</span><span class="number">-0x180</span>);</span><br><span class="line"><span class="keyword">int</span> write_size = <span class="number">0x180</span>+<span class="number">0x7e</span>;</span><br><span class="line">k_stackof_write(read_buf,write_size);        </span><br><span class="line"><span class="comment">// 对应到内核态会执行copy_from_user(k_addr,read_buf,write_size);</span></span><br></pre></td></tr></table></div></figure>
+<p>按理说，内核态会有0x7e个字节拷贝失败，copy_from_user()的返回值应当为0x7e。然而，调试发现copy_from_user()的返回值为0xae（<code>0xae-0x7e=0x30</code>）。试了0x63，返回值是0x93（<code>0x93-0x63=0x30</code>），试了0x23，返回值是0x23（符合预期）。</p>
+<p>很奇怪的现象，为什么返回值会出现跟预期不一样的情况？copy_from_user()底层实际拷贝时究竟是怎么做的呢？</p>
+<p>涉及到一段汇编代码：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://elixir.bootlin.com/linux/v5.4.50/source/arch/arm64/lib/copy_template.S" >copy_template.S</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>以arm64架构、linux 5.4.50 为例，探索下内核中的拷贝过程是怎样的。以大于128字节的情况为例，主要的拷贝逻辑在 <code>Lcpy_body_large</code> 中。</p>
+<figure class="highlight armasm"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/* SPDX-License-Identifier: GPL-2.0-only */</span></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Copyright (C) 2013 ARM Ltd.</span></span><br><span class="line"><span class="comment"> * Copyright (C) 2013 Linaro.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * This code is based on glibc cortex strings work originally authored by Linaro</span></span><br><span class="line"><span class="comment"> * be found @</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * &lt;http://bazaar.launchpad.net/~linaro-toolchain-dev/cortex-strings/trunk/&gt;</span></span><br><span class="line"><span class="comment"> * files/head:/src/aarch64/</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"></span><br><span class="line"><span class="comment">/*</span></span><br><span class="line"><span class="comment"> * Copy a buffer from src to dest (alignment handled by the hardware)</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * Parameters:</span></span><br><span class="line"><span class="comment"> *	x0 - dest</span></span><br><span class="line"><span class="comment"> *	x1 - src</span></span><br><span class="line"><span class="comment"> *	x2 - n</span></span><br><span class="line"><span class="comment"> * Returns:</span></span><br><span class="line"><span class="comment"> *	x0 - dest</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="symbol">dstin</span>	<span class="meta">.req</span>	x0</span><br><span class="line"><span class="symbol">src</span>	<span class="meta">.req</span>	x1</span><br><span class="line"><span class="symbol">count</span>	<span class="meta">.req</span>	x2</span><br><span class="line"><span class="symbol">tmp1</span>	<span class="meta">.req</span>	x3</span><br><span class="line"><span class="symbol">tmp1w</span>	<span class="meta">.req</span>	w3</span><br><span class="line"><span class="symbol">tmp2</span>	<span class="meta">.req</span>	x4</span><br><span class="line"><span class="symbol">tmp2w</span>	<span class="meta">.req</span>	w4</span><br><span class="line"><span class="symbol">dst</span>	<span class="meta">.req</span>	x6</span><br><span class="line"></span><br><span class="line"><span class="symbol">A_l</span>	<span class="meta">.req</span>	x7</span><br><span class="line"><span class="symbol">A_h</span>	<span class="meta">.req</span>	x8</span><br><span class="line"><span class="symbol">B_l</span>	<span class="meta">.req</span>	x9</span><br><span class="line"><span class="symbol">B_h</span>	<span class="meta">.req</span>	x10</span><br><span class="line"><span class="symbol">C_l</span>	<span class="meta">.req</span>	x11</span><br><span class="line"><span class="symbol">C_h</span>	<span class="meta">.req</span>	x12</span><br><span class="line"><span class="symbol">D_l</span>	<span class="meta">.req</span>	x13</span><br><span class="line"><span class="symbol">D_h</span>	<span class="meta">.req</span>	x14</span><br><span class="line"></span><br><span class="line">	<span class="keyword">mov</span>	dst, dstin</span><br><span class="line">	<span class="keyword">cmp</span>	count, <span class="number">#16</span></span><br><span class="line">	<span class="comment">/*When memory length is less than 16, the accessed are not aligned.*/</span></span><br><span class="line">	b.lo	.Ltiny15          <span class="comment">/*如果count小于16，就跳转到标号Ltiny15处执行*/</span></span><br><span class="line"></span><br><span class="line">	neg	tmp2, src           <span class="comment">/*确定起始地址是否对齐*/</span></span><br><span class="line">	<span class="keyword">ands</span>	tmp2, tmp2, <span class="number">#15</span><span class="comment">/* Bytes to reach alignment. */</span></span><br><span class="line">	b.eq	.LSrcAligned      <span class="comment">/*若对齐，则跳转到LSrcAligned*/</span></span><br><span class="line">	<span class="keyword">sub</span>	count, count, tmp2</span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	* Copy the leading memory data from src to dst in an increasing</span></span><br><span class="line"><span class="comment">	* address order.By this way,the risk of overwriting the source</span></span><br><span class="line"><span class="comment">	* memory data is eliminated when the distance between src and</span></span><br><span class="line"><span class="comment">	* dst is less than 16. The memory accesses here are alignment.</span></span><br><span class="line"><span class="comment">	*/</span></span><br><span class="line">	tbz	tmp2, <span class="number">#0</span>, <span class="number">1</span>f</span><br><span class="line">	ldrb1	tmp1w, src, <span class="number">#1</span></span><br><span class="line">	strb1	tmp1w, dst, <span class="number">#1</span></span><br><span class="line"><span class="number">1</span>:</span><br><span class="line">	tbz	tmp2, <span class="number">#1</span>, <span class="number">2</span>f</span><br><span class="line">	ldrh1	tmp1w, src, <span class="number">#2</span></span><br><span class="line">	strh1	tmp1w, dst, <span class="number">#2</span></span><br><span class="line"><span class="number">2</span>:</span><br><span class="line">	tbz	tmp2, <span class="number">#2</span>, <span class="number">3</span>f</span><br><span class="line">	ldr1	tmp1w, src, <span class="number">#4</span></span><br><span class="line">	str1	tmp1w, dst, <span class="number">#4</span></span><br><span class="line"><span class="number">3</span>:</span><br><span class="line">	tbz	tmp2, <span class="number">#3</span>, .LSrcAligned</span><br><span class="line">	ldr1	tmp1, src, <span class="number">#8</span></span><br><span class="line">	str1	tmp1, dst, <span class="number">#8</span></span><br><span class="line"></span><br><span class="line"><span class="symbol">.LSrcAligned:</span></span><br><span class="line">	<span class="keyword">cmp</span>	count, <span class="number">#64</span>       </span><br><span class="line">	b.ge	.Lcpy_over64       <span class="comment">/*若待拷贝的大小大于等于64，则跳转至Lcpy_over64*/</span></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	* Deal with small copies quickly by dropping straight into the</span></span><br><span class="line"><span class="comment">	* exit block.</span></span><br><span class="line"><span class="comment">	*/</span></span><br><span class="line"><span class="symbol">.Ltail63:</span></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	* Copy up to 48 bytes of data. At this point we only need the</span></span><br><span class="line"><span class="comment">	* bottom 6 bits of count to be accurate.</span></span><br><span class="line"><span class="comment">	*/</span></span><br><span class="line">	<span class="keyword">ands</span>	tmp1, count, <span class="number">#0x30</span></span><br><span class="line">	b.eq	.Ltiny15</span><br><span class="line">	<span class="keyword">cmp</span>	tmp1w, <span class="number">#0x20</span></span><br><span class="line">	b.eq	<span class="number">1</span>f</span><br><span class="line">	b.lt	<span class="number">2</span>f</span><br><span class="line">	ldp1	A_l, A_h, src, <span class="number">#16</span></span><br><span class="line">	stp1	A_l, A_h, dst, <span class="number">#16</span></span><br><span class="line"><span class="number">1</span>:</span><br><span class="line">	ldp1	A_l, A_h, src, <span class="number">#16</span></span><br><span class="line">	stp1	A_l, A_h, dst, <span class="number">#16</span></span><br><span class="line"><span class="number">2</span>:</span><br><span class="line">	ldp1	A_l, A_h, src, <span class="number">#16</span></span><br><span class="line">	stp1	A_l, A_h, dst, <span class="number">#16</span></span><br><span class="line"><span class="symbol">.Ltiny15:</span></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	* Prefer to break one ldp/stp into several load/store to access</span></span><br><span class="line"><span class="comment">	* memory in an increasing address order,rather than to load/store 16</span></span><br><span class="line"><span class="comment">	* bytes from (src-16) to (dst-16) and to backward the src to aligned</span></span><br><span class="line"><span class="comment">	* address,which way is used in original cortex memcpy. If keeping</span></span><br><span class="line"><span class="comment">	* the original memcpy process here, memmove need to satisfy the</span></span><br><span class="line"><span class="comment">	* precondition that src address is at least 16 bytes bigger than dst</span></span><br><span class="line"><span class="comment">	* address,otherwise some source data will be overwritten when memove</span></span><br><span class="line"><span class="comment">	* call memcpy directly. To make memmove simpler and decouple the</span></span><br><span class="line"><span class="comment">	* memcpy&#x27;s dependency on memmove, withdrew the original process.</span></span><br><span class="line"><span class="comment">	*/</span></span><br><span class="line">	tbz	count, <span class="number">#3</span>, <span class="number">1</span>f</span><br><span class="line">	ldr1	tmp1, src, <span class="number">#8</span></span><br><span class="line">	str1	tmp1, dst, <span class="number">#8</span></span><br><span class="line"><span class="number">1</span>:</span><br><span class="line">	tbz	count, <span class="number">#2</span>, <span class="number">2</span>f</span><br><span class="line">	ldr1	tmp1w, src, <span class="number">#4</span></span><br><span class="line">	str1	tmp1w, dst, <span class="number">#4</span></span><br><span class="line"><span class="number">2</span>:</span><br><span class="line">	tbz	count, <span class="number">#1</span>, <span class="number">3</span>f</span><br><span class="line">	ldrh1	tmp1w, src, <span class="number">#2</span></span><br><span class="line">	strh1	tmp1w, dst, <span class="number">#2</span></span><br><span class="line"><span class="number">3</span>:</span><br><span class="line">	tbz	count, <span class="number">#0</span>, .Lexitfunc</span><br><span class="line">	ldrb1	tmp1w, src, <span class="number">#1</span></span><br><span class="line">	strb1	tmp1w, dst, <span class="number">#1</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">b</span>	.Lexitfunc</span><br><span class="line"></span><br><span class="line"><span class="symbol">.Lcpy_over64:</span></span><br><span class="line">	<span class="keyword">subs</span>	count, count, <span class="number">#128</span></span><br><span class="line">	b.ge	.Lcpy_body_large           <span class="comment">/*若待拷贝的大小大于等于128，则跳转至Lcpy_body_large*/</span></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	* Less than 128 bytes to copy, so handle 64 here and then jump</span></span><br><span class="line"><span class="comment">	* to the tail.</span></span><br><span class="line"><span class="comment">	*/</span></span><br><span class="line">	ldp1	A_l, A_h, src, <span class="number">#16</span></span><br><span class="line">	stp1	A_l, A_h, dst, <span class="number">#16</span></span><br><span class="line">	ldp1	B_l, B_h, src, <span class="number">#16</span></span><br><span class="line">	ldp1	C_l, C_h, src, <span class="number">#16</span></span><br><span class="line">	stp1	B_l, B_h, dst, <span class="number">#16</span></span><br><span class="line">	stp1	C_l, C_h, dst, <span class="number">#16</span></span><br><span class="line">	ldp1	D_l, D_h, src, <span class="number">#16</span></span><br><span class="line">	stp1	D_l, D_h, dst, <span class="number">#16</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">tst</span>	count, <span class="number">#0x3f</span></span><br><span class="line">	b.ne	.Ltail63</span><br><span class="line">	<span class="keyword">b</span>	.Lexitfunc</span><br><span class="line"></span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	* Critical loop.  Start at a new cache line boundary.  Assuming</span></span><br><span class="line"><span class="comment">	* 64 bytes per line this ensures the entire loop is in one line.</span></span><br><span class="line"><span class="comment">	*/</span></span><br><span class="line">	.p2align	L1_CACHE_SHIFT</span><br><span class="line"><span class="symbol">.Lcpy_body_large:</span></span><br><span class="line">	<span class="comment">/* pre-get 64 bytes data. */</span></span><br><span class="line">	ldp1	A_l, A_h, src, <span class="number">#16</span></span><br><span class="line">	ldp1	B_l, B_h, src, <span class="number">#16</span></span><br><span class="line">	ldp1	C_l, C_h, src, <span class="number">#16</span></span><br><span class="line">	ldp1	D_l, D_h, src, <span class="number">#16</span>             <span class="comment">/*先将起始64字节内存加载到寄存器中*/</span></span><br><span class="line"><span class="number">1</span>:</span><br><span class="line">	<span class="comment">/*</span></span><br><span class="line"><span class="comment">	* interlace the load of next 64 bytes data block with store of the last</span></span><br><span class="line"><span class="comment">	* loaded 64 bytes data.</span></span><br><span class="line"><span class="comment">	*/</span></span><br><span class="line">	stp1	A_l, A_h, dst, <span class="number">#16</span>         <span class="comment">/*将寄存器A中16字节内容存入目的地址*/</span></span><br><span class="line">	ldp1	A_l, A_h, src, <span class="number">#16</span>         <span class="comment">/*从源地址中下一个64字节内容中，加载16字节到A寄存器*/</span></span><br><span class="line">	stp1	B_l, B_h, dst, <span class="number">#16</span>         <span class="comment">/*B C D寄存器依次重复A过程*/</span></span><br><span class="line">	ldp1	B_l, B_h, src, <span class="number">#16</span></span><br><span class="line">	stp1	C_l, C_h, dst, <span class="number">#16</span></span><br><span class="line">	ldp1	C_l, C_h, src, <span class="number">#16</span></span><br><span class="line">	stp1	D_l, D_h, dst, <span class="number">#16</span></span><br><span class="line">	ldp1	D_l, D_h, src, <span class="number">#16</span>        </span><br><span class="line">	<span class="keyword">subs</span>	count, count, <span class="number">#64</span>          <span class="comment">/*待拷贝长度减去64字节，表示下一个循环将从源地址加载64字节内容，同时将上一次A B C D寄存器的内容（共64字节）存到目的地址中去*/</span></span><br><span class="line">	b.ge	<span class="number">1</span>b                         <span class="comment">/*count大于等于0的情况下，跳转到1处*/</span></span><br><span class="line">	stp1	A_l, A_h, dst, <span class="number">#16</span></span><br><span class="line">	stp1	B_l, B_h, dst, <span class="number">#16</span></span><br><span class="line">	stp1	C_l, C_h, dst, <span class="number">#16</span></span><br><span class="line">	stp1	D_l, D_h, dst, <span class="number">#16</span></span><br><span class="line"></span><br><span class="line">	<span class="keyword">tst</span>	count, <span class="number">#0x3f</span></span><br><span class="line">	b.ne	.Ltail63</span><br><span class="line"><span class="symbol">.Lexitfunc:</span></span><br></pre></td></tr></table></div></figure>
+<p>Lcpy_body_large 中主要逻辑如下图示。64字节为一组，上一轮中，已将源地址（用户态）64字节内容分别加载到A（A_l/A_h）B（B_l/B_h）C（C_l/C_h）D（D_l/D_h）对应的8个寄存器中。此轮中：</p>
+<ol>
+<li>先将A存到目的地址（内核态）</li>
+<li>然后从下一个分组读取16个字节到A寄存器（此时完成16字节从源地址到目的地址的写入）</li>
+<li>后面的 3 4 5 6 7 8 依次重复 1 2的操作，完成共64字节的拷贝</li>
+</ol>
+<p><img   src="./image-20230908172757504.png?size=600" style="width: 600px;"  alt="image-20230908172757504"></p>
+<p>理解汇编后，就能明白开头那段代码中为什么内核在 copy_from_user() 时返回值会出现 <code>0x93(0x63+0x30)</code> 和 <code>0x23(0x23+0)</code> 这两种情况。</p>
+<p>第一种情况：本质是需要访问未映射页面的size大于等于0x40</p>
+<p>假设左侧是已映射区域，右侧是未映射区域。那么当执行 2 时，内核访问未映射区域会进入错误页处理。此时存在寄存器B C D中的内容还未来的及写入目的地址中。于是未拷贝的长度实际是右侧未映射区域的大小（0x63），加上左侧B C D 寄存器中未写入的内容大小（0x30）。所以 copy_from_user() 返回未拷贝的长度是0x93。</p>
+<p><img   src="./image-20230908172831999.png?size=600" style="width: 600px;"  alt="image-20230908172831999"></p>
+<p>第二种情况：本质是需要访问未映射页面的size小于0x40</p>
+<p>剩余count小于0x40的情况下，不会再进入前面的循环拷贝过程，而是一次性将 A B C D 的内容写入目标地址，然后处理剩下的小于0x40的部分。访问这部分内容必然触发异常，于是未拷贝的长度就是未映射页面的size。</p>
+<p>第三种情况：左侧已映射部分不是0x40的整数倍</p>
+<p>前两种情况都是基于左侧已映射部分是0x40的整数倍为基础讨论的，假设左侧已映射部分是0x1b0，右侧是0x10。那么当执行到第8步时访问到非法内存，此时2 4 6步存到寄存器中的0x30字节内容未写入目的地址中，所以最终copy_from_user() 的返回值是 0x10+0x30=0x40。其他情况不枚举了。</p>
+<p><img   src="./image-20230908172857815.png?size=600" style="width: 600px;"  alt="image-20230908172857815"></p>
+<p>总之，copy_from_user() 函数出现返回值跟预期不一致的原因，是因为实际拷贝操作中，异常发生时，寄存器内容未来得及写入目标地址。寄存器中未写入目标地址的内容也会被纳入未拷贝长度中，这是用户态不容易感知到的部分。</p>
+<p>参考：</p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.csdn.net/m0_46250244/article/details/115055101" >ARM64架构下memcpy实现原理</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://codeantenna.com/a/GLeEH22cAA" >ARM64-memcpy.S 汇编源码分析</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="http://blingblingxuanxuan.github.io">blingbling</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="http://blingblingxuanxuan.github.io/2023/09/08/230908-arm64-memcpy-template/">http://blingblingxuanxuan.github.io/2023/09/08/230908-arm64-memcpy-template/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/linux/">linux</a></span></div><div class="post-share"><div class="social-share" data-sites="qzone, qq, weibo, wechat, douban, linkedin, facebook, twitter, google">Share to: </div></div><nav class="post-paginator paginator"><div class="paginator-next"><a class="paginator-next__link" href="/2023/09/05/230905-kStackOverflow/"><span class="paginator-prev__text">GeekCon AVSS 2023 Qualifier - kStackOverflow</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/uploads/zhishi1.jpg" alt="avatar"></div></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/blingblingxuanxuan" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">70</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">15</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">38</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2023</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>blingbling</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.3.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon" data-popover-pos="up" data-popover="访问人数"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon" data-popover-pos="up" data-popover="浏览总量"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div><div>Just follow your heart, and keep smiling.</div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/js/social-share.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>
