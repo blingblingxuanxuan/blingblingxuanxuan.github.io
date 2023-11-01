@@ -1,0 +1,436 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/leaf-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/leaf-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="制作一根调试线，用 KGDB 调试 pixel3  android 11 内核">
+<meta property="og:type" content="article">
+<meta property="og:title" content="为 pixel3 制作一根 KGDB 调试线">
+<meta property="og:url" content="http://blingblingxuanxuan.github.io/2023/11/01/231101-pixel3-debug-cable/index.html">
+<meta property="og:site_name" content="blingbling&#39;s blog">
+<meta property="og:description" content="制作一根调试线，用 KGDB 调试 pixel3  android 11 内核">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2023/11/01/231101-pixel3-debug-cable/image-20231101225044924.png?size=600">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2023/11/01/231101-pixel3-debug-cable/image-20231101205919974.png?size=600">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2023/11/01/231101-pixel3-debug-cable/image-20231101210447849.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2023/11/01/231101-pixel3-debug-cable/image-20231101224034942.png">
+<meta property="og:image" content="http://blingblingxuanxuan.github.io/2023/11/01/231101-pixel3-debug-cable/20231101231855.jpg">
+<meta property="article:published_time" content="2023-11-01T08:57:05.000Z">
+<meta property="article:modified_time" content="2023-11-01T15:35:55.015Z">
+<meta property="article:author" content="blingbling">
+<meta property="article:tag" content="android">
+<meta property="article:tag" content="pixel">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://blingblingxuanxuan.github.io/2023/11/01/231101-pixel3-debug-cable/image-20231101225044924.png?size=600"><title>为 pixel3 制作一根 KGDB 调试线 | blingbling's blog</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2023/11/01/231101-pixel3-debug-cable/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/css/share.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"80px","tocMaxDepth":3},
+  header: {"enable":true,"showOnPost":false,"scrollDownIcon":true},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"light","wordWrap":false},
+  reward: false,
+  fancybox: true,
+  zoomImage: undefined,
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: undefined,
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner header-inner--height header-inner--bgcolor"><nav class="header-nav header-nav--sticky"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/about/"><span class="header-nav-menu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-menu-item__text">关于</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/friends/"><span class="header-nav-menu-item__icon"><i class="fas fa-thumbs-up"></i></span><span class="header-nav-menu-item__text">友链</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">为 pixel3 制作一根 KGDB 调试线</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2023-11-01</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2023-11-01</span></span></div></header><div class="post-body"><p>关于android真机的调试，网络上的资料并不多。之前复现漏洞时，看见过一些大佬用printk来调试，这是个好方法（毕竟linus大神都用printk）。但是如果我不想频繁地添加printk代码，然后一遍遍重新编译内核，有没有其他办法呢？</p>
+<p>在搜索过程中，发现有两种基于KGDB的调试思路：</p>
+<ol>
+<li><p><strong>制作调试线接出串口</strong></p>
+<p>最早介绍该方法的文章：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://web.archive.org/web/20150823121007/http://www.contextis.com/resources/blog/kgdb-android-debugging-kernel-boss/" >KGDB on Android: Debugging the kernel like a boss</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>关于如何制作调试线：</p>
+<p>​        <a target="_blank" rel="noopener" href="https://github.com/Peter-Easton/android-debug-cable-howto/blob/master/README.md"><strong>How To Make Your Own Pixel 2, Pixel 3 or Pixel 4 Debugging Cable</strong></a></p>
+<p>​        <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.bacon.dev/2020/10/enabling-serial-port-or-console-uart-on.html" >Enabling the Serial Port (or Console, UART) on Google Pixel Phones</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>关于如何结合kgdb和调试线：</p>
+<p>​        <a target="_blank" rel="noopener" href="https://github.com/screwer/kgdb-android"><strong>screwer-kgdb-android</strong></a></p>
+</li>
+<li><p><strong>将USB口强转为串口</strong></p>
+<p>英文原文：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.trendmicro.com/en_us/research/17/a/practical-android-debugging-via-kgdb.html" >Practical Android Debugging Via KGDB</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>涉及代码：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://github.com/jacktang310/KernelDebugOnNexus6P/tree/master#kerneldebugonnexus6p" >KernelDebugOnNexus6P</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p>中文翻译：<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.anquanke.com/post/id/85352" >【技术分享】使用KGDB实现Android内核调试</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">该方法在pixel1上测试失败，编译内核的过程中，被替换的 drivers&#x2F;usb&#x2F;dwc3&#x2F;gadget.c 文件报了错。</span><br></pre></td></tr></table></div></figure>
+<p>本文记录的是第一种调试方法，涉及如下几个步骤：</p>
+</li>
+</ol>
+<ul>
+<li>制作调试线：从手机的Type-C中接出串口信号</li>
+<li>编译userdebug版本的AOSP：开启串口的shell调试</li>
+<li>编译用于调试的内核：开启kgdb并关闭watchdog</li>
+<li>接线调试：通过串口线连接到kgdb</li>
+</ul>
+
+        <h1 id="制作调试线"   >
+          <a href="#制作调试线" class="heading-link"><i class="fas fa-link"></i></a><a href="#制作调试线" class="headerlink" title="制作调试线"></a>制作调试线</h1>
+      <p>pixel3 手机的type-c接口中A8和B8口（但如下淘宝买的板子上测出是A5和B5）被用作UART的收发口，将它们接出，再通过ttl转usb连接到pc即可。</p>
+<p>需要两个东西：</p>
+<ol>
+<li>type-c 测试板（公头）</li>
+<li>usb转串口线（虽然其他帖子强调需要1.8v规格的电平，但经过测试PL2303即可成功连接）</li>
+</ol>
+<p><img   src="image-20231101225044924.png?size=600" style="width: 600px;"  alt="image-20231101225044924"></p>
+<p>把它们连接起来，如下图（为了方便接线，我们还焊了个座）：</p>
+<p><img   src="image-20231101205919974.png?size=600" style="width: 600px;"  alt="image-20231101205919974"></p>
+
+        <h1 id="编译userdebug版本的AOSP"   >
+          <a href="#编译userdebug版本的AOSP" class="heading-link"><i class="fas fa-link"></i></a><a href="#编译userdebug版本的AOSP" class="headerlink" title="编译userdebug版本的AOSP"></a>编译userdebug版本的AOSP</h1>
+      <blockquote>
+<p>只有userdebug版本的系统镜像才能在串口上拿到一个 console shell</p>
+</blockquote>
+<p>环境：ubuntu20.04虚拟机，8核，22G内存，350G SSD存储。</p>
+<p>耗时：10h左右。</p>
+<p>步骤如下：</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 下载aosp源码</span></span><br><span class="line">mkdir aosp_a11</span><br><span class="line"><span class="built_in">cd</span> aosp_a11</span><br><span class="line">repo init --depth 1 -u https://android.googlesource.com/platform/manifest -b android-11.0.0_r1</span><br><span class="line">repo sync -c -j8</span><br><span class="line"></span><br><span class="line"><span class="comment"># 下载对应的驱动 bluelinerp1a.200720.009</span></span><br><span class="line">mkdir temp </span><br><span class="line"><span class="built_in">cd</span> temp</span><br><span class="line">wget https://dl.google.com/dl/android/aosp/google_devices-blueline-rp1a.200720.009-6cd41940.tgz</span><br><span class="line">wget https://dl.google.com/dl/android/aosp/qcom-blueline-rp1a.200720.009-f772c38c.tgz</span><br><span class="line">tar zxf ./google_devices-blueline-rp1a.200720.009-6cd41940.tgz &amp;&amp; tar zxf ./qcom-blueline-rp1a.200720.009-f772c38c.tgz</span><br><span class="line">./extract </span><br><span class="line">./extract</span><br><span class="line">mv vendor ../          <span class="comment"># 将vendor目录放入aosp源码根目录</span></span><br><span class="line"><span class="built_in">cd</span> ../</span><br><span class="line"></span><br><span class="line"><span class="comment"># 开始编译</span></span><br><span class="line"><span class="built_in">source</span> build/envsetup.sh</span><br><span class="line">lunch aosp_blueline-userdebug</span><br><span class="line">make -j8</span><br><span class="line"><span class="comment"># 全部编译完成后，可以使用 m/mm/mmm 进行模块编译</span></span><br></pre></td></tr></table></div></figure>
+<p>编译完成后，刷入手机，测试能否成功开机</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 在刚刚编译完成的窗口中执行（因为需要复用编译过程中用到的一些环境变量）</span></span><br><span class="line">adb reboot bootloader</span><br><span class="line">fastboot flashall -w</span><br><span class="line">fastboot reboot</span><br></pre></td></tr></table></div></figure>
+<p>开机测试手机能否正常使用，没什么问题的话，就可以编译我们自己的内核了。</p>
+
+        <h1 id="编译用于调试的内核"   >
+          <a href="#编译用于调试的内核" class="heading-link"><i class="fas fa-link"></i></a><a href="#编译用于调试的内核" class="headerlink" title="编译用于调试的内核"></a>编译用于调试的内核</h1>
+      <blockquote>
+<p>主要是在内核编译选项中开启kgdb并关闭硬件的watchdog</p>
+</blockquote>
+<ol>
+<li><p>下载内核源码</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 下载目标分支涉及的源码文件</span></span><br><span class="line">repo init -u https://android.googlesource.com/kernel/manifest -b android-msm-crosshatch-4.9-android11-qpr2</span><br><span class="line">repo sync</span><br><span class="line"></span><br><span class="line"><span class="comment"># 切换build分支版本，因为最新版本的build目录不支持build/build.sh的编译方式</span></span><br><span class="line"><span class="built_in">cd</span> build</span><br><span class="line">git checkout f4f2d2f0665c6031f67d8c84ff98b7d22d5abac1          </span><br><span class="line"><span class="comment"># ps. checkout的tag是从android12的default.xml中获取的</span></span><br></pre></td></tr></table></div></figure></li>
+<li><p>改内核编译选项</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">cd</span> private/msm-google</span><br><span class="line"><span class="built_in">export</span> ARCH=arm64      <span class="comment"># this is the magic line</span></span><br><span class="line">make b1c1_defconfig    <span class="comment"># This sets up the config for my hardware. Yours is probably different.</span></span><br><span class="line">make menuconfig			<span class="comment"># 更改编译选项，或直接改.config文件。更改完毕后，继续执行</span></span><br><span class="line">make savedefconfig</span><br><span class="line">cp defconfig arch/arm64/configs/b1c1_defconfig <span class="comment"># or whatever your hardware configuration is</span></span><br><span class="line">make mrproper</span><br></pre></td></tr></table></div></figure>
+<p>config中需要</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 关闭的选项  ！！！如果不关watchdog，kgdb挂上之后手机会重启！！！</span></span><br><span class="line">CONFIG_MSM_WATCHDOG_V2=n      <span class="comment"># 老版本手机</span></span><br><span class="line">CONFIG_QCOM_WATCHDOG_V2=n     <span class="comment"># 新版本手机</span></span><br><span class="line">CONFIG_STRICT_MEMORY_RWX=n</span><br><span class="line">CONFIG_MSM_WATCHDOG_CTX_PRINT=n      <span class="comment"># 老版本手机</span></span><br><span class="line">CONFIG_QCOM_WATCHDOG_CTX_PRINT=n     <span class="comment"># 新版本手机</span></span><br><span class="line"><span class="comment"># 开启的选项</span></span><br><span class="line">CONFIG_CONSOLE_POLL=y</span><br><span class="line">CONFIG_KGDB=y</span><br><span class="line">CONFIG_KGDB_SERIAL_CONSOLE=y</span><br><span class="line">CONFIG_KGDB_KDB=y</span><br><span class="line">CONFIG_KDB_KEYBOARD=y</span><br><span class="line">CONFIG_KDB_DEFAULT_ENABLE=0x1</span><br></pre></td></tr></table></div></figure></li>
+<li><p>编译内核</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 编译内核</span></span><br><span class="line"><span class="built_in">cd</span> ../</span><br><span class="line">build/build.sh</span><br></pre></td></tr></table></div></figure></li>
+<li><p>改内核启动参数/proc/cmdline</p>
+<p>编译boot.img之前，在aosp源码目录 <code>device/google/crosshatch</code> 中找到 <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="http://boardconfig-common.mk/" >BoardConfig-common.mk</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>，更改 BOARD_KERNEL_CMDLINE 即可</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">BOARD_KERNEL_CMDLINE += console=ttyMSM0,115200n8 androidboot.console=ttyMSM0 printk.devkmsg=on</span><br><span class="line">BOARD_KERNEL_CMDLINE += msm_rtb.filter=0x237</span><br><span class="line">[...]</span><br><span class="line"><span class="comment"># 改成了</span></span><br><span class="line">BOARD_KERNEL_CMDLINE += console=ttyMSM0,115200n8 androidboot.console=ttyMSM0 kgdboc=ttyMSM0,115200 kgdbcon nokaslr printk.devkmsg=on</span><br><span class="line">BOARD_KERNEL_CMDLINE += msm_rtb.filter=0x237</span><br><span class="line"><span class="comment"># 或者改成下面这样</span></span><br><span class="line">BOARD_KERNEL_CMDLINE += console=ttyMSM0,115200n8 androidboot.console=ttyMSM0 kgdboc=ttyMSM0,115200 kgdbretry=4 nokaslr printk.devkmsg=on</span><br><span class="line">BOARD_KERNEL_CMDLINE += msm_rtb.filter=0x237</span><br></pre></td></tr></table></div></figure></li>
+<li><p>将内核镜像打包成boot.img</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 进入aosp源码目录，初始化环境</span></span><br><span class="line"><span class="built_in">cd</span> ~/aosp/</span><br><span class="line"><span class="built_in">source</span> build/envsetup.sh</span><br><span class="line">lunch aosp_blueline-userdebug</span><br><span class="line"></span><br><span class="line"><span class="comment"># 将目标文件Image.lz4导出到环境变量</span></span><br><span class="line"><span class="built_in">export</span> TARGET_PREBUILT_KERNEL=/home/bling/pixel3/android11/out/android-msm-pixel-4.9/dist/Image.lz4</span><br><span class="line"></span><br><span class="line"><span class="comment"># 编译</span></span><br><span class="line">make -j4 bootimage</span><br><span class="line"></span><br><span class="line"><span class="comment"># 等待编译完成，在 out/target/product/blueline/ 目录下查看生成的boot.img文件</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 然后，进入fastboot，通过如下命令将新镜像刷入手机即可</span></span><br><span class="line">adb reboot bootloader</span><br><span class="line">fastboot flash boot out/target/product/blueline/boot.img</span><br><span class="line">fastboot oem uart <span class="built_in">enable</span>	<span class="comment"># 启用uart串口调试功能</span></span><br><span class="line">fastboot reboot</span><br></pre></td></tr></table></div></figure></li>
+<li><p>刷入新的ko文件，修复触屏不好使等问题</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">adb root </span><br><span class="line">adb remount -R     <span class="comment"># adb remount &amp; adb reboot</span></span><br><span class="line">adb push out/android-msm-pixel-4.9/dist/*.ko /vendor/lib/modules/</span><br><span class="line">adb reboot</span><br></pre></td></tr></table></div></figure>
+
+
+</li>
+</ol>
+
+        <h1 id="接线调试"   >
+          <a href="#接线调试" class="heading-link"><i class="fas fa-link"></i></a><a href="#接线调试" class="headerlink" title="接线调试"></a>接线调试</h1>
+      <p>接好线后，可以先看看串口输出和输入功能是否正常</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">sudo minicom --device /dev/ttyUSB0</span><br></pre></td></tr></table></div></figure>
+<p>如下图说明是正常的</p>
+<p><img src="image-20231101210447849.png" alt="image-20231101210447849"></p>
+<p>然后，关闭minicom界面，执行如下两个步骤：</p>
+<ul>
+<li><p>手机的adb shell中（网络连接）</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">adb tcpip 5555</span><br><span class="line">adb connect 192.168.40.123:5555</span><br><span class="line">adb shell</span><br><span class="line">blueline:&#x2F; $ su</span><br><span class="line">blueline:&#x2F; # echo g &gt; &#x2F;proc&#x2F;sysrq-trigger</span><br></pre></td></tr></table></div></figure></li>
+<li><p>调试linux主机中（调试线连接）</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">su root</span><br><span class="line">gdb-multiarch</span><br><span class="line">(gdb) set architecture aarch64</span><br><span class="line">(gdb) file .&#x2F;vmlinux</span><br><span class="line">(gdb) set serial baud 115200</span><br><span class="line">(gdb) target remote &#x2F;dev&#x2F;ttyUSB0</span><br></pre></td></tr></table></div></figure>
+
+
+
+
+</li>
+</ul>
+<p>断下情况如图：</p>
+<p><img src="image-20231101224034942.png" alt="image-20231101224034942"></p>
+<p><img src="20231101231855.jpg" alt="image-20231101231040773"></p>
+<p>但是，有几个问题，暂时不知道原因：</p>
+<ul>
+<li>可以设置一个断点，然后<code>c</code>继续执行，但是单步<code>si</code>就会崩溃重启</li>
+<li>同时设置多个断点时，<code>c</code>继续执行就不生效了</li>
+</ul>
+
+        <h1 id="参考文章"   >
+          <a href="#参考文章" class="heading-link"><i class="fas fa-link"></i></a><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.csdn.net/zhaojidong6020/article/details/50929454" >android手机调通kgdb调试</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_38233274/article/details/95204486" >高通uart调试总结</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://web.archive.org/web/20141018021239/http://www.accuvant.com/blog/building-a-nexus-4-uart-debug-cable" >Building a Nexus 4 UART Debug Cable</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://stackoverflow.com/questions/4937322/android-kernel-debugging-with-kgdb" >Android: Kernel Debugging with KGDB</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://duasynt.com/blog/google-pixel-uart-serial-cable" >Google Pixel UART kernel debug cable</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://gist.github.com/calebccff/50d32bc879c26001971e2dba20fe1b5e#kgdb-notes" >kgdb notes</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://wiki.postmarketos.org/wiki/Serial_debugging:Cable_schematics" >Serial debugging:Cable schematics</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="http://www.ramlife.org/2021/09/01/400.html" >aosp 学习记录</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://xdaforums.com/t/how-to-specify-a-custom-defconfig-file-in-android-10-kernel-compilation.4080241/" >How to specify a custom defconfig file in Android 10 Kernel compilation</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="http://blingblingxuanxuan.github.io">blingbling</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="http://blingblingxuanxuan.github.io/2023/11/01/231101-pixel3-debug-cable/">http://blingblingxuanxuan.github.io/2023/11/01/231101-pixel3-debug-cable/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/android/">android</a></span><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/pixel/">pixel</a></span></div><div class="post-share"><div class="social-share" data-sites="qzone, qq, weibo, wechat, douban, linkedin, facebook, twitter, google">Share to: </div></div><nav class="post-paginator paginator"><div class="paginator-next"><a class="paginator-next__link" href="/2023/09/18/230918-kSysRace/"><span class="paginator-prev__text">GeekCon AVSS 2023 Qualifier - kSysRace</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%88%B6%E4%BD%9C%E8%B0%83%E8%AF%95%E7%BA%BF"><span class="toc-number">1.</span> <span class="toc-text">
+          制作调试线</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BC%96%E8%AF%91userdebug%E7%89%88%E6%9C%AC%E7%9A%84AOSP"><span class="toc-number">2.</span> <span class="toc-text">
+          编译userdebug版本的AOSP</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BC%96%E8%AF%91%E7%94%A8%E4%BA%8E%E8%B0%83%E8%AF%95%E7%9A%84%E5%86%85%E6%A0%B8"><span class="toc-number">3.</span> <span class="toc-text">
+          编译用于调试的内核</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%8E%A5%E7%BA%BF%E8%B0%83%E8%AF%95"><span class="toc-number">4.</span> <span class="toc-text">
+          接线调试</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%AB%A0"><span class="toc-number">5.</span> <span class="toc-text">
+          参考文章</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/uploads/zhishi1.jpg" alt="avatar"></div></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/blingblingxuanxuan" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">73</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">15</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">39</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2023</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>blingbling</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.3.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon" data-popover-pos="up" data-popover="访问人数"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon" data-popover-pos="up" data-popover="浏览总量"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div><div>Just follow your heart, and keep smiling.</div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/js/social-share.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>
