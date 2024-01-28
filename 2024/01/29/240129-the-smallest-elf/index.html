@@ -1,0 +1,439 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="format-detection" content="telephone=no"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black"><link rel="icon" href="/images/icons/leaf-16x16.png?v=2.6.2" type="image/png" sizes="16x16"><link rel="icon" href="/images/icons/leaf-32x32.png?v=2.6.2" type="image/png" sizes="32x32"><meta name="description" content="以 PlaidCTF 2020 的题目 golf.so 为目标，深入了解 ELF 文件格式，尽可能构造出满足条件的最小 ELF 文件">
+<meta property="og:type" content="article">
+<meta property="og:title" content="构造一个最小ELF文件">
+<meta property="og:url" content="http://blingblingxuanxuan.github.io/2024/01/29/240129-the-smallest-elf/index.html">
+<meta property="og:site_name" content="blingbling&#39;s blog">
+<meta property="og:description" content="以 PlaidCTF 2020 的题目 golf.so 为目标，深入了解 ELF 文件格式，尽可能构造出满足条件的最小 ELF 文件">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-01-28T16:18:23.000Z">
+<meta property="article:modified_time" content="2024-01-28T16:35:27.148Z">
+<meta property="article:author" content="blingbling">
+<meta property="article:tag" content="elf structure">
+<meta name="twitter:card" content="summary"><title>构造一个最小ELF文件 | blingbling's blog</title><link ref="canonical" href="http://blingblingxuanxuan.github.io/2024/01/29/240129-the-smallest-elf/"><link rel="dns-prefetch" href="https://cdn.jsdelivr.net"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.12.1/css/all.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" type="text/css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/css/share.min.css" type="text/css"><link rel="stylesheet" href="/css/index.css?v=2.6.2"><script>var Stun = window.Stun || {};
+var CONFIG = {
+  root: '/',
+  algolia: undefined,
+  assistSearch: undefined,
+  fontIcon: {"prompt":{"success":"fas fa-check-circle","info":"fas fa-arrow-circle-right","warning":"fas fa-exclamation-circle","error":"fas fa-times-circle"},"copyBtn":"fas fa-copy"},
+  sidebar: {"offsetTop":"80px","tocMaxDepth":3},
+  header: {"enable":true,"showOnPost":false,"scrollDownIcon":true},
+  postWidget: {"endText":true},
+  nightMode: {"enable":true},
+  back2top: {"enable":true},
+  codeblock: {"style":"default","highlight":"light","wordWrap":false},
+  reward: false,
+  fancybox: true,
+  zoomImage: undefined,
+  galleryWaterfall: undefined,
+  lazyload: false,
+  pjax: undefined,
+  externalLink: {"icon":{"enable":true,"name":"fas fa-external-link-alt"}},
+  shortcuts: undefined,
+  prompt: {"copyButton":"复制","copySuccess":"复制成功","copyError":"复制失败"},
+  sourcePath: {"js":"js","css":"css","images":"images"},
+};
+
+window.CONFIG = CONFIG;</script><meta name="generator" content="Hexo 5.3.0"></head><body><div class="container" id="container"><header class="header" id="header"><div class="header-inner header-inner--height header-inner--bgcolor"><nav class="header-nav header-nav--sticky"><div class="header-nav-inner"><div class="header-nav-menubtn"><i class="fas fa-bars"></i></div><div class="header-nav-menu"><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/"><span class="header-nav-menu-item__icon"><i class="fas fa-home"></i></span><span class="header-nav-menu-item__text">首页</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/archives/"><span class="header-nav-menu-item__icon"><i class="fas fa-folder-open"></i></span><span class="header-nav-menu-item__text">归档</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/categories/"><span class="header-nav-menu-item__icon"><i class="fas fa-layer-group"></i></span><span class="header-nav-menu-item__text">分类</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/tags/"><span class="header-nav-menu-item__icon"><i class="fas fa-tags"></i></span><span class="header-nav-menu-item__text">标签</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/about/"><span class="header-nav-menu-item__icon"><i class="fas fa-user"></i></span><span class="header-nav-menu-item__text">关于</span></a></div><div class="header-nav-menu-item"><a class="header-nav-menu-item__link" href="/friends/"><span class="header-nav-menu-item__icon"><i class="fas fa-thumbs-up"></i></span><span class="header-nav-menu-item__text">友链</span></a></div></div><div class="header-nav-search"><span class="header-nav-search__icon"><i class="fas fa-search"></i></span><span class="header-nav-search__text">搜索</span></div><div class="header-nav-mode"><div class="mode"><div class="mode-track"><span class="mode-track-moon"></span><span class="mode-track-sun"></span></div><div class="mode-thumb"></div></div></div></div></nav></div></header><main class="main" id="main"><div class="main-inner"><div class="content-wrap" id="content-wrap"><div class="content" id="content"><!-- Just used to judge whether it is an article page--><div id="is-post"></div><div class="post"><header class="post-header"><h1 class="post-title">构造一个最小ELF文件</h1><div class="post-meta"><span class="post-meta-item post-meta-item--createtime"><span class="post-meta-item__icon"><i class="far fa-calendar-plus"></i></span><span class="post-meta-item__info">发表于</span><span class="post-meta-item__value">2024-01-29</span></span><span class="post-meta-item post-meta-item--updatetime"><span class="post-meta-item__icon"><i class="far fa-calendar-check"></i></span><span class="post-meta-item__info">更新于</span><span class="post-meta-item__value">2024-01-29</span></span></div></header><div class="post-body"><p>2020年的时候，出现过两道构造最小ELF文件的题目：</p>
+<ul>
+<li><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://ctftime.org/task/11305" >PlaidCTF 2020 - golf.so</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+<li><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://cloud.tencent.com/developer/special/tencentgeekchallenge" >腾讯极客挑战赛 - 第二期：世界上最小的MD5程序</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></li>
+</ul>
+<p>前者要求构造一个共享库文件，通过 <code>LD_PRELOAD=&lt;upload&gt; /bin/true</code> 指定该文件以执行。（第一关要求大小&lt;300字节，第二关要求大小&lt;196字节）</p>
+<p>后者要求构造一个可执行程序，执行后输出该ELF文件的MD5值。</p>
+<p>两个题都很有意思，但出于了解如何构造最小ELF的目的，选择了相对简单点的第一个题 - golf.so，作为本文的目标。</p>
+<p>本文按如下步骤，最终构造出一个170字节的满足golf.so题目要求的ELF文件：</p>
+<ol>
+<li>创建一个ELF壳：利用已有汇编模板构造一个ELF可执行程序</li>
+<li>创建一个动态链接库文件：动态链接库文件比一般可执行文件多了一条类型为 <code>PT_DYNAMIC</code> 的Program Header</li>
+<li>缩减至192字节：将shellcode并入各个 Header 中</li>
+<li>缩减至170字节：将_dynamic段并入 Header ，并缩减ELF头大小（e_ehsize），及利用DT_INIT</li>
+</ol>
+
+        <h1 id="创建一个ELF壳"   >
+          <a href="#创建一个ELF壳" class="heading-link"><i class="fas fa-link"></i></a><a href="#创建一个ELF壳" class="headerlink" title="创建一个ELF壳"></a>创建一个ELF壳</h1>
+      <blockquote>
+<p>使用gcc直接编译生成的可执行程序的文件大小较大，因为含有许多不必须的字段。所以比较好的方法是，在了解了ELF文件头各个字段的含义后，使用汇编或其他方法来构造一个ELF文件。</p>
+</blockquote>
+<p>参考 <span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://blog.stalkr.net/2014/10/tiny-elf-3264-with-nasm.html" >Tiny ELF 32/64 with nasm</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span> 中展示的32位和64位最小ELF的汇编代码，照猫画虎，创建一个弹shell的64位ELF可执行程序的壳：</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br></pre></td><td class="code"><pre><span class="line">; nasm -f bin -o tiny64 tiny64.asm</span><br><span class="line">BITS 64</span><br><span class="line">  org 0x400000</span><br><span class="line"></span><br><span class="line">ehdr:           ; Elf64_Ehdr</span><br><span class="line">  db 0x7f, &quot;ELF&quot;, 2, 1, 1, 0 ; e_ident</span><br><span class="line">  times 8 db 0</span><br><span class="line">  dw  2         ; e_type</span><br><span class="line">  dw  0x3e      ; e_machine</span><br><span class="line">  dd  1         ; e_version</span><br><span class="line">  dq  _start    ; e_entry</span><br><span class="line">  dq  phdr - $$ ; e_phoff</span><br><span class="line">  dq  0         ; e_shoff</span><br><span class="line">  dd  0         ; e_flags</span><br><span class="line">  dw  ehdrsize  ; e_ehsize</span><br><span class="line">  dw  phdrsize  ; e_phentsize</span><br><span class="line">  dw  1         ; e_phnum</span><br><span class="line">  dw  0         ; e_shentsize</span><br><span class="line">  dw  0         ; e_shnum</span><br><span class="line">  dw  0         ; e_shstrndx</span><br><span class="line">  ehdrsize  equ  $ - ehdr</span><br><span class="line"></span><br><span class="line">phdr:           ; Elf64_Phdr</span><br><span class="line">  dd  1         ; p_type</span><br><span class="line">  dd  5         ; p_flags</span><br><span class="line">  dq  0         ; p_offset</span><br><span class="line">  dq  $$        ; p_vaddr</span><br><span class="line">  dq  $$        ; p_paddr</span><br><span class="line">  dq  filesize  ; p_filesz</span><br><span class="line">  dq  filesize  ; p_memsz</span><br><span class="line">  dq  0x1000    ; p_align</span><br><span class="line">  phdrsize  equ  $ - phdr</span><br><span class="line"></span><br><span class="line">_start:</span><br><span class="line">	xor	rdx, rdx</span><br><span class="line">	mov	rdi, &quot;&#x2F;bin&#x2F;sh&quot;</span><br><span class="line">	push rdi</span><br><span class="line">	mov rdi, rsp</span><br><span class="line">	push rdx</span><br><span class="line">	push rdi</span><br><span class="line">	mov rsi,rsp</span><br><span class="line">	mov rax, 59</span><br><span class="line">	syscall				; execve(&quot;&#x2F;bin&#x2F;sh&quot;,[&quot;&#x2F;bin&#x2F;sh&quot;],...)</span><br><span class="line"></span><br><span class="line">filesize  equ  $ - $$</span><br></pre></td></tr></table></div></figure>
+<p>执行结果：</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">$ nasm -f bin -o tiny64 test.s</span><br><span class="line">$ chmod u+x tiny64</span><br><span class="line">$ ./tiny64</span><br><span class="line">$ <span class="built_in">exit</span></span><br><span class="line">$ wc -c tiny64</span><br><span class="line">149 tiny64</span><br></pre></td></tr></table></div></figure>
+<p>成功执行了，但是当前编译的结果是一个可执行程序，而golf.so题目的要求是通过 <code>LD_PRELOAD</code> 指定的一个动态链接库文件。于是下一步，我们需要在Program Header中构造一个 .dynamic 节。</p>
+
+        <h1 id="创建一个动态链接ELF"   >
+          <a href="#创建一个动态链接ELF" class="heading-link"><i class="fas fa-link"></i></a><a href="#创建一个动态链接ELF" class="headerlink" title="创建一个动态链接ELF"></a>创建一个动态链接ELF</h1>
+      <blockquote>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="http://osr507doc.sco.com/en/topics/ELF_dynam_section.html" >Dynamic section</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>中详细介绍了动态链接文件的构造方法，跟一般可执行文件的主要区别在于：</p>
+<ol>
+<li>需要构造一个类型为 PT_DYNAMIC 的Program Header</li>
+<li>需要以 _dynamic 为符号构造一个段，这个段用于存放Dynamic table entry</li>
+<li>构造Dynamic table entry中需要的其他数据，如_hash段</li>
+</ol>
+</blockquote>
+<p>通过<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="http://osr507doc.sco.com/en/topics/ELF_dynam_section.html" >Dynamic section</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>中表格得知，对于shared object（动态链接库文件），必须具备的六个Dynamic table entry分别是：<code>DT_NULL, DT_HASH, DT_STRTAB, DT_SYMTAB, DT_STRSZ, DT_SYMENT</code>。于是参考其他ELF文件中的.dynamic节和_DYNAMIC，构造了如下ELF的汇编：</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line">BITS 64</span><br><span class="line">  org 0x0</span><br><span class="line"></span><br><span class="line">ehdr:                           ; Elf64_Ehdr</span><br><span class="line">  db 0x7f, &quot;ELF&quot;, 2, 1, 1, 0    ; e_ident</span><br><span class="line">  times 8 db 0</span><br><span class="line">  dw  3                         ; e_type : ET_DYN</span><br><span class="line">  dw  0x3e                      ; e_machine</span><br><span class="line">  dd  1                         ; e_version</span><br><span class="line">  dq  _start                    ; e_entry</span><br><span class="line">  dq  0x40                      ; e_phoff</span><br><span class="line">  dq  0                         ; e_shoff</span><br><span class="line">  dd  0                         ; e_flags</span><br><span class="line">  dw  0x40                      ; e_ehsize</span><br><span class="line">  dw  0x38                      ; e_phentsize</span><br><span class="line">  dw  2                         ; e_phnum</span><br><span class="line">  dw  0                         ; e_shentsize ;</span><br><span class="line">  dw  0                         ; e_shnum ;</span><br><span class="line">  dw  0                         ; e_shstrnd ;</span><br><span class="line"></span><br><span class="line">phdr_loadable:                  ; Elf64_Phdr</span><br><span class="line">  dd  1                         ; p_type</span><br><span class="line">  dd  7                         ; p_flags</span><br><span class="line">  dq  0                         ; p_offset</span><br><span class="line">  dq  $$                        ; p_vaddr</span><br><span class="line">  dq  $$                        ; p_paddr</span><br><span class="line">  dq  loadable_size             ; p_filesz</span><br><span class="line">  dq  loadable_size             ; p_memsz</span><br><span class="line">  dq  0x1000                    ; p_align</span><br><span class="line"></span><br><span class="line">phdr_dynamic:                   ; Elf64_Phdr</span><br><span class="line">  dd  2                         ; p_type</span><br><span class="line">  dd  7                         ; p_flags</span><br><span class="line">  dq  loadable_size             ; p_offset</span><br><span class="line">  dq  _dynamic                  ; p_vaddr</span><br><span class="line">  dq  _dynamic                  ; p_paddr</span><br><span class="line">  dq  dynamic_size              ; p_filesz</span><br><span class="line">  dq  dynamic_size              ; p_memsz</span><br><span class="line">  dq  0x8                       ; p_align</span><br><span class="line"></span><br><span class="line">_start:</span><br><span class="line">	xor	rdx, rdx</span><br><span class="line">	mov	rdi, &quot;&#x2F;bin&#x2F;sh&quot;</span><br><span class="line">	push rdi</span><br><span class="line">	mov rdi, rsp</span><br><span class="line">	push rdx</span><br><span class="line">	push rdi</span><br><span class="line">	mov rsi,rsp</span><br><span class="line">	mov rax, 59</span><br><span class="line">	syscall				;execve(&quot;&#x2F;bin&#x2F;sh&quot;,[&quot;&#x2F;bin&#x2F;sh&quot;],...)</span><br><span class="line"></span><br><span class="line">loadable_size  equ  $ - ehdr</span><br><span class="line"></span><br><span class="line">_dynamic:</span><br><span class="line">    dq 6FFFFEF5h,_hash       ;DT_HASH</span><br><span class="line">    dq 5, 0                  ;DT_STRTAB</span><br><span class="line">    dq 6, 0                  ;DT_SYMTAB</span><br><span class="line">    dq 0Ah, 0                ;DT_STRSZ</span><br><span class="line">    dq 0Bh, 0                ;DT_SYMENT</span><br><span class="line">    dq 0Ch, _start           ;DT_INIT</span><br><span class="line">    dq 0,0                   ;DT_NULL</span><br><span class="line"></span><br><span class="line">dynamic_size equ $ - _dynamic</span><br><span class="line"></span><br><span class="line">_hash:</span><br><span class="line">    dd 1</span><br><span class="line">    dd 1</span><br><span class="line">    dd 1</span><br><span class="line">    dd 0</span><br><span class="line">    dq 0</span><br><span class="line">    dd 0</span><br><span class="line">    dd 0</span><br></pre></td></tr></table></div></figure>
+<p>编译命令及结果如下：</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ nasm -f bin -o <span class="built_in">test</span> test.s</span><br><span class="line">$ LD_PRELOAD=./<span class="built_in">test</span> /bin/<span class="literal">true</span></span><br><span class="line">$ <span class="built_in">exit</span>          <span class="comment"># 成功获得shell</span></span><br><span class="line">$ wc -c <span class="built_in">test</span></span><br><span class="line">349 <span class="built_in">test</span></span><br></pre></td></tr></table></div></figure>
+<p>此时生成的动态链接库文件大小为349，离第一关的目标300还差一些。于是考虑是不是还有可以删除的部分。</p>
+<p>经过测试，将DT_HASH、DT_STRTAB、DT_STRSZ、DT_SYMENT、DT_NULL删除后，该动态库也能正常工作。删掉后，得到满足第一关的ELF：</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">$ nasm -f bin -o <span class="built_in">test</span> test.s</span><br><span class="line">$ LD_PRELOAD=./<span class="built_in">test</span> /bin/<span class="literal">true</span></span><br><span class="line">$ <span class="built_in">exit</span></span><br><span class="line">$ wc -c <span class="built_in">test</span></span><br><span class="line">237 <span class="built_in">test</span></span><br></pre></td></tr></table></div></figure>
+
+        <h1 id="继续精简-192字节版本"   >
+          <a href="#继续精简-192字节版本" class="heading-link"><i class="fas fa-link"></i></a><a href="#继续精简-192字节版本" class="headerlink" title="继续精简 - 192字节版本"></a>继续精简 - 192字节版本</h1>
+      <blockquote>
+<p>通过编辑覆盖 ELF Header 和 Program Header 中的内容，确认不会影响ELF执行的部分并标记。然后将shellcode拆散，分别布置到 Header 中标记的各个位置。各段 shellcode 通过 jmp 指令来回跳转，最终完成弹 shell 的功能。</p>
+</blockquote>
+<p>将 shellcode 拆散后，放入各个 Header 中，对应的汇编代码如下：</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><span class="line">BITS 64</span><br><span class="line">  org 0x0</span><br><span class="line"></span><br><span class="line">ehdr:                           ; Elf64_Ehdr</span><br><span class="line">    db 0x7f, &quot;ELF&quot;, 2, 1, 1, 0    ; e_ident</span><br><span class="line">    times 8 db 0</span><br><span class="line">    dw  3                         ; e_type : ET_DYN</span><br><span class="line">    dw  0x3e                      ; e_machine</span><br><span class="line">    dd  1                         ; e_version</span><br><span class="line">    dq  _start                    ; e_entry</span><br><span class="line">    dq  0x40                      ; e_phoff</span><br><span class="line">    ;dq  0xffffeeee                        ; e_shoff</span><br><span class="line">    ;dd  0xffffeeee                         ; e_flags</span><br><span class="line">_start:</span><br><span class="line">    mov	rdi, &quot;&#x2F;bin&#x2F;sh&quot;</span><br><span class="line">    jmp gadget1</span><br><span class="line">    dw  0x40                      ; e_ehsize</span><br><span class="line">    dw  0x38                      ; e_phentsize</span><br><span class="line">    dw  2                         ; e_phnum</span><br><span class="line">    ;dw  0xffff                     ; e_shentsize ;</span><br><span class="line">    ;dw  0xffff                       ; e_shnum ;</span><br><span class="line">    ;dw                          ; e_shstrnd ;</span><br><span class="line">gadget1:</span><br><span class="line">    push rdi</span><br><span class="line">    mov rdi, rsp</span><br><span class="line">    jmp gadget2</span><br><span class="line"></span><br><span class="line">phdr_loadable:                  ; Elf64_Phdr</span><br><span class="line">    dd  1                         ; p_type</span><br><span class="line">    dd  7                         ; p_flags</span><br><span class="line">    dq  0                         ; p_offset</span><br><span class="line">    dq  $$                        ; p_vaddr</span><br><span class="line">    ;dq  $$                        ; p_paddr    ;</span><br><span class="line">gadget2:</span><br><span class="line">    xor	rdx, rdx</span><br><span class="line">    push rdx</span><br><span class="line">    push rdi</span><br><span class="line">    jmp gadget3</span><br><span class="line">    db 0x0</span><br><span class="line">    dq  loadable_size             ; p_filesz</span><br><span class="line">    dq  loadable_size             ; p_memsz ;</span><br><span class="line">    ;dq  0x1000                    ; p_align ; </span><br><span class="line">gadget3:</span><br><span class="line">    mov rsi,rsp</span><br><span class="line">    jmp gadget4</span><br><span class="line">    db 0, 0, 0</span><br><span class="line"></span><br><span class="line">phdr_dynamic:                   ; Elf64_Phdr</span><br><span class="line">    dd  2                         ; p_type</span><br><span class="line">    dd  7                         ; p_flags</span><br><span class="line">    dq  loadable_size             ; p_offset</span><br><span class="line">    dq  _dynamic                  ; p_vaddr</span><br><span class="line">    ;dq  0                         ; p_paddr</span><br><span class="line">gadget4:</span><br><span class="line">    mov rax, 59</span><br><span class="line">    syscall</span><br><span class="line">    db 0</span><br><span class="line">    dq  dynamic_size              ; p_filesz</span><br><span class="line">    ;dq  0              ; p_memsz ;</span><br><span class="line">    ;dq  0xffffeeee     ; p_align ;</span><br><span class="line"></span><br><span class="line">loadable_size  equ  $ - ehdr</span><br><span class="line"></span><br><span class="line">_dynamic:</span><br><span class="line">  dq 0Ch, _start           ;DT_INIT</span><br><span class="line">  dq 6, 0                  ;DT_SYMTAB</span><br><span class="line"></span><br><span class="line">dynamic_size equ $ - _dynamic</span><br></pre></td></tr></table></div></figure>
+<p>编译运行，得到192字节版本的ELF：</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">➜ nasm -o <span class="built_in">test</span> test.s</span><br><span class="line">➜ chmod +x ./<span class="built_in">test</span></span><br><span class="line">➜ LD_PRELOAD=./<span class="built_in">test</span> /bin/<span class="literal">true</span></span><br><span class="line">$ ls</span><br><span class="line"><span class="built_in">test</span>  test.s</span><br><span class="line">$ <span class="built_in">exit</span></span><br><span class="line">➜ wc -c <span class="built_in">test</span></span><br><span class="line">192 <span class="built_in">test</span></span><br></pre></td></tr></table></div></figure>
+
+        <h1 id="再度精简-170字节版本"   >
+          <a href="#再度精简-170字节版本" class="heading-link"><i class="fas fa-link"></i></a><a href="#再度精简-170字节版本" class="headerlink" title="再度精简 - 170字节版本"></a>再度精简 - 170字节版本</h1>
+      <blockquote>
+<p>继续缩减工作，主要从以下3各方面考虑：</p>
+<ol>
+<li>覆写ELF Header中的e_entry：在 _dynamic 段存在时，可通过DT_INIT指定程序入口地址，所以ELF Header中的e_entry可以被覆盖为任意值</li>
+<li>缩小ELF Header大小：通过删除ELF header中的e_shentsize 、e_shnum 、e_shstrnd 三个字段，ELF Header（e_ehsize）的大小可以缩小6字节</li>
+<li>将_dynamic融入到phdr_dynamic中（刘大爷的ELF文件中看到的小trick）</li>
+</ol>
+</blockquote>
+<p>按照以上思路精简后，ELF文件对应的汇编代码如下：</p>
+<figure class="highlight plain"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br></pre></td><td class="code"><pre><span class="line">BITS 64</span><br><span class="line">  org 0x0</span><br><span class="line"></span><br><span class="line">ehdr:                           ; Elf64_Ehdr</span><br><span class="line">    db 0x7f, &quot;ELF&quot;, 2, 1, 1, 0    ; e_ident</span><br><span class="line">    times 8 db 0</span><br><span class="line">    dw  3                         ; e_type : ET_DYN</span><br><span class="line">    dw  0x3e                      ; e_machine</span><br><span class="line">    dd  1                         ; e_version</span><br><span class="line">    ;dq  _start                    ; e_entry </span><br><span class="line">  gadget1:</span><br><span class="line">        push rdi</span><br><span class="line">        mov rdi, rsp</span><br><span class="line">        jmp gadget2</span><br><span class="line">    db 0, 0</span><br><span class="line">    dq  ehdrsize                  ; e_phoff</span><br><span class="line">    ;dq  0xffffeeee                ; e_shoff</span><br><span class="line">    ;dd  0xffffeeee                ; e_flags</span><br><span class="line">  _start:</span><br><span class="line">        mov	rdi, &quot;&#x2F;bin&#x2F;sh&quot;</span><br><span class="line">        jmp gadget1</span><br><span class="line">    dw  ehdrsize                  ; e_ehsize</span><br><span class="line">    dw  0x38                      ; e_phentsize</span><br><span class="line">    dw  2                         ; e_phnum</span><br><span class="line">    ;dw  0xffff                    ; e_shentsize</span><br><span class="line">    ;dw  0xffff                    ; e_shnum</span><br><span class="line">    ;dw                            ; e_shstrnd </span><br><span class="line"></span><br><span class="line">ehdrsize equ $ - ehdr</span><br><span class="line"></span><br><span class="line">phdr_loadable:                  ; Elf64_Phdr</span><br><span class="line">    dd  1                         ; p_type</span><br><span class="line">    dd  7                         ; p_flags</span><br><span class="line">    dq  0                         ; p_offset</span><br><span class="line">    dq  $$                        ; p_vaddr</span><br><span class="line">    ;dq  $$                        ; p_paddr</span><br><span class="line">  gadget2:</span><br><span class="line">        xor	rdx, rdx</span><br><span class="line">        push rdx</span><br><span class="line">        push rdi</span><br><span class="line">        jmp gadget3</span><br><span class="line">        db 0x0</span><br><span class="line">    dq  loadable_size             ; p_filesz</span><br><span class="line">    dq  loadable_size             ; p_memsz </span><br><span class="line">    ;dq  0x1000                    ; p_align </span><br><span class="line">  gadget3:</span><br><span class="line">        mov rsi,rsp</span><br><span class="line">        jmp gadget4</span><br><span class="line">        db 0, 0, 0</span><br><span class="line"></span><br><span class="line">phdr_dynamic:                   ; Elf64_Phdr</span><br><span class="line">    dd  2                        ; p_type</span><br><span class="line">    dd  7                        ; p_flags</span><br><span class="line">  _dynamic:    </span><br><span class="line">    dq  0x6                     ; p_offset</span><br><span class="line">    dq  _dynamic                ; p_vaddr</span><br><span class="line">    dq  0xc                     ; p_paddr</span><br><span class="line">    dq  _start                  ; p_filesz</span><br><span class="line">    dq  0                       ; p_memsz</span><br><span class="line">    ;dq  0x8                    ; p_align</span><br><span class="line"> gadget4:</span><br><span class="line">        mov rax, 59</span><br><span class="line">        syscall</span><br><span class="line">        db 0</span><br><span class="line">loadable_size  equ  $ - ehdr</span><br></pre></td></tr></table></div></figure>
+<p>编译运行，得到170字节版本的ELF：</p>
+<figure class="highlight bash"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">➜ nasm -o <span class="built_in">test</span> test.s</span><br><span class="line">➜ chmod +x ./<span class="built_in">test</span></span><br><span class="line">➜ LD_PRELOAD=./<span class="built_in">test</span> /bin/<span class="literal">true</span></span><br><span class="line">$ ls</span><br><span class="line"><span class="built_in">test</span>  test.s</span><br><span class="line">$ <span class="built_in">exit</span></span><br><span class="line">➜ wc -c <span class="built_in">test</span></span><br><span class="line">170 <span class="built_in">test</span></span><br></pre></td></tr></table></div></figure>
+
+        <h1 id="更小的？-136字节"   >
+          <a href="#更小的？-136字节" class="heading-link"><i class="fas fa-link"></i></a><a href="#更小的？-136字节" class="headerlink" title="更小的？- 136字节"></a>更小的？- 136字节</h1>
+      <blockquote>
+<p>在不断缩减文件大小的过程中，了解ELF文件格式的目的已达成。而这个136字节有点trick，就没继续做了。</p>
+</blockquote>
+<p>参考golf.so最小解：**<span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://www.pimzero.com/2020/04/19/golf_so.html" >golf.so (Plaid CTF 2020) - The race to the smallest .so</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span>**</p>
+<p>根据作者的表述，该题最小的elf应该是：24（elf header中不可改的部分）+2*56（PT_LOAD和PT_DYNAMIC两个program header的大小）= 136字节。tql，以后有空再玩~</p>
+
+        <h1 id="了解ELF文件格式"   >
+          <a href="#了解ELF文件格式" class="heading-link"><i class="fas fa-link"></i></a><a href="#了解ELF文件格式" class="headerlink" title="了解ELF文件格式"></a>了解ELF文件格式</h1>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://uclibc.org/docs/elf-64-gen.pdf" >ELF-64 Object File Format</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span> 中详细讲述了ELF文件中各个部分的定义，一个ELF文件主要分为4个部分：</p>
+<ul>
+<li>ELF header：根基，用于定位其他几个部分</li>
+<li>Program header table：运行视图</li>
+<li>content：代码或数据</li>
+<li>Section header table：链接视图</li>
+</ul>
+<p>我们需要记住的就是三个header各自的作用及互相之间的关系，并粗略了解每个header中的内容。</p>
+<p>作用：可以将 ELF Header 看作 ELF 格式的核心，Program header table 用于指导将文件加载到内存时如何布局的，Section header table是用于链接过程时寻找定位的。</p>
+<p>关系：三者之间的关系，可以简单地理解为，通过 ELF Header 能定位到 Program header table 和 Section header table 在文件中的位置，以及 Program/Section header table中各有几项内容。</p>
+<p>内容：每个 header table 项中的内容则不尽相同，在需要时视具体情况具体分析。以本文中golf.so为例，对于Section header table，由于构造的ELF不需要链接到其他文件，所以可以将其完全删除。而在Program header table中，为了构造动态链接库文件，需要包含 PT_LOAD 和 PT_DYNAMIC 两项内容。</p>
+<p>三个header对应的结构体内容，最好能大体上熟记于心。</p>
+
+        <h2 id="ELF-Header"   >
+          <a href="#ELF-Header" class="heading-link"><i class="fas fa-link"></i></a><a href="#ELF-Header" class="headerlink" title="ELF Header"></a>ELF Header</h2>
+      <p>ELF Header对应的结构体如下：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span> &#123;</span></span><br><span class="line">    <span class="keyword">unsigned</span> <span class="keyword">char</span> e_ident[<span class="number">16</span>]; <span class="comment">/* ELF identification */</span></span><br><span class="line">    Elf64_Half e_type; <span class="comment">/* Object file type */</span></span><br><span class="line">    Elf64_Half e_machine; <span class="comment">/* Machine type */</span></span><br><span class="line">    Elf64_Word e_version; <span class="comment">/* Object file version */</span></span><br><span class="line"></span><br><span class="line">    Elf64_Addr e_entry; <span class="comment">/* Entry point address */</span></span><br><span class="line">    Elf64_Off e_phoff; <span class="comment">/* Program header offset */</span></span><br><span class="line">    Elf64_Off e_shoff; <span class="comment">/* Section header offset */</span></span><br><span class="line"></span><br><span class="line">    Elf64_Word e_flags; <span class="comment">/* Processor-specific flags */</span></span><br><span class="line">    Elf64_Half e_ehsize; <span class="comment">/* ELF header size */</span></span><br><span class="line"></span><br><span class="line">    Elf64_Half e_phentsize; <span class="comment">/* Size of program header entry */</span></span><br><span class="line">    Elf64_Half e_phnum; <span class="comment">/* Number of program header entries */</span></span><br><span class="line"></span><br><span class="line">    Elf64_Half e_shentsize; <span class="comment">/* Size of section header entry */</span></span><br><span class="line">    Elf64_Half e_shnum; <span class="comment">/* Number of section header entries */</span></span><br><span class="line">    Elf64_Half e_shstrndx; <span class="comment">/* Section name string table index */</span></span><br><span class="line">&#125; Elf64_Ehdr;</span><br><span class="line"></span><br></pre></td></tr></table></div></figure>
+<p>比较重要的几个点：</p>
+<ul>
+<li>e_entry - 指明程序加载到内存后，从哪个地址开始执行</li>
+<li>e_phoff - program header在文件中的偏移</li>
+<li>e_phentsize - 每个program header table的大小</li>
+<li>e_phnum - 在program header中一共有多少个program header table</li>
+</ul>
+
+        <h2 id="Program-Header"   >
+          <a href="#Program-Header" class="heading-link"><i class="fas fa-link"></i></a><a href="#Program-Header" class="headerlink" title="Program Header"></a>Program Header</h2>
+      <p>program header table 由多个 Program Header 结构体组成，加载ELF文件时会根据这些 header 内容布置进程虚拟内存空间。一个 Program Header 对应的结构体如下：</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span>&#123;</span></span><br><span class="line">    Elf64_Word p_type; <span class="comment">/* Type of segment */</span>        <span class="comment">/* PT_LOAD, PT_DYNAMIC, PT_INTERP, 等 */</span></span><br><span class="line">    Elf64_Word p_flags; <span class="comment">/* Segment attributes */</span>    <span class="comment">/* PF_X, PF_W, PF_R, 等 */</span></span><br><span class="line">    Elf64_Off p_offset; <span class="comment">/* Offset in file */</span></span><br><span class="line">    Elf64_Addr p_vaddr; <span class="comment">/* Virtual address in memory */</span></span><br><span class="line">    Elf64_Addr p_paddr; <span class="comment">/* Reserved */</span></span><br><span class="line">    Elf64_Xword p_filesz; <span class="comment">/* Size of segment in file */</span></span><br><span class="line">    Elf64_Xword p_memsz; <span class="comment">/* Size of segment in memory */</span></span><br><span class="line">    Elf64_Xword p_align; <span class="comment">/* Alignment of segment */</span></span><br><span class="line">&#125; Elf64_Phdr;</span><br></pre></td></tr></table></div></figure>
+
+        <h2 id="Section-Header"   >
+          <a href="#Section-Header" class="heading-link"><i class="fas fa-link"></i></a><a href="#Section-Header" class="headerlink" title="Section Header"></a>Section Header</h2>
+      <p>在对ELF进行链接时会使用到这里面的数据，而在构造最小ELF时，可以忽略这块内容。</p>
+<figure class="highlight c"><div class="table-container"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">typedef</span> <span class="class"><span class="keyword">struct</span>&#123;</span></span><br><span class="line">    Elf64_Word sh_name; <span class="comment">/* Section name */</span></span><br><span class="line">    Elf64_Word sh_type; <span class="comment">/* Section type */</span></span><br><span class="line">    Elf64_Xword sh_flags; <span class="comment">/* Section attributes */</span></span><br><span class="line">    Elf64_Addr sh_addr; <span class="comment">/* Virtual address in memory */</span></span><br><span class="line">    Elf64_Off sh_offset; <span class="comment">/* Offset in file */</span></span><br><span class="line">    Elf64_Xword sh_size; <span class="comment">/* Size of section */</span></span><br><span class="line">    Elf64_Word sh_link; <span class="comment">/* Link to other section */</span></span><br><span class="line">    Elf64_Word sh_info; <span class="comment">/* Miscellaneous information */</span></span><br><span class="line">    Elf64_Xword sh_addralign; <span class="comment">/* Address alignment boundary */</span></span><br><span class="line">    Elf64_Xword sh_entsize; <span class="comment">/* Size of entries, if section has table */</span></span><br><span class="line">&#125; Elf64_Shdr;</span><br></pre></td></tr></table></div></figure>
+
+        <h1 id="参考文章"   >
+          <a href="#参考文章" class="heading-link"><i class="fas fa-link"></i></a><a href="#参考文章" class="headerlink" title="参考文章"></a>参考文章</h1>
+      <p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://ctftime.org/writeup/20276" >golf.so Writeup</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://cloud.tencent.com/developer/article/1835583" >腾讯极客挑战赛丨从“碰撞”到“爆破”，42次尝试终破纪录</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+<p><span class="exturl"><a class="exturl__link"   target="_blank" rel="noopener" href="https://tinylab-1.gitbook.io/cbook/02-chapter8#da-zao-shi-shang-zui-xiao-ke-zhi-hang-elf-wen-jian-45-zi-jie-ke-da-yin-zi-fu-chuan" >打造史上最小可执行ELF文件(45字节)</a><span class="exturl__icon"><i class="fas fa-external-link-alt"></i></span></span></p>
+</div><footer class="post-footer"><div class="post-ending ending"><div class="ending__text">------ 本文结束，感谢您的阅读 ------</div></div><div class="post-copyright copyright"><div class="copyright-author"><span class="copyright-author__name">本文作者: </span><span class="copyright-author__value"><a href="http://blingblingxuanxuan.github.io">blingbling</a></span></div><div class="copyright-link"><span class="copyright-link__name">本文链接: </span><span class="copyright-link__value"><a href="http://blingblingxuanxuan.github.io/2024/01/29/240129-the-smallest-elf/">http://blingblingxuanxuan.github.io/2024/01/29/240129-the-smallest-elf/</a></span></div><div class="copyright-notice"><span class="copyright-notice__name">版权声明: </span><span class="copyright-notice__value">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" rel="external nofollow" target="_blank">BY-NC-SA</a> 许可协议。转载请注明出处！</span></div></div><div class="post-tags"><span class="post-tags-item"><span class="post-tags-item__icon"><i class="fas fa-tag"></i></span><a class="post-tags-item__link" href="http://blingblingxuanxuan.github.io/tags/elf-structure/">elf structure</a></span></div><div class="post-share"><div class="social-share" data-sites="qzone, qq, weibo, wechat, douban, linkedin, facebook, twitter, google">Share to: </div></div><nav class="post-paginator paginator"><div class="paginator-next"><a class="paginator-next__link" href="/2024/01/17/240117-6th-tctf-new-final/"><span class="paginator-prev__text">0CTF/TCTF 2022 RisingStar Final ftpd (ARM Pwn)</span><span class="paginator-next__icon"><i class="fas fa-angle-right"></i></span></a></div></nav></footer></div></div></div><div class="sidebar-wrap" id="sidebar-wrap"><aside class="sidebar" id="sidebar"><div class="sidebar-nav"><span class="sidebar-nav-toc current">文章目录</span><span class="sidebar-nav-ov">站点概览</span></div><section class="sidebar-toc"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AAELF%E5%A3%B3"><span class="toc-number">1.</span> <span class="toc-text">
+          创建一个ELF壳</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AA%E5%8A%A8%E6%80%81%E9%93%BE%E6%8E%A5ELF"><span class="toc-number">2.</span> <span class="toc-text">
+          创建一个动态链接ELF</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BB%A7%E7%BB%AD%E7%B2%BE%E7%AE%80-192%E5%AD%97%E8%8A%82%E7%89%88%E6%9C%AC"><span class="toc-number">3.</span> <span class="toc-text">
+          继续精简 - 192字节版本</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%86%8D%E5%BA%A6%E7%B2%BE%E7%AE%80-170%E5%AD%97%E8%8A%82%E7%89%88%E6%9C%AC"><span class="toc-number">4.</span> <span class="toc-text">
+          再度精简 - 170字节版本</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%9B%B4%E5%B0%8F%E7%9A%84%EF%BC%9F-136%E5%AD%97%E8%8A%82"><span class="toc-number">5.</span> <span class="toc-text">
+          更小的？- 136字节</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BA%86%E8%A7%A3ELF%E6%96%87%E4%BB%B6%E6%A0%BC%E5%BC%8F"><span class="toc-number">6.</span> <span class="toc-text">
+          了解ELF文件格式</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#ELF-Header"><span class="toc-number">6.1.</span> <span class="toc-text">
+          ELF Header</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Program-Header"><span class="toc-number">6.2.</span> <span class="toc-text">
+          Program Header</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Section-Header"><span class="toc-number">6.3.</span> <span class="toc-text">
+          Section Header</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E6%96%87%E7%AB%A0"><span class="toc-number">7.</span> <span class="toc-text">
+          参考文章</span></a></li></ol></section><!-- ov = overview--><section class="sidebar-ov hide"><div class="sidebar-ov-author"><div class="sidebar-ov-author__avatar"><img class="sidebar-ov-author__avatar_img" src="/uploads/littledog.jpg" alt="avatar"></div></div><div class="sidebar-ov-social"><a class="sidebar-ov-social-item" href="https://github.com/blingblingxuanxuan" target="_blank" rel="noopener" data-popover="Github" data-popover-pos="up"><span class="sidebar-ov-social-item__icon"><i class="fab fa-github"></i></span></a></div><div class="sidebar-ov-state"><a class="sidebar-ov-state-item sidebar-ov-state-item--posts" href="/archives/"><div class="sidebar-ov-state-item__count">78</div><div class="sidebar-ov-state-item__name">归档</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--categories" href="/categories/"><div class="sidebar-ov-state-item__count">15</div><div class="sidebar-ov-state-item__name">分类</div></a><a class="sidebar-ov-state-item sidebar-ov-state-item--tags" href="/tags/"><div class="sidebar-ov-state-item__count">49</div><div class="sidebar-ov-state-item__name">标签</div></a></div><div class="sidebar-ov-cc"><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.en" target="_blank" rel="noopener" data-popover="知识共享许可协议" data-popover-pos="up"><img src="/images/cc-by-nc-sa.svg"></a></div></section><div class="sidebar-reading"><div class="sidebar-reading-info"><span class="sidebar-reading-info__text">你已阅读了 </span><span class="sidebar-reading-info__num">0</span><span class="sidebar-reading-info__perc">%</span></div><div class="sidebar-reading-line"></div></div></aside></div><div class="clearfix"></div></div></main><footer class="footer" id="footer"><div class="footer-inner"><div><span>Copyright © 2024</span><span class="footer__icon"><i class="fas fa-heart"></i></span><span>blingbling</span></div><div><span>由 <a href="http://hexo.io/" title="Hexo" target="_blank" rel="noopener">Hexo</a> 强力驱动</span><span> v5.3.0</span><span class="footer__devider">|</span><span>主题 - <a href="https://github.com/liuyib/hexo-theme-stun/" title="Stun" target="_blank" rel="noopener">Stun</a></span><span> v2.6.2</span></div><div class="busuanzi"><span class="busuanzi-siteuv"><span class="busuanzi-siteuv__icon" data-popover-pos="up" data-popover="访问人数"><i class="fas fa-user"></i></span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_uv"></span></span><span class="busuanzi-sitepv"><span class="busuanzi-siteuv__icon" data-popover-pos="up" data-popover="浏览总量"><i class="fas fa-eye"></i></span><span class="busuanzi-siteuv__value" id="busuanzi_value_site_pv"></span></span></div><div>Just follow your heart, and keep smiling.</div></div></footer><div class="loading-bar" id="loading-bar"><div class="loading-bar__progress"></div></div><div class="back2top" id="back2top"><span class="back2top__icon"><i class="fas fa-rocket"></i></span></div></div><div class="search-mask"></div><div class="search-popup"><span class="search-close"></span><div class="search-input"><input placeholder="搜索文章（支持多关键词，请用空格分隔）"></div><div class="search-results"></div></div><script src="https://cdn.jsdelivr.net/npm/jquery@v3.4.1/dist/jquery.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.min.js"></script><script src="https://cdn.jsdelivr.net/npm/velocity-animate@1.5.2/velocity.ui.min.js"></script><script src="https://cdn.jsdelivr.net/gh/fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js"></script><script src="https://cdn.jsdelivr.net/npm/social-share.js@1.0.16/dist/js/social-share.min.js"></script><script>function initSearch() {
+  var isXML = true;
+  var search_path = 'search.json';
+
+  if (!search_path) {
+    search_path = 'search.xml';
+  } else if (/json$/i.test(search_path)) {
+    isXML = false;
+  }
+
+  var path = '/' + search_path;
+  $.ajax({
+    url: path,
+    dataType: isXML ? 'xml' : 'json',
+    async: true,
+    success: function (res) {
+      var datas = isXML ? $('entry', res).map(function () {
+        // 将 XML 转为 JSON
+        return {
+          title: $('title', this).text(),
+          content: $('content', this).text(),
+          url: $('url', this).text()
+        };
+      }).get() : res;
+      var $input = $('.search-input input');
+      var $result = $('.search-results');
+      // 搜索对象（标题、内容）的权重，影响显示顺序
+      var WEIGHT = { title: 100, content: 1 };
+      var searchPost = function () {
+        var searchText = $input.val().toLowerCase().trim();
+        // 根据空白字符分隔关键字
+        var keywords = searchText.split(/[\s]+/);
+        // 搜索结果
+        var matchPosts = [];
+
+        // 有多个关键字时，将原文字整个保存下来
+        if (keywords.length > 1) {
+          keywords.push(searchText);
+        }
+        // 防止未输入字符时搜索
+        if (searchText.length > 0) {
+          datas.forEach(function (data) {
+            var isMatch  = false;
+            // 没有标题的文章使用预设的 i18n 变量代替
+            var title = (data.title && data.title.trim()) || '[ 文章无标题 ]';
+            var titleLower = title && title.toLowerCase();
+            // 删除 HTML 标签 和 所有空白字符
+            var content = data.content && data.content.replace(/<[^>]+>/g, '');
+            var contentLower = content && content.toLowerCase();
+            // 删除重复的 /
+            var postURL = data.url && decodeURI(data.url).replace(/\/{2,}/g, '/');
+            // 标题中匹配到的关键词
+            var titleHitSlice = [];
+            // 内容中匹配到的关键词
+            var contentHitSlice = [];
+
+            keywords.forEach(function (keyword) {
+              /**
+              * 获取匹配的关键词的索引
+              * @param {String} keyword 要匹配的关键字
+              * @param {String} text 原文字
+              * @param {Boolean} caseSensitive 是否区分大小写
+              * @param {Number} weight 匹配对象的权重。权重大的优先显示
+              * @return {Array}
+              */
+              function getIndexByword (word, text, caseSensitive, weight) {
+                if (!word || !text) {
+                  return [];
+                };
+
+                var startIndex = 0; // 每次匹配的开始索引
+                var index = -1;     // 匹配到的索引值
+                var result = [];    // 匹配结果
+
+                if (!caseSensitive) {
+                  word = word.toLowerCase();
+                  text = text.toLowerCase();
+                }
+
+                while((index = text.indexOf(word, startIndex)) !== -1) {
+                  var hasMatch = false;
+                  // 索引位置相同的关键词，保留长度较长的
+                  titleHitSlice.forEach(function (hit) {
+                    if (hit.index === index && hit.word.length < word.length) {
+                      hit.word = word;
+                      hasMatch = true;
+                    }
+                  });
+                  startIndex = index + word.length;
+                  !hasMatch && result.push({ index: index, word: word, weight: weight });
+                }
+                return result;
+              }
+              titleHitSlice = titleHitSlice.concat(getIndexByword(keyword, titleLower, false, WEIGHT.title));
+              contentHitSlice = contentHitSlice.concat(getIndexByword(keyword, contentLower, false, WEIGHT.content));
+            });
+
+            var hitTitle = titleHitSlice.length;
+            var hitContent = contentHitSlice.length;
+
+            if (hitTitle > 0 || hitContent > 0) {
+              isMatch = true;
+            }
+            if (isMatch) {
+              ;[titleHitSlice, contentHitSlice].forEach(function (hit) {
+                // 按照匹配文字的索引的递增顺序排序
+                hit.sort(function (left, right) {
+                  return left.index - right.index;
+                });
+              });
+              /**
+              * 给文本中匹配到的关键词添加标记，从而进行高亮显示
+              * @param {String} text 原文本
+              * @param {Array} hitSlice 匹配项的索引信息
+              * @param {Number} start 开始索引
+              * @param {Number} end 结束索引
+              * @return {String}
+              */
+              function highlightKeyword (text, hitSlice, start, end) {
+                if (!text || !hitSlice || !hitSlice.length) {
+                  return;
+                }
+
+                var result = '';
+                var startIndex = start;
+                var endIndex = end;
+                hitSlice.forEach(function (hit) {
+                  if (hit.index < startIndex) {
+                    return;
+                  }
+
+                  var hitWordEnd = hit.index + hit.word.length;
+                  result += text.slice(startIndex, hit.index);
+                  result += '<b>' + text.slice(hit.index, hitWordEnd) + '</b>';
+                  startIndex = hitWordEnd;
+                });
+                result += text.slice(startIndex, endIndex);
+                return result;
+              }
+
+              var postData = {};
+              // 文章总的搜索权重
+              var postWeight = titleHitSlice.length * WEIGHT.title + contentHitSlice.length * WEIGHT.content;
+              // 标记匹配关键词后的标题
+              var postTitle = highlightKeyword(title, titleHitSlice, 0, title.length) || title;
+              // 标记匹配关键词后的内容
+              var postContent;
+              // 显示内容的长度
+              var SHOW_WORD_LENGTH = 200;
+              // 命中关键词前的字符显示长度
+              var SHOW_WORD_FRONT_LENGTH = 20;
+              var SHOW_WORD_END_LENGTH = SHOW_WORD_LENGTH - SHOW_WORD_FRONT_LENGTH;
+
+              // 截取匹配的第一个字符，前后共 200 个字符来显示
+              if (contentHitSlice.length > 0) {
+                var firstIndex = contentHitSlice[0].index;
+                var start = firstIndex > SHOW_WORD_FRONT_LENGTH ? firstIndex - SHOW_WORD_FRONT_LENGTH : 0;
+                var end = firstIndex + SHOW_WORD_END_LENGTH;
+                postContent = highlightKeyword(content, contentHitSlice, start, end);
+              } else { // 未匹配到内容，直接截取前 200 个字符来显示
+                postContent = content.slice(0, SHOW_WORD_LENGTH);
+              }
+              postData.title = postTitle;
+              postData.content = postContent;
+              postData.url = postURL;
+              postData.weight = postWeight;
+              matchPosts.push(postData);
+            }
+          });
+        }
+
+        var resultInnerHtml = '';
+        if (matchPosts.length) {
+          // 按权重递增的顺序排序，使权重大的优先显示
+          matchPosts.sort(function (left, right) {
+            return right.weight - left.weight;
+          });
+          resultInnerHtml += '<ul>';
+          matchPosts.forEach(function (post) {
+            resultInnerHtml += '<li><a class="search-results-title" href="' + post.url + '">';
+            resultInnerHtml += post.title;
+            resultInnerHtml += '</a><div class="search-results-content">';
+            resultInnerHtml += post.content;
+            resultInnerHtml += '</div></li>';
+          });
+          resultInnerHtml += '</ul>';
+        } else {
+          resultInnerHtml += '<div class="search-results-none"><i class="far fa-meh"></i></div>';
+        }
+        $result.html(resultInnerHtml);
+      };
+      $input.on('input', searchPost);
+      $input.on('keyup', function (e) {
+        if (e.keyCode === Stun.utils.codeToKeyCode('Enter')) {
+          searchPost();
+        }
+      });
+    }
+  });
+}
+
+function closeSearch () {
+  $('body').css({ overflow: 'auto' });
+  $('.search-popup').css({ display: 'none' });
+  $('.search-mask').css({ display: 'none' });
+}
+
+window.addEventListener('DOMContentLoaded', function () {
+  Stun.utils.pjaxReloadLocalSearch = function () {
+    $('.header-nav-search').on('click', function (e) {
+      e.stopPropagation();
+      $('body').css('overflow', 'hidden');
+      $('.search-popup')
+        .velocity('stop')
+        .velocity('transition.expandIn', {
+          duration: 300,
+          complete: function () {
+            $('.search-popup input').focus();
+          }
+        });
+      $('.search-mask')
+        .velocity('stop')
+        .velocity('transition.fadeIn', {
+          duration: 300
+        });
+
+      initSearch();
+    });
+    $('.search-mask, .search-close').on('click', function () {
+      closeSearch();
+    });
+    $(document).on('keydown', function (e) {
+      // Escape <=> 27
+      if (e.keyCode === Stun.utils.codeToKeyCode('Escape')) {
+        closeSearch();
+      }
+    });
+  };
+
+  Stun.utils.pjaxReloadLocalSearch();
+}, false);
+
+function safeOpenUrl(url) {
+  var newTab = window.open();
+  newTab.opener = null;
+  newTab.location = url;
+}
+
+function extSearch(engine) {
+  var engines = {
+    google: 'https://www.google.com/search?q=',
+    bing: 'https://cn.bing.com/search?q=',
+    baidu: 'https://www.baidu.com/s?ie=UTF-8&wd=',
+  };
+  var host = window.location.host;
+  var query = $('.search-input input').val().toLowerCase().trim();
+  var uri = engines[engine] + query + ' site:' + host;
+
+  if (query) {
+    safeOpenUrl(uri);
+  } else {
+    Stun.utils.popAlert('warning', '请输入字符');
+  }
+}
+
+var assistSearchList = window.CONFIG.assistSearch;
+
+if (Array.isArray(assistSearchList)) {
+  assistSearchList.forEach(function (name) {
+    document.querySelector('.search-btns-item--' + name).addEventListener('click', function () {
+      extSearch(name);
+    }, false);
+  });
+}</script><script src="https://cdn.jsdelivr.net/gh/sukkaw/busuanzi@latest/bsz.pure.mini.js" async></script><script src="/js/utils.js?v=2.6.2"></script><script src="/js/stun-boot.js?v=2.6.2"></script><script src="/js/scroll.js?v=2.6.2"></script><script src="/js/header.js?v=2.6.2"></script><script src="/js/sidebar.js?v=2.6.2"></script><script type="application/json" src="/search.json"></script></body></html>
