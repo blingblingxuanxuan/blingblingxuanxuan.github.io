@@ -628,11 +628,7 @@ body::after {
   position: fixed;
   height: 100vh;
   z-index: -2;
-  background: url("/uploads/flower.jpg") no-repeat center/cover;
-  background-repeat: repeat;
-  -webkit-background-size: auto;
-  -moz-background-size: auto;
-  background-size: auto;
+  background: url("/uploads/ocean.jpg") no-repeat center/cover;
 }
 body::before {
   content: '';
@@ -645,7 +641,7 @@ body::before {
   position: fixed;
   height: 100vh;
   z-index: -1;
-  background-color: rgba(0,0,0,0.2);
+  background-color: rgba(0,0,0,0.3);
 }
 .nightmode body::before {
   background-color: rgba(0,0,0,0.6);
@@ -753,11 +749,6 @@ body::before {
 .pullquote.right {
   text-align: right;
 }
-.post-body h1,
-.post-body h2 {
-  border-bottom: 1px solid var(--color-gray-250);
-  padding-bottom: 0.3em;
-}
 .table-container {
   overflow: auto;
   margin-bottom: 1rem;
@@ -766,7 +757,7 @@ body::before {
   width: 100%;
   font-size: 16px;
   background-color: #2d2e30;
-  height: 100vh;
+  height: 65vh;
 }
 .header-inner--bgcolor {
   background-color: #333;
@@ -953,7 +944,7 @@ body::before {
   z-index: 0;
   width: 100%;
   height: 100%;
-  background: url("/uploads/grass.jpg") no-repeat center/cover;
+  background: url("/uploads/ocean.jpg") no-repeat center/cover;
 }
 .header-banner::before {
   content: '';
@@ -1441,33 +1432,6 @@ body::before {
 .sidebar-ov-state-item__count {
   font-weight: 600;
   color: var(--color-gray-950);
-}
-.sidebar-ov-cc {
-  padding-top: 0.5rem;
-  text-align: center;
-}
-.sidebar-reading {
-  overflow: hidden;
-  margin-top: 0.5em;
-  text-align: center;
-}
-.sidebar-reading-info {
-  margin-bottom: 0.3em;
-}
-.sidebar-reading-line {
-  width: 100%;
-  height: 1px;
-  background-color: #fc6423;
-  -webkit-transition: -webkit-transform 0.2s ease;
-  -moz-transition: -moz-transform 0.2s ease;
-  -o-transition: -o-transform 0.2s ease;
-  -ms-transition: -ms-transform 0.2s ease;
-  transition: transform 0.2s ease;
-  -webkit-transform: translateX(-100%);
-  -moz-transform: translateX(-100%);
-  -o-transform: translateX(-100%);
-  -ms-transform: translateX(-100%);
-  transform: translateX(-100%);
 }
 .search-mask {
   display: none;
